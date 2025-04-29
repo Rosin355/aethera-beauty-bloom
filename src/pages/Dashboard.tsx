@@ -3,7 +3,9 @@ import DashboardLayout from "@/components/Dashboard/DashboardLayout";
 import WelcomeCard from "@/components/Dashboard/WelcomeCard";
 import StatCard from "@/components/Dashboard/StatCard";
 import FeaturePreview from "@/components/Dashboard/FeaturePreview";
-import { BookOpen, Calendar, Users, MessageSquare, ChartPie } from "lucide-react";
+import { BookOpen, Calendar, Users, MessageSquare, ChartPie, Layout } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Link } from "react-router-dom";
 
 const Dashboard = () => {
   return (
@@ -41,9 +43,17 @@ const Dashboard = () => {
         />
       </div>
       
-      <h2 className="text-xl font-bold font-playfair mb-6">
-        Explore Aethera Features
-      </h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-bold font-playfair">
+          Explore Aethera Features
+        </h2>
+        <Link to="/dashboard/personalized">
+          <Button variant="outline" className="flex items-center gap-2 border-brand-earth text-brand-earth hover:bg-brand-earth hover:text-white">
+            <Layout size={16} />
+            <span>View Personalized Dashboard</span>
+          </Button>
+        </Link>
+      </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <FeaturePreview 
