@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { 
@@ -16,6 +15,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import Logo from "../Layout/Logo";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -55,13 +55,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           <div className="p-4 flex items-center justify-between">
             <Link to="/dashboard" className="flex items-center">
               {isSidebarOpen ? (
-                <h1 className="text-xl font-bold font-playfair text-white">
-                  Aethera<span className="text-brand-fire">.</span>
-                </h1>
+                <Logo variant="white" />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-brand-fire flex items-center justify-center">
-                  <span className="text-white font-bold">A</span>
-                </div>
+                <Logo variant="white" showText={false} />
               )}
             </Link>
             <button
