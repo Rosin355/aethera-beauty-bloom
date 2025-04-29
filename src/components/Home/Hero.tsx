@@ -1,4 +1,3 @@
-
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -26,6 +25,11 @@ const Hero = () => {
               <Link to="#features">
                 <Button variant="outline" className="border-brand-black hover:bg-brand-black hover:text-white text-lg px-8 py-6 h-auto">
                   Explore Features
+                </Button>
+              </Link>
+              <Link to="/dashboard/personalized">
+                <Button className="bg-brand-earth hover:bg-brand-earth/90 text-white text-lg px-8 py-6 h-auto">
+                  Try Personalized Dashboard
                 </Button>
               </Link>
             </div>

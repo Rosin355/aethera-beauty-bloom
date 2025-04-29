@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -18,6 +19,7 @@ const Navbar = () => {
     { name: "Management", path: "/management" },
     { name: "Community", path: "/community" },
     { name: "Support", path: "/support" },
+    { name: "Dashboard", path: "/dashboard" }, // Added Dashboard link
   ];
 
   const toggleMenu = () => {

@@ -52,15 +52,22 @@ const CallToAction = () => {
                 </Link>
               </div>
               <div className="bg-white/10 rounded-lg p-6 border border-white/20">
-                <h3 className="text-xl font-bold text-white mb-2">Need More Information?</h3>
+                <h3 className="text-xl font-bold text-white mb-2">Access Your Dashboard</h3>
                 <p className="text-gray-300 mb-4">
-                  Schedule a free demo with our team to see how Aethera can help your business.
+                  Already a member? Access your personalized dashboard to continue your growth journey.
                 </p>
-                <Link to="/demo">
-                  <Button variant="outline" className="w-full border-white text-white hover:bg-white hover:text-brand-black">
-                    Request a Demo
-                  </Button>
-                </Link>
+                <div className="flex flex-col space-y-2">
+                  <Link to="/dashboard">
+                    <Button variant="outline" className="w-full border-white text-white hover:bg-white hover:text-brand-black">
+                      Standard Dashboard
+                    </Button>
+                  </Link>
+                  <Link to="/dashboard/personalized">
+                    <Button className="w-full bg-brand-earth hover:bg-brand-earth/90 text-white">
+                      Personalized Dashboard
+                    </Button>
+                  </Link>
+                </div>
               </div>
             </div>
           </div>
