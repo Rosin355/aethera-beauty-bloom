@@ -30,11 +30,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   const sidebarItems = [
     { name: "Dashboard", path: "/dashboard", icon: ChartPie },
-    { name: "Training", path: "/dashboard/training", icon: BookOpen },
-    { name: "Management", path: "/dashboard/management", icon: Calendar },
+    { name: "Formazione", path: "/dashboard/training", icon: BookOpen },
+    { name: "Gestione", path: "/dashboard/management", icon: Calendar },
     { name: "Community", path: "/dashboard/community", icon: Users },
-    { name: "AI Assistant", path: "/dashboard/ai-assistant", icon: MessageSquare },
-    { name: "Settings", path: "/dashboard/settings", icon: Settings },
+    { name: "Assistente AI", path: "/dashboard/ai-assistant", icon: MessageSquare },
+    { name: "Impostazioni", path: "/dashboard/settings", icon: Settings },
   ];
 
   const isActive = (path: string) => {
@@ -101,7 +101,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 </div>
                 <div className="ml-3">
                   <p className="text-sm font-medium text-white">Jane Smith</p>
-                  <p className="text-xs text-gray-400">Premium Plan</p>
+                  <p className="text-xs text-gray-400">Piano Premium</p>
                 </div>
               </div>
             ) : (
@@ -145,7 +145,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <div className="relative ml-4 w-64">
               <Input
                 type="text"
-                placeholder="Search..."
+                placeholder="Cerca..."
                 className="pl-10 pr-4 py-2 border rounded-md w-full"
               />
               <Search
