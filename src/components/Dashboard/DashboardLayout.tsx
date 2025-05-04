@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { 
@@ -11,7 +12,9 @@ import {
   Search, 
   Menu, 
   X,
-  LogOut 
+  LogOut,
+  List,
+  Archive
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";

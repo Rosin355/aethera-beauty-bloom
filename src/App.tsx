@@ -11,13 +11,14 @@ import Login from "./pages/Login";
 import SignUp from "./pages/SignUp";
 import Dashboard from "./pages/Dashboard";
 import PersonalizedDashboard from "./pages/PersonalizedDashboard";
+import ManagementTools from "./pages/ManagementTools";
 
 const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Helmet titleTemplate="%s | Aethera" defaultTitle="Aethera - Beauty Business Growth Platform" />
+      <Helmet titleTemplate="%s | 4 elementi Italia" defaultTitle="4 elementi Italia - Beauty Business Growth Platform" />
       <Toaster />
       <Sonner />
       <BrowserRouter>
@@ -27,6 +28,7 @@ const App = () => (
           <Route path="/signup" element={<SignUp />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/personalized" element={<PersonalizedDashboard />} />
+          <Route path="/dashboard/management" element={<ManagementTools />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
