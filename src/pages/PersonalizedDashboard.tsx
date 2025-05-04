@@ -1,30 +1,27 @@
-
 import { useState, useEffect } from "react";
 import DashboardLayout from "@/components/Dashboard/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
 import { ChartPie, Users, BookOpen, Calendar } from "lucide-react";
-
 const PersonalizedDashboard = () => {
-  const { toast } = useToast();
+  const {
+    toast
+  } = useToast();
   const [userData, setUserData] = useState({
     name: "Jane Smith",
     businessType: "Salon Owner",
     focusAreas: ["Client Acquisition", "Skill Development"],
     experience: "3-5 years"
   });
-
   useEffect(() => {
     // In a real app, this would fetch the user's profile data
     toast({
       title: "Dashboard personalized",
-      description: "Your dashboard has been customized based on your profile.",
+      description: "Your dashboard has been customized based on your profile."
     });
   }, [toast]);
-
-  return (
-    <DashboardLayout>
+  return <DashboardLayout>
       <div className="space-y-6">
         <Card className="bg-gradient-to-r from-brand-earth to-brand-earth/70 text-white">
           <CardHeader>
@@ -122,9 +119,9 @@ const PersonalizedDashboard = () => {
               <CardContent>
                 <div className="relative">
                   <div className="absolute left-4 h-full w-0.5 bg-gray-200"></div>
-                  <div className="space-y-8 relative">
+                  <div className="space-y-8 relative px-[13px] py-0 my-0">
                     <div className="ml-10 relative">
-                      <div className="absolute -left-12 mt-1.5 h-6 w-6 rounded-full border-4 border-brand-water bg-white"></div>
+                      <div className="absolute -left-12 mt-1.5 h-6 w-6 rounded-full border-4 border-brand-water bg-white px-0 py-0"></div>
                       <h3 className="font-bold">Building Foundations</h3>
                       <p className="text-gray-600">Complete your business profile and set goals</p>
                     </div>
@@ -150,8 +147,6 @@ const PersonalizedDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
-    </DashboardLayout>
-  );
+    </DashboardLayout>;
 };
-
 export default PersonalizedDashboard;
