@@ -17,22 +17,22 @@ const ManagementTools = () => {
         <Card className="bg-gradient-to-r from-brand-water to-brand-water/70 text-white">
           <CardHeader>
             <CardTitle className="text-2xl font-playfair">
-              Management Tools
+              Strumenti di Gestione
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-white/90">
-              Organize your business operations efficiently with these management tools.
+              Organizza le operazioni del tuo business in modo efficiente con questi strumenti di gestione.
             </p>
           </CardContent>
         </Card>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <TabsList className="grid grid-cols-4 mb-8">
-            <TabsTrigger value="appointments">Appointments</TabsTrigger>
-            <TabsTrigger value="inventory">Inventory</TabsTrigger>
-            <TabsTrigger value="services">Services</TabsTrigger>
-            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="appointments">Appuntamenti</TabsTrigger>
+            <TabsTrigger value="inventory">Inventario</TabsTrigger>
+            <TabsTrigger value="services">Servizi</TabsTrigger>
+            <TabsTrigger value="overview">Panoramica</TabsTrigger>
           </TabsList>
           
           <TabsContent value="appointments" className="space-y-4">

@@ -15,11 +15,11 @@ const Navbar = () => {
 
   const navLinks = [
     { name: "Home", path: "/" },
-    { name: "Training", path: "/training" },
-    { name: "Management", path: "/management" },
+    { name: "Formazione", path: "/training" },
+    { name: "Gestione", path: "/management" },
     { name: "Community", path: "/community" },
-    { name: "Support", path: "/support" },
-    { name: "Dashboard", path: "/dashboard" }, // Added Dashboard link
+    { name: "Supporto", path: "/support" },
+    { name: "Dashboard", path: "/dashboard" },
   ];
 
   const toggleMenu = () => {
@@ -55,12 +55,17 @@ const Navbar = () => {
           <div className="hidden md:flex md:items-center md:space-x-4">
             <Link to="/login">
               <Button variant="outline" className="border-brand-black hover:bg-brand-black hover:text-white">
-                Log In
+                Accedi
               </Button>
             </Link>
             <Link to="/signup">
               <Button className="bg-brand-fire hover:bg-brand-fire/90 text-white">
-                Sign Up
+                Registrati
+              </Button>
+            </Link>
+            <Link to="/admin/login">
+              <Button variant="outline" size="sm" className="border-brand-earth text-brand-earth hover:bg-brand-earth hover:text-white ml-2">
+                Admin
               </Button>
             </Link>
           </div>
@@ -98,12 +103,17 @@ const Navbar = () => {
             <div className="pt-4 pb-2 border-t border-gray-200 flex flex-col space-y-2">
               <Link to="/login" onClick={() => setIsMenuOpen(false)}>
                 <Button variant="outline" className="w-full border-brand-black hover:bg-brand-black hover:text-white">
-                  Log In
+                  Accedi
                 </Button>
               </Link>
               <Link to="/signup" onClick={() => setIsMenuOpen(false)}>
                 <Button className="w-full bg-brand-fire hover:bg-brand-fire/90 text-white">
-                  Sign Up
+                  Registrati
+                </Button>
+              </Link>
+              <Link to="/admin/login" onClick={() => setIsMenuOpen(false)}>
+                <Button variant="outline" className="w-full border-brand-earth text-brand-earth hover:bg-brand-earth hover:text-white">
+                  Admin
                 </Button>
               </Link>
             </div>

@@ -13,6 +13,9 @@ import Dashboard from "./pages/Dashboard";
 import PersonalizedDashboard from "./pages/PersonalizedDashboard";
 import ManagementTools from "./pages/ManagementTools";
 import Onboarding from "./pages/Onboarding";
+import AdminLogin from "./pages/Admin/Login";
+import AdminDashboard from "./pages/Admin/Dashboard";
+import ClientDetail from "./pages/Admin/ClientDetail";
 
 const queryClient = new QueryClient();
 
@@ -31,6 +34,12 @@ const App = () => (
           <Route path="/dashboard/personalized" element={<PersonalizedDashboard />} />
           <Route path="/dashboard/management" element={<ManagementTools />} />
           <Route path="/onboarding" element={<Onboarding />} />
+          
+          {/* Admin routes */}
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/dashboard" element={<AdminDashboard />} />
+          <Route path="/admin/clients/:id" element={<ClientDetail />} />
+          
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
