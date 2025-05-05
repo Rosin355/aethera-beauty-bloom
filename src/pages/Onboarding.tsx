@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
@@ -20,6 +20,7 @@ const Onboarding = () => {
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(0);
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
+  const [isStepValid, setIsStepValid] = useState(true);
   
   const steps = [
     {
@@ -41,6 +42,15 @@ const Onboarding = () => {
   ];
   
   const handleNext = () => {
+    if (currentStep === 0 && !isStepValid) {
+      toast({
+        title: "Compila tutti i campi",
+        description: "Per favore compila tutti i campi obbligatori per continuare.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
@@ -61,6 +71,10 @@ const Onboarding = () => {
       description: "Puoi completare il processo di onboarding più tardi nelle impostazioni del profilo."
     });
     navigate("/dashboard");
+  };
+  
+  const handleValidationChange = (isValid: boolean) => {
+    setIsStepValid(isValid);
   };
   
   const progress = ((currentStep + 1) / steps.length) * 100;
@@ -95,7 +109,10 @@ const Onboarding = () => {
           </div>
           
           <CardContent className="pt-6">
-            <OnboardingForm step={currentStep} />
+            <OnboardingForm 
+              step={currentStep}
+              onValidate={handleValidationChange}
+            />
           </CardContent>
           
           <CardFooter className="flex justify-between border-t pt-6">
@@ -118,7 +135,8 @@ const Onboarding = () => {
             </div>
             <Button 
               onClick={handleNext}
-              className="bg-brand-fire hover:bg-brand-fire/90"
+              className={`bg-brand-fire hover:bg-brand-fire/90 ${currentStep === 0 && !isStepValid ? 'opacity-70' : ''}`}
+              disabled={currentStep === 0 && !isStepValid}
             >
               {currentStep === steps.length - 1 ? "Completa" : "Continua"}
             </Button>

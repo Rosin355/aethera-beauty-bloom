@@ -24,6 +24,7 @@ const CompletionDialog = ({ open, onOpenChange }: CompletionDialogProps) => {
   
   useEffect(() => {
     if (open && canvasRef.current) {
+      console.log("Initializing confetti");
       const confettiSettings = {
         target: canvasRef.current,
         max: 200,

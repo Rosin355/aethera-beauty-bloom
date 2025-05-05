@@ -7,16 +7,27 @@ import LearningPreferencesStep from "./Steps/LearningPreferencesStep";
 
 interface OnboardingFormProps {
   step: number;
+  onValidate?: (isValid: boolean) => void;
 }
 
-const OnboardingForm = ({ step }: OnboardingFormProps) => {
+const OnboardingForm = ({ step, onValidate }: OnboardingFormProps) => {
   const {
     personalInfo,
     professionalInfo,
     businessGoals,
     learningPreferences,
+    errors,
+    validateStep,
     handlers
   } = useOnboardingForm();
+  
+  // Validate current step when it changes
+  React.useEffect(() => {
+    if (onValidate) {
+      const isValid = validateStep(step);
+      onValidate(isValid);
+    }
+  }, [step, onValidate, validateStep, personalInfo, professionalInfo, businessGoals, learningPreferences]);
   
   // Render different form based on step
   switch (step) {
@@ -26,6 +37,7 @@ const OnboardingForm = ({ step }: OnboardingFormProps) => {
         <PersonalInfoStep 
           personalInfo={personalInfo}
           onInfoChange={handlers.handlePersonalInfoChange}
+          errors={errors}
         />
       );
     
