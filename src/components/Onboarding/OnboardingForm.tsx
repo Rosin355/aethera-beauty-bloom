@@ -25,10 +25,21 @@ const OnboardingForm = ({ step, onValidate }: OnboardingFormProps) => {
   // Validate current step when it changes
   useEffect(() => {
     if (onValidate) {
-      const isValid = validateStep(step);
+      // Prevent infinite updates by not calling validateStep directly in this effect
+      // Instead just check validity based on current state without setting more state
+      let isValid = true;
+      
+      if (step === 0) {
+        // For personal info step
+        isValid = !!personalInfo.fullName && 
+                 !!personalInfo.businessName && 
+                 !!personalInfo.city && 
+                 !!personalInfo.phoneNumber;
+      }
+      
       onValidate(isValid);
     }
-  }, [step, onValidate, validateStep, personalInfo, professionalInfo, businessGoals, learningPreferences]);
+  }, [step, onValidate, personalInfo, professionalInfo, businessGoals, learningPreferences]);
   
   // Render different form based on step
   switch (step) {

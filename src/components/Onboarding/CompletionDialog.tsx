@@ -23,31 +23,46 @@ const CompletionDialog = ({ open, onOpenChange }: CompletionDialogProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   
   useEffect(() => {
-    if (open && canvasRef.current) {
-      console.log("Initializing confetti");
-      const confettiSettings = {
-        target: canvasRef.current,
-        max: 200,
-        size: 1.5,
-        animate: true,
-        props: ['circle', 'square', 'triangle', 'line'],
-        colors: [
-          [235, 106, 57],   // brand-fire
-          [106, 168, 179],  // brand-water
-          [203, 216, 212],  // brand-air
-          [194, 151, 126],  // brand-earth
-          [246, 244, 237],  // brand-cream
-        ],
-        clock: 25,
-        rotate: true,
-        start_from_edge: true,
-        respawn: false
-      };
-      
-      const confetti = new ConfettiGenerator(confettiSettings);
-      confetti.render();
-      
-      return () => confetti.clear();
+    // Delay slightly to ensure DOM is ready
+    if (open) {
+      console.log("Dialog opened, initializing confetti");
+      setTimeout(() => {
+        if (canvasRef.current) {
+          const confettiSettings = {
+            target: canvasRef.current,
+            max: 200,
+            size: 1.5,
+            animate: true,
+            props: ['circle', 'square', 'triangle', 'line'],
+            colors: [
+              [235, 106, 57],   // brand-fire
+              [106, 168, 179],  // brand-water
+              [203, 216, 212],  // brand-air
+              [194, 151, 126],  // brand-earth
+              [246, 244, 237],  // brand-cream
+            ],
+            clock: 25,
+            rotate: true,
+            start_from_edge: true,
+            respawn: true
+          };
+          
+          try {
+            const confetti = new ConfettiGenerator(confettiSettings);
+            confetti.render();
+            console.log("Confetti rendered successfully");
+            
+            return () => {
+              console.log("Cleaning up confetti");
+              confetti.clear();
+            };
+          } catch (error) {
+            console.error("Error rendering confetti:", error);
+          }
+        } else {
+          console.warn("Canvas ref is not available");
+        }
+      }, 100);
     }
   }, [open]);
   
@@ -61,6 +76,7 @@ const CompletionDialog = ({ open, onOpenChange }: CompletionDialogProps) => {
       <DialogContent className="sm:max-w-md">
         <canvas 
           ref={canvasRef} 
+          id="confetti-canvas"
           className="fixed top-0 left-0 w-full h-full pointer-events-none z-50"
         ></canvas>
         

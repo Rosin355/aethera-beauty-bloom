@@ -26,10 +26,10 @@ const PersonalInfoStep = ({ personalInfo, onInfoChange, errors }: PersonalInfoPr
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="fullName" className="flex items-center justify-between">
-            Nome completo <span className="text-red-500">*</span>
+          <Label htmlFor="fullName" className="flex items-center gap-1">
+            Nome completo <span className="text-red-500 inline-block">*</span>
             {personalInfo.fullName && !errors?.fullName && (
-              <Check className="h-4 w-4 text-green-500" />
+              <Check className="h-4 w-4 text-green-500 ml-auto" />
             )}
           </Label>
           <Input
@@ -46,10 +46,10 @@ const PersonalInfoStep = ({ personalInfo, onInfoChange, errors }: PersonalInfoPr
           )}
         </div>
         <div className="space-y-2">
-          <Label htmlFor="businessName" className="flex items-center justify-between">
-            Nome attività <span className="text-red-500">*</span>
+          <Label htmlFor="businessName" className="flex items-center gap-1">
+            Nome attività <span className="text-red-500 inline-block">*</span>
             {personalInfo.businessName && !errors?.businessName && (
-              <Check className="h-4 w-4 text-green-500" />
+              <Check className="h-4 w-4 text-green-500 ml-auto" />
             )}
           </Label>
           <Input
@@ -68,10 +68,10 @@ const PersonalInfoStep = ({ personalInfo, onInfoChange, errors }: PersonalInfoPr
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
-          <Label htmlFor="city" className="flex items-center justify-between">
-            Città <span className="text-red-500">*</span>
+          <Label htmlFor="city" className="flex items-center gap-1">
+            Città <span className="text-red-500 inline-block">*</span>
             {personalInfo.city && !errors?.city && (
-              <Check className="h-4 w-4 text-green-500" />
+              <Check className="h-4 w-4 text-green-500 ml-auto" />
             )}
           </Label>
           <Input
@@ -88,10 +88,10 @@ const PersonalInfoStep = ({ personalInfo, onInfoChange, errors }: PersonalInfoPr
           )}
         </div>
         <div className="space-y-2">
-          <Label htmlFor="phoneNumber" className="flex items-center justify-between">
-            Numero di telefono <span className="text-red-500">*</span>
+          <Label htmlFor="phoneNumber" className="flex items-center gap-1">
+            Numero di telefono <span className="text-red-500 inline-block">*</span>
             {personalInfo.phoneNumber && !errors?.phoneNumber && (
-              <Check className="h-4 w-4 text-green-500" />
+              <Check className="h-4 w-4 text-green-500 ml-auto" />
             )}
           </Label>
           <Input
