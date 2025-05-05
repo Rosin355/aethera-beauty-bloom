@@ -1,4 +1,5 @@
 
+import React, { useEffect } from "react";
 import { useOnboardingForm } from "./hooks/useOnboardingForm";
 import PersonalInfoStep from "./Steps/PersonalInfoStep";
 import ProfessionalExperienceStep from "./Steps/ProfessionalExperienceStep";
@@ -22,7 +23,7 @@ const OnboardingForm = ({ step, onValidate }: OnboardingFormProps) => {
   } = useOnboardingForm();
   
   // Validate current step when it changes
-  React.useEffect(() => {
+  useEffect(() => {
     if (onValidate) {
       const isValid = validateStep(step);
       onValidate(isValid);
