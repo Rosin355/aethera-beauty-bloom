@@ -13,11 +13,13 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import Logo from "@/components/Layout/Logo";
 import OnboardingForm from "@/components/Onboarding/OnboardingForm";
+import CompletionDialog from "@/components/Onboarding/CompletionDialog";
 
 const Onboarding = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [currentStep, setCurrentStep] = useState(0);
+  const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   
   const steps = [
     {
@@ -42,12 +44,8 @@ const Onboarding = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      // Complete onboarding
-      toast({
-        title: "Onboarding completato!",
-        description: "La tua dashboard personalizzata è pronta."
-      });
-      navigate("/dashboard/personalized");
+      // Complete onboarding and show completion dialog
+      setShowCompletionDialog(true);
     }
   };
   
@@ -127,6 +125,12 @@ const Onboarding = () => {
           </CardFooter>
         </Card>
       </div>
+      
+      {/* Completion Dialog with Confetti */}
+      <CompletionDialog 
+        open={showCompletionDialog}
+        onOpenChange={setShowCompletionDialog}
+      />
     </div>
   );
 };
