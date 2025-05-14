@@ -9,36 +9,36 @@ import {
 
 const features = [
   {
-    title: "Continuous Learning",
-    description: "Access video courses, downloadable materials, and earn automatic certificates to enhance your professional skills.",
+    title: "Formazione Continua",
+    description: "Accedi a corsi video, materiali scaricabili e ottieni certificati automatici per migliorare le tue competenze professionali.",
     icon: BookOpen,
     color: "bg-brand-water",
     delay: "0"
   },
   {
-    title: "Management Tools",
-    description: "Organize your business with digital calendars, inventory management, and comprehensive analytics dashboards.",
+    title: "Strumenti di Gestione",
+    description: "Organizza la tua attività con calendari digitali, gestione dell'inventario e dashboard analitici completi.",
     icon: Calendar,
     color: "bg-brand-fire",
     delay: "100"
   },
   {
-    title: "Professional Community",
-    description: "Connect with fellow beauticians through forums, share testimonials, and participate in live events.",
+    title: "Comunità Professionale",
+    description: "Connettiti con altre estetiste attraverso forum, condividi testimonianze e partecipa a eventi dal vivo.",
     icon: Users,
     color: "bg-brand-air",
     delay: "200"
   },
   {
-    title: "AI Driven Support",
-    description: "Receive tailored tips on business and treatment management through our intelligent AI Chat Assistant.",
+    title: "Supporto AI",
+    description: "Ricevi consigli personalizzati su business e gestione dei trattamenti attraverso il nostro Assistente AI intelligente.",
     icon: MessageSquare,
     color: "bg-brand-earth",
     delay: "300"
   },
   {
-    title: "Analytics Dashboard",
-    description: "Track KPIs, sales, margins, and monthly performance with beautiful, easy-to-understand visualizations.",
+    title: "Dashboard Analitico",
+    description: "Monitora KPI, vendite, margini e performance mensili con visualizzazioni belle e facili da comprendere.",
     icon: ChartPie,
     color: "bg-brand-black",
     delay: "400"
@@ -47,12 +47,13 @@ const features = [
 
 const Features = () => {
   return (
-    <section id="features" className="py-20 bg-white">
+    <section id="features" className="py-24 bg-gradient-to-b from-white to-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-16 animate-fade-in">
-          <h2 className="text-3xl md:text-4xl font-bold font-playfair">Comprehensive Features for Beauticians</h2>
+          <h2 className="text-3xl md:text-4xl font-bold font-playfair text-brand-black">Funzionalità Complete per Professionisti della Bellezza</h2>
+          <div className="w-24 h-1 bg-brand-fire mx-auto mt-4 mb-6"></div>
           <p className="mt-4 text-xl text-gray-600 max-w-3xl mx-auto">
-            Everything you need to grow your beauty business, enhance your skills, and connect with your community.
+            Tutto ciò di cui hai bisogno per far crescere la tua attività nel settore beauty, migliorare le tue competenze e connetterti con la tua comunità.
           </p>
         </div>
 
@@ -60,13 +61,13 @@ const Features = () => {
           {features.map((feature, index) => (
             <div 
               key={index}
-              className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow group animate-slide-up"
+              className="bg-white border border-gray-100 rounded-xl p-8 shadow-sm hover:shadow-md transition-all duration-300 group animate-slide-up"
               style={{ animationDelay: `${feature.delay}ms` }}
             >
-              <div className={`${feature.color} w-14 h-14 rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
-                <feature.icon className="text-white" size={24} />
+              <div className={`${feature.color} w-16 h-16 rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}>
+                <feature.icon className="text-white" size={28} />
               </div>
-              <h3 className="text-xl font-bold font-playfair mb-3">{feature.title}</h3>
+              <h3 className="text-2xl font-bold font-playfair mb-3">{feature.title}</h3>
               <p className="text-gray-600">{feature.description}</p>
             </div>
           ))}

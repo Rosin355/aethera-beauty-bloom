@@ -27,7 +27,7 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-brand-cream z-50 sticky top-0 border-b">
+    <nav className="bg-white shadow-sm z-50 sticky top-0 border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16 items-center">
           <div className="flex items-center">
@@ -42,7 +42,7 @@ const Navbar = () => {
                 to={link.path}
                 className={`font-medium text-sm hover:text-brand-fire transition-colors ${
                   isActive(link.path)
-                    ? "text-brand-fire"
+                    ? "text-brand-fire font-semibold"
                     : "text-gray-600"
                 }`}
               >
@@ -84,7 +84,7 @@ const Navbar = () => {
 
       {/* Mobile menu */}
       {isMenuOpen && (
-        <div className="md:hidden bg-brand-cream border-t">
+        <div className="md:hidden bg-white border-t shadow-lg">
           <div className="pt-2 pb-4 space-y-1 px-4">
             {navLinks.map((link) => (
               <Link
@@ -92,7 +92,7 @@ const Navbar = () => {
                 to={link.path}
                 className={`block py-2 text-base font-medium hover:text-brand-fire transition-colors ${
                   isActive(link.path)
-                    ? "text-brand-fire"
+                    ? "text-brand-fire font-semibold"
                     : "text-gray-600"
                 }`}
                 onClick={() => setIsMenuOpen(false)}
