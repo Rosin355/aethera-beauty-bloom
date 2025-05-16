@@ -1,5 +1,5 @@
 
-import { ArrowRight, CalendarCheck, BookOpen } from "lucide-react";
+import { ArrowRight, BookOpen } from "lucide-react";
 import { Link } from "react-router-dom";
 import HeroSection from "./HeroSection";
 
@@ -29,8 +29,8 @@ const Hero = () => {
         },
       ]}
       image={{
-        src: "https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80",
-        alt: "4 elementi Italia - Dashboard Preview",
+        light: "https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80",
+        dark: "https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80&auto=format&fit=crop&w=1200&q=80",
       }}
     />
   );

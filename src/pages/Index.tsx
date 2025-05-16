@@ -3,7 +3,7 @@ import { Helmet } from "react-helmet";
 import Navbar from "@/components/Layout/Navbar";
 import Footer from "@/components/Layout/Footer";
 import Hero from "@/components/Home/Hero";
-import Features from "@/components/Home/Features";
+import FeaturesWithHoverEffects from "@/components/Home/FeaturesWithHoverEffects";
 import Testimonials from "@/components/Home/Testimonials";
 import CallToAction from "@/components/Home/CallToAction";
 
@@ -14,11 +14,11 @@ const Index = () => {
         <title>4 elementi Italia - Piattaforma di Crescita per Beauty Business</title>
         <meta name="description" content="Una piattaforma multifunzionale per supportare la crescita professionale e operativa delle estetiste." />
       </Helmet>
-      <div className="flex flex-col min-h-screen">
+      <div className="flex flex-col min-h-screen dark:bg-gray-950">
         <Navbar />
         <main className="flex-grow">
           <Hero />
-          <Features />
+          <FeaturesWithHoverEffects />
           <Testimonials />
           <CallToAction />
         </main>

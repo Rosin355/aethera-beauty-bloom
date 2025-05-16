@@ -122,7 +122,7 @@
   }
   
   .bg-blur-overlay {
-    @apply backdrop-blur-md bg-white/30;
+    @apply backdrop-blur-md bg-white/30 dark:bg-black/30;
   }
   
   .font-playfair {

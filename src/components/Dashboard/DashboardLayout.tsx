@@ -12,13 +12,13 @@ import {
   Search, 
   Menu, 
   X,
-  LogOut,
-  List,
-  Archive
+  LogOut
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Logo from "../Layout/Logo";
+import { ThemeToggle } from "@/components/ui/theme-toggle";
+import { cn } from "@/lib/utils";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -46,7 +46,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex">
       {/* Sidebar */}
       <aside
         className={`bg-brand-black text-white w-64 transition-all duration-300 ease-in-out fixed inset-y-0 left-0 z-30 md:relative ${
@@ -124,7 +124,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="bg-white border-b border-gray-200 p-4 flex items-center justify-between">
+        <header className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 p-4 flex items-center justify-between">
           <div className="flex items-center">
             <Button
               variant="ghost"
@@ -146,7 +146,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               <Input
                 type="text"
                 placeholder="Cerca..."
-                className="pl-10 pr-4 py-2 border rounded-md w-full"
+                className="pl-10 pr-4 py-2 border rounded-md w-full dark:bg-gray-800 dark:border-gray-700"
               />
               <Search
                 className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
@@ -156,22 +156,23 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </div>
 
           <div className="flex items-center space-x-4">
+            <ThemeToggle />
             <Button variant="ghost" size="icon" className="relative">
               <Bell size={20} />
               <span className="absolute top-0 right-0 w-2 h-2 bg-brand-fire rounded-full"></span>
             </Button>
-            <div className="hidden md:block h-8 w-px bg-gray-200"></div>
+            <div className="hidden md:block h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
             <div className="hidden md:flex items-center space-x-2">
               <div className="w-8 h-8 rounded-full bg-brand-fire flex items-center justify-center">
                 <span className="text-white font-bold text-sm">JS</span>
               </div>
-              <span className="text-sm font-medium">Jane Smith</span>
+              <span className="text-sm font-medium dark:text-gray-200">Jane Smith</span>
             </div>
           </div>
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-gray-50 dark:bg-gray-950">
           {children}
         </main>
       </div>

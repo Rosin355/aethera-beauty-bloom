@@ -29,13 +29,13 @@ const Glow = React.forwardRef<
   >
     <div
       className={cn(
-        "absolute left-1/2 h-[256px] w-[60%] -translate-x-1/2 scale-[2.5] rounded-[50%] bg-[radial-gradient(ellipse_at_center,_hsla(var(--brand-fire)/.5)_10%,_hsla(var(--brand-black)/0)_60%)] sm:h-[512px]",
+        "absolute left-1/2 h-[256px] w-[60%] -translate-x-1/2 scale-[2.5] rounded-[50%] bg-[radial-gradient(ellipse_at_center,_hsla(var(--brand-fire)/.5)_10%,_hsla(var(--brand-black)/0)_60%)] dark:bg-[radial-gradient(ellipse_at_center,_hsla(var(--brand-fire)/.3)_10%,_hsla(var(--background)/0)_60%)] sm:h-[512px]",
         variant === "center" && "-translate-y-1/2",
       )}
     />
     <div
       className={cn(
-        "absolute left-1/2 h-[128px] w-[40%] -translate-x-1/2 scale-[2] rounded-[50%] bg-[radial-gradient(ellipse_at_center,_hsla(var(--brand-water)/.3)_10%,_hsla(var(--brand-black)/0)_60%)] sm:h-[256px]",
+        "absolute left-1/2 h-[128px] w-[40%] -translate-x-1/2 scale-[2] rounded-[50%] bg-[radial-gradient(ellipse_at_center,_hsla(var(--brand-water)/.3)_10%,_hsla(var(--brand-black)/0)_60%)] dark:bg-[radial-gradient(ellipse_at_center,_hsla(var(--brand-water)/.2)_10%,_hsla(var(--background)/0)_60%)] sm:h-[256px]",
         variant === "center" && "-translate-y-1/2",
       )}
     />

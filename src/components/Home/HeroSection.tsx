@@ -6,6 +6,8 @@ import { ArrowRight } from "lucide-react";
 import { Mockup, MockupFrame } from "@/components/ui/mockup";
 import { Glow } from "@/components/ui/glow";
 import { Link } from "react-router-dom";
+import { useTheme } from "@/hooks/use-theme";
+import { cn } from "@/lib/utils";
 
 interface HeroAction {
   text: string;
@@ -26,7 +28,8 @@ interface HeroProps {
   description: string;
   actions: HeroAction[];
   image: {
-    src: string;
+    light: string;
+    dark: string;
     alt: string;
   };
 }
@@ -38,9 +41,15 @@ export function HeroSection({
   actions,
   image,
 }: HeroProps) {
+  const { theme } = useTheme();
+  const isDark = theme === "dark";
+  const imageSrc = isDark ? image.dark : image.light;
+
   return (
     <section
-      className="bg-background text-foreground py-12 sm:py-24 md:py-32 px-4 fade-bottom overflow-hidden pb-0"
+      className={cn(
+        "bg-background text-foreground py-12 sm:py-24 md:py-32 px-4 fade-bottom overflow-hidden pb-0"
+      )}
     >
       <div className="mx-auto flex max-w-container flex-col gap-12 pt-16 sm:gap-24">
         <div className="flex flex-col items-center gap-6 text-center sm:gap-12">
@@ -85,7 +94,7 @@ export function HeroSection({
             >
               <Mockup type="responsive">
                 <img
-                  src={image.src}
+                  src={imageSrc}
                   alt={image.alt}
                   width={1248}
                   height={765}
