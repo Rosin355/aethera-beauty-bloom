@@ -118,6 +118,14 @@
   .bg-blur-overlay {
     @apply backdrop-blur-md bg-white/30;
   }
+  
+  .font-playfair {
+    font-family: 'Playfair Display', serif;
+  }
+  
+  .font-inter {
+    font-family: 'Inter', sans-serif;
+  }
 }
 
 @layer utilities {
