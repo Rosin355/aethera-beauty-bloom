@@ -46,6 +46,9 @@
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 187 19% 88%;
     --sidebar-ring: 187 28% 56%;
+    
+    --brand: 16 74% 56%;
+    --brand-foreground: 16 74% 80%;
   }
 
   .dark {
@@ -85,6 +88,9 @@
     --sidebar-accent-foreground: 0 0% 100%;
     --sidebar-border: 187 16% 29%;
     --sidebar-ring: 187 28% 56%;
+    
+    --brand: 16 74% 56%;
+    --brand-foreground: 16 74% 80%;
   }
 }
 
@@ -125,6 +131,10 @@
   
   .font-inter {
     font-family: 'Inter', sans-serif;
+  }
+  
+  .fade-bottom {
+    mask-image: linear-gradient(to bottom, black 85%, transparent 100%);
   }
 }
 
@@ -175,6 +185,14 @@
   .delay-500 {
     animation-delay: 500ms;
   }
+  
+  .delay-700 {
+    animation-delay: 700ms;
+  }
+  
+  .delay-1000 {
+    animation-delay: 1000ms;
+  }
 }
 
 #root {
@@ -184,4 +202,3 @@
   padding: 0;
   text-align: left;
 }
-

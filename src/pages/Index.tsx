@@ -11,8 +11,8 @@ const Index = () => {
   return (
     <>
       <Helmet>
-        <title>Aethera - Beauty Business Growth Platform</title>
-        <meta name="description" content="A multifunctional portal to support the professional and operational growth of beauticians." />
+        <title>4 elementi Italia - Piattaforma di Crescita per Beauty Business</title>
+        <meta name="description" content="Una piattaforma multifunzionale per supportare la crescita professionale e operativa delle estetiste." />
       </Helmet>
       <div className="flex flex-col min-h-screen">
         <Navbar />
