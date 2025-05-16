@@ -1,17 +1,14 @@
 
 import { cn } from "@/lib/utils";
 import {
-  ArrowDown,
-  ArrowUp,
+  Terminal,
   ChevronDown,
   ChevronUp,
-  Terminal,
-  EaseInOut,
-  CurrencyDollar,
+  ArrowDown,
+  ArrowUp,
   Cloud,
-  Route,
-  Help,
-  AdjustmentsBolt,
+  Settings,
+  HelpCircle,
   Heart
 } from "lucide-react";
 
@@ -25,7 +22,7 @@ export function FeaturesWithHoverEffects() {
     {
       title: "Strumenti di Gestione",
       description: "Organizza la tua attività con calendari digitali, gestione dell'inventario e dashboard analitici completi.",
-      icon: <EaseInOut className="h-6 w-6" />,
+      icon: <Settings className="h-6 w-6" />,
     },
     {
       title: "Comunità Professionale",
@@ -40,17 +37,17 @@ export function FeaturesWithHoverEffects() {
     {
       title: "Dashboard Analitico",
       description: "Monitora KPI, vendite, margini e performance mensili con visualizzazioni belle e facili da comprendere.",
-      icon: <CurrencyDollar className="h-6 w-6" />,
+      icon: <ArrowUp className="h-6 w-6" />,
     },
     {
       title: "Supporto 24/7",
       description: "Accedi a supporto professionale in qualsiasi momento attraverso vari canali di comunicazione.",
-      icon: <Help className="h-6 w-6" />,
+      icon: <HelpCircle className="h-6 w-6" />,
     },
     {
       title: "Risultati Garantiti",
       description: "Vedi risultati concreti nella crescita del tuo business grazie ai nostri strumenti e metodi testati.",
-      icon: <AdjustmentsBolt className="h-6 w-6" />,
+      icon: <Settings className="h-6 w-6" />,
     },
     {
       title: "Esperienza Olistica",

@@ -31,6 +31,7 @@ const Hero = () => {
       image={{
         light: "https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80",
         dark: "https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?ixlib=rb-1.2.1&auto=format&fit=crop&w=1200&q=80&auto=format&fit=crop&w=1200&q=80",
+        alt: "Professionista della bellezza al lavoro",
       }}
     />
   );
