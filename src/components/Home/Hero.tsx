@@ -4,22 +4,42 @@ import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ContainerScroll } from "@/components/ui/container-scroll-animation";
-import { cn } from "@/lib/utils";
 
 const Hero = () => {
   return (
     <div className="relative min-h-screen overflow-hidden">
-      {/* Enhanced Background Gradients */}
+      {/* Background gradiente come Stardust - parte nero e finisce con colori */}
       <div className="absolute inset-0">
-        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/40 via-pink-900/30 to-orange-900/40"></div>
-        <div className="absolute inset-0 bg-gradient-to-tr from-blue-900/20 via-purple-800/30 to-pink-800/20"></div>
-      </div>
-      
-      {/* Floating Elements */}
-      <div className="absolute top-0 left-0 w-full h-full opacity-30">
-        <div className="absolute top-20 left-20 w-96 h-96 bg-purple-500/40 rounded-full blur-3xl animate-float"></div>
-        <div className="absolute bottom-20 right-20 w-80 h-80 bg-pink-500/40 rounded-full blur-3xl animate-float delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-orange-500/20 rounded-full blur-3xl"></div>
+        <div 
+          className="absolute inset-0"
+          style={{
+            background: `
+              linear-gradient(135deg, 
+                #000000 0%, 
+                #0a0a0a 25%, 
+                #1a0a2e 50%, 
+                #3d1a78 75%, 
+                #6b46c1 85%, 
+                #9333ea 95%, 
+                #a855f7 100%
+              )
+            `
+          }}
+        ></div>
+        {/* Overlay gradiente per sfumatura più morbida */}
+        <div 
+          className="absolute inset-0"
+          style={{
+            background: `
+              radial-gradient(ellipse at center bottom, 
+                rgba(168, 85, 247, 0.3) 0%, 
+                rgba(147, 51, 234, 0.2) 30%, 
+                rgba(107, 70, 193, 0.1) 60%, 
+                rgba(0, 0, 0, 0.8) 100%
+              )
+            `
+          }}
+        ></div>
       </div>
       
       <ContainerScroll
