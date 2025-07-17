@@ -17,7 +17,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Logo from "../Layout/Logo";
-import { ThemeToggle } from "@/components/ui/theme-toggle";
+
 import { cn } from "@/lib/utils";
 
 interface DashboardLayoutProps {
@@ -46,7 +46,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex">
+    <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
       <aside
         className={`bg-brand-black text-white w-64 transition-all duration-300 ease-in-out fixed inset-y-0 left-0 z-30 md:relative ${
@@ -156,7 +156,6 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </div>
 
           <div className="flex items-center space-x-4">
-            <ThemeToggle />
             <Button variant="ghost" size="icon" className="relative">
               <Bell size={20} />
               <span className="absolute top-0 right-0 w-2 h-2 bg-brand-fire rounded-full"></span>

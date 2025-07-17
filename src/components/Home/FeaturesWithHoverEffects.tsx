@@ -67,13 +67,13 @@ export function FeaturesWithHoverEffects() {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
           {features.map((feature, index) => (
-            <GradientCard
-              key={feature.title}
-              title={feature.title}
-              description={feature.description}
-              icon={feature.icon}
-              index={index}
-            />
+            <div key={feature.title} className="glass rounded-xl p-6 hover:scale-105 transition-transform">
+              <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center mb-4">
+                {feature.icon}
+              </div>
+              <h3 className="text-lg font-bold font-playfair text-white mb-2">{feature.title}</h3>
+              <p className="text-muted-foreground text-sm">{feature.description}</p>
+            </div>
           ))}
         </div>
       </div>
