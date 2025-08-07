@@ -12,6 +12,7 @@ import SignUp from "./pages/SignUp";
 import Dashboard from "./pages/Dashboard";
 import PersonalizedDashboard from "./pages/PersonalizedDashboard";
 import ManagementTools from "./pages/ManagementTools";
+import Community from "./pages/Community";
 import Onboarding from "./pages/Onboarding";
 import AdminLogin from "./pages/Admin/Login";
 import AdminDashboard from "./pages/Admin/Dashboard";
@@ -34,6 +35,7 @@ const App = () => (
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/dashboard/personalized" element={<PersonalizedDashboard />} />
           <Route path="/dashboard/management" element={<ManagementTools />} />
+          <Route path="/dashboard/community" element={<Community />} />
           <Route path="/onboarding" element={<Onboarding />} />
           
           {/* Landing page isolata */}
