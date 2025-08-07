@@ -18,28 +18,24 @@ const Dashboard = () => {
           value="124" 
           change={{ value: "12%", isPositive: true }} 
           icon={<Users size={24} className="text-white" />} 
-          color="bg-brand-water" 
         />
         <StatCard 
           title="Fatturato Mensile" 
           value="€8.250" 
           change={{ value: "8.2%", isPositive: true }} 
           icon={<ChartPie size={24} className="text-white" />} 
-          color="bg-brand-fire" 
         />
         <StatCard 
           title="Corsi Completati" 
           value="7" 
           change={{ value: "2", isPositive: true }} 
           icon={<BookOpen size={24} className="text-white" />} 
-          color="bg-brand-earth" 
         />
         <StatCard 
           title="Appuntamenti" 
           value="28" 
           change={{ value: "4%", isPositive: false }} 
           icon={<Calendar size={24} className="text-white" />} 
-          color="bg-brand-air" 
         />
       </div>
       
@@ -48,7 +44,7 @@ const Dashboard = () => {
           Esplora le Funzionalità di 4 elementi Italia
         </h2>
         <Link to="/dashboard/personalized">
-          <Button variant="outline" className="flex items-center gap-2 border-brand-earth text-brand-earth hover:bg-brand-earth hover:text-white">
+          <Button variant="outline" className="flex items-center gap-2 border-neutral-600 text-neutral-300 hover:bg-neutral-800 hover:text-white">
             <Layout size={16} />
             <span>Visualizza Dashboard Personalizzata</span>
           </Button>
@@ -62,7 +58,6 @@ const Dashboard = () => {
           icon={<BookOpen size={24} className="text-white" />}
           linkText="Sfoglia Corsi" 
           linkPath="/dashboard/training" 
-          color="bg-brand-water" 
         />
         <FeaturePreview 
           title="Strumenti di Gestione" 
@@ -70,7 +65,6 @@ const Dashboard = () => {
           icon={<Calendar size={24} className="text-white" />}
           linkText="Apri Calendario" 
           linkPath="/dashboard/management" 
-          color="bg-brand-fire" 
         />
         <FeaturePreview 
           title="Community Professionale" 
@@ -78,7 +72,6 @@ const Dashboard = () => {
           icon={<Users size={24} className="text-white" />}
           linkText="Partecipa alle Discussioni" 
           linkPath="/dashboard/community" 
-          color="bg-brand-air" 
         />
         <FeaturePreview 
           title="Assistente AI" 
@@ -86,7 +79,6 @@ const Dashboard = () => {
           icon={<MessageSquare size={24} className="text-white" />}
           linkText="Inizia Conversazione" 
           linkPath="/dashboard/ai-assistant" 
-          color="bg-brand-earth" 
         />
         <FeaturePreview 
           title="Dashboard Analitica" 
@@ -94,7 +86,6 @@ const Dashboard = () => {
           icon={<ChartPie size={24} className="text-white" />}
           linkText="Visualizza Report" 
           linkPath="/dashboard/analytics" 
-          color="bg-brand-black" 
         />
       </div>
     </DashboardLayout>

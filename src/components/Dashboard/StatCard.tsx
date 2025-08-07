@@ -9,29 +9,28 @@ interface StatCardProps {
     value: string | number;
     isPositive: boolean;
   };
-  color: string;
 }
 
-const StatCard = ({ title, value, icon, change, color }: StatCardProps) => {
+const StatCard = ({ title, value, icon, change }: StatCardProps) => {
   return (
-    <div className="glass rounded-xl p-6 transition-all hover:shadow-md">
+    <div className="glass rounded-xl p-6 transition-all hover:shadow-md border border-neutral-800">
       <div className="flex justify-between items-start">
         <div>
           <p className="text-sm text-muted-foreground mb-1">{title}</p>
-          <h3 className="text-2xl font-bold font-playfair">{value}</h3>
+          <h3 className="text-2xl font-bold font-playfair text-white">{value}</h3>
           
           {change && (
             <div className="flex items-center mt-2">
               <span
                 className={`text-xs font-medium ${
-                  change.isPositive ? "text-green-600" : "text-red-600"
+                  change.isPositive ? "text-neutral-300" : "text-neutral-400"
                 }`}
               >
                 {change.isPositive ? "+" : ""}{change.value}
               </span>
               <svg
                 className={`w-3 h-3 ml-1 ${
-                  change.isPositive ? "text-green-600" : "text-red-600"
+                  change.isPositive ? "text-neutral-300" : "text-neutral-400"
                 }`}
                 viewBox="0 0 24 24"
                 fill="none"
@@ -59,7 +58,7 @@ const StatCard = ({ title, value, icon, change, color }: StatCardProps) => {
             </div>
           )}
         </div>
-        <div className={`${color} p-2 rounded-lg`}>{icon}</div>
+        <div className="bg-neutral-800 p-2 rounded-lg border border-neutral-700">{icon}</div>
       </div>
     </div>
   );
