@@ -62,17 +62,17 @@ export function FeaturesWithHoverEffects() {
           <h2 className="text-4xl font-bold font-playfair text-white">
             Perché Unirsi a 4 elementi Italia?
           </h2>
-          <div className="w-16 h-1 bg-gradient-to-r from-purple-500 to-pink-500 mx-auto mt-4 mb-6"></div>
+          <div className="w-16 h-1 bg-white mx-auto mt-4 mb-6"></div>
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
           {features.map((feature, index) => (
-            <div key={feature.title} className="glass rounded-xl p-6 hover:scale-105 transition-transform">
-              <div className="w-12 h-12 rounded-full bg-accent/20 flex items-center justify-center mb-4">
+            <div key={feature.title} className="glass rounded-xl p-6 hover:scale-105 transition-transform border border-white/10 hover:border-white/20">
+              <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center mb-4 text-white">
                 {feature.icon}
               </div>
               <h3 className="text-lg font-bold font-playfair text-white mb-2">{feature.title}</h3>
-              <p className="text-muted-foreground text-sm">{feature.description}</p>
+              <p className="text-gray-400 text-sm">{feature.description}</p>
             </div>
           ))}
         </div>

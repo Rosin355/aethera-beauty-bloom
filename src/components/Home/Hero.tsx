@@ -8,7 +8,7 @@ import { ContainerScroll } from "@/components/ui/container-scroll-animation";
 const Hero = () => {
   return (
     <div className="relative min-h-screen overflow-hidden">
-      {/* Background gradiente come Stardust - parte nero e finisce con colori */}
+      {/* Background minimale nero con sfumature sottili */}
       <div className="absolute inset-0">
         <div 
           className="absolute inset-0"
@@ -17,25 +17,25 @@ const Hero = () => {
               linear-gradient(135deg, 
                 #000000 0%, 
                 #0a0a0a 25%, 
-                #1a0a2e 50%, 
-                #3d1a78 75%, 
-                #6b46c1 85%, 
-                #9333ea 95%, 
-                #a855f7 100%
+                #1a1a1a 50%, 
+                #2a2a2a 75%, 
+                #1a1a1a 85%, 
+                #0a0a0a 95%, 
+                #000000 100%
               )
             `
           }}
         ></div>
-        {/* Overlay gradiente per sfumatura più morbida */}
+        {/* Overlay sottile per profondità */}
         <div 
           className="absolute inset-0"
           style={{
             background: `
               radial-gradient(ellipse at center bottom, 
-                rgba(168, 85, 247, 0.3) 0%, 
-                rgba(147, 51, 234, 0.2) 30%, 
-                rgba(107, 70, 193, 0.1) 60%, 
-                rgba(0, 0, 0, 0.8) 100%
+                rgba(255, 255, 255, 0.02) 0%, 
+                rgba(255, 255, 255, 0.01) 30%, 
+                rgba(0, 0, 0, 0.2) 60%, 
+                rgba(0, 0, 0, 0.9) 100%
               )
             `
           }}
@@ -46,9 +46,9 @@ const Hero = () => {
         titleComponent={
           <div className="flex flex-col items-center gap-6 text-center relative z-10">
             {/* Badge */}
-            <Badge variant="outline" className="animate-appear gap-2 glass border-purple-500/30 text-purple-200 mb-4">
-              <span className="text-purple-300">Nuovi corsi di formazione disponibili</span>
-              <Link to="/training" className="flex items-center gap-1 text-purple-200 hover:text-white transition-colors">
+            <Badge variant="outline" className="animate-appear gap-2 glass border-white/20 text-gray-300 mb-4">
+              <span className="text-gray-200">Nuovi corsi di formazione disponibili</span>
+              <Link to="/training" className="flex items-center gap-1 text-gray-300 hover:text-white transition-colors">
                 Scopri di più
                 <ArrowRight className="h-3 w-3" />
               </Link>
@@ -70,7 +70,7 @@ const Hero = () => {
               <Button 
                 size="lg" 
                 asChild
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white border-0 glow-effect text-lg px-8 py-4"
+                className="bg-white text-black hover:bg-gray-200 border-0 text-lg px-8 py-4 font-medium"
               >
                 <Link to="/signup" className="flex items-center gap-2">
                   <Sparkles className="h-5 w-5" />
@@ -82,7 +82,7 @@ const Hero = () => {
                 variant="outline" 
                 size="lg" 
                 asChild
-                className="glass border-white/20 text-white hover:bg-white/10 text-lg px-8 py-4"
+                className="glass border-white/30 text-white hover:bg-white/5 text-lg px-8 py-4"
               >
                 <Link to="/features" className="flex items-center gap-2">
                   <BookOpen className="h-5 w-5" />

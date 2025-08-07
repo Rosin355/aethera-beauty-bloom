@@ -85,7 +85,7 @@ const Navbar = () => {
               </Button>
             </Link>
             <Link to="/signup">
-              <Button className={scrolled ? "bg-accent hover:bg-accent/90 text-accent-foreground" : "bg-white hover:bg-white/90 text-black"}>
+              <Button className="bg-white hover:bg-gray-200 text-black">
                 Registrati
               </Button>
             </Link>
@@ -132,7 +132,7 @@ const Navbar = () => {
                 </Button>
               </Link>
               <Link to="/signup" onClick={() => setIsMenuOpen(false)}>
-                <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+                <Button className="w-full bg-white hover:bg-gray-200 text-black">
                   Registrati
                 </Button>
               </Link>
