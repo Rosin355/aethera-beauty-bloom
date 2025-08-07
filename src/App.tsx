@@ -16,6 +16,7 @@ import Onboarding from "./pages/Onboarding";
 import AdminLogin from "./pages/Admin/Login";
 import AdminDashboard from "./pages/Admin/Dashboard";
 import ClientDetail from "./pages/Admin/ClientDetail";
+import LandingPage from "./pages/LandingPage";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,9 @@ const App = () => (
           <Route path="/dashboard/personalized" element={<PersonalizedDashboard />} />
           <Route path="/dashboard/management" element={<ManagementTools />} />
           <Route path="/onboarding" element={<Onboarding />} />
+          
+          {/* Landing page isolata */}
+          <Route path="/landing" element={<LandingPage />} />
           
           {/* Admin routes */}
           <Route path="/admin/login" element={<AdminLogin />} />
