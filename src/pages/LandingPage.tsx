@@ -284,7 +284,7 @@ const LandingPage = () => {
                     <h3 className="font-playfair text-xl font-bold text-white text-center">FUOCO</h3>
                   </div>
                 </div>
-                <div className="h-20 flex items-center justify-center mt-4">
+                <div className="h-20 flex items-start justify-center mt-4">
                   <p className="text-muted-foreground text-center text-sm leading-relaxed">Piattaforma 4 Elementi Italia Srl e consulenza.</p>
                 </div>
               </GlowCard>
