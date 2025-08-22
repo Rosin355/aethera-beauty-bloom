@@ -64,11 +64,22 @@ const LandingPage = () => {
               </Button>
             </div>
 
-            <div className="relative">
+            <div className="relative space-y-6">
+              {/* Video Placeholder */}
+              <div className="w-full aspect-video bg-card/30 backdrop-blur-sm border-white/10 border rounded-lg flex items-center justify-center">
+                <div className="text-center space-y-4">
+                  <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mx-auto">
+                    <Play className="w-10 h-10 text-white" />
+                  </div>
+                  <p className="text-white font-medium">Video Tutorial Gratuito</p>
+                  <p className="text-muted-foreground text-sm">Il video apparirà qui</p>
+                </div>
+              </div>
+              
               <Card className="bg-card/50 backdrop-blur-sm border-white/10 p-8">
                 <div className="space-y-6">
                   <div className="text-center">
-                    <h3 className="font-playfair text-2xl font-bold mb-4">VIDEO TUTORIAL GRATUITO</h3>
+                    <h3 className="font-playfair text-2xl font-bold mb-4">ACCEDI AL VIDEO GRATUITO</h3>
                     <p className="text-muted-foreground">Compila il form e ricevi subito il link</p>
                   </div>
                   
@@ -144,7 +155,10 @@ const LandingPage = () => {
       </section>
 
       {/* Value Proposition */}
-      <section className="relative z-10 px-4 py-16 bg-card/20">
+      <section className="relative z-10 px-4 py-16 bg-card/20 overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -inset-[10px] opacity-20 will-change-transform [--aurora:repeating-linear-gradient(100deg,hsl(var(--fire))_10%,hsl(var(--water))_15%,hsl(var(--air))_20%,hsl(var(--earth))_25%,hsl(var(--fire))_30%)] [background-image:var(--aurora)] [background-size:300%,_200%] [background-position:50%_50%] filter blur-[10px] animate-aurora pointer-events-none"></div>
+        </div>
         <div className="container mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div>
@@ -226,7 +240,10 @@ const LandingPage = () => {
       </section>
 
       {/* Services */}
-      <section id="services" className="relative z-10 px-4 py-16 bg-card/20">
+      <section id="services" className="relative z-10 px-4 py-16 bg-card/20 overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden">
+          <div className="absolute -inset-[10px] opacity-20 will-change-transform [--aurora:repeating-linear-gradient(100deg,hsl(var(--earth))_10%,hsl(var(--air))_15%,hsl(var(--water))_20%,hsl(var(--fire))_25%,hsl(var(--earth))_30%)] [background-image:var(--aurora)] [background-size:300%,_200%] [background-position:50%_50%] filter blur-[10px] animate-aurora pointer-events-none"></div>
+        </div>
         <div className="container mx-auto">
           <div className="text-center mb-12">
             <h2 className="font-playfair text-3xl lg:text-4xl font-bold mb-4 text-white">I NOSTRI SERVIZI</h2>
