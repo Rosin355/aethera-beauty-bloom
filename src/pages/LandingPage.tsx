@@ -131,7 +131,7 @@ const LandingPage = () => {
               <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Check className="w-8 h-8 text-white" />
               </div>
-              <h3 className="font-playfair text-xl font-bold mb-4 text-white">CALCOLO DEL PRODOTTO</h3>
+              <h3 className="font-playfair text-xl font-bold mb-4 text-white">CALCOLO DEL<br />PRODOTTO</h3>
               <p className="text-muted-foreground">
                 Cosa scrivere per trasmettere professionalità e farti scegliere dai tuoi clienti
               </p>
