@@ -41,7 +41,7 @@ const LandingPage = () => {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-8">
               <div className="space-y-4">
-                <h1 className="font-playfair text-4xl lg:text-6xl font-bold leading-tight text-white">
+                <h1 className="font-playfair text-4xl lg:text-6xl font-bold leading-tight text-foreground">
                   SEI UN'ESTETISTA
                   <span className="gradient-text"> PROFESSIONISTA?</span>
                 </h1>
