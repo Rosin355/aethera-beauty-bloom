@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { GlowCard } from "@/components/ui/spotlight-card";
+import { AuroraBackground } from "@/components/ui/aurora-background";
 import { Check, Play, Users, Award, BookOpen, Headphones } from "lucide-react";
 import { Glow } from "@/components/ui/glow";
 const LandingPage = () => {
@@ -34,9 +35,9 @@ const LandingPage = () => {
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative z-10 px-4 py-16 overflow-hidden">
-        <div className="container mx-auto">
+      {/* Hero Section with Aurora Background */}
+      <AuroraBackground className="h-auto py-16">
+        <div className="container mx-auto relative z-10">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-8">
               <div className="space-y-4">
@@ -101,7 +102,7 @@ const LandingPage = () => {
             </div>
           </div>
         </div>
-      </section>
+      </AuroraBackground>
 
       {/* What You'll Learn */}
       <section id="video" className="relative z-10 px-4 py-16">
