@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
+import { GlowCard } from "@/components/ui/spotlight-card";
 import { Check, Play, Users, Award, BookOpen, Headphones } from "lucide-react";
 import { Glow } from "@/components/ui/glow";
 
@@ -124,7 +125,7 @@ const LandingPage = () => {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            <Card className="bg-card/30 backdrop-blur-sm border-white/10 p-8 text-center">
+            <GlowCard glowColor="orange" customSize className="w-full p-8 text-center aspect-auto h-auto">
               <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Check className="w-8 h-8 text-white" />
               </div>
@@ -132,9 +133,9 @@ const LandingPage = () => {
               <p className="text-muted-foreground">
                 Come organizzare il tuo listino in modo strategico (anche se non sei brava con i numeri o il marketing)
               </p>
-            </Card>
+            </GlowCard>
 
-            <Card className="bg-card/30 backdrop-blur-sm border-white/10 p-8 text-center">
+            <GlowCard glowColor="blue" customSize className="w-full p-8 text-center aspect-auto h-auto">
               <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Check className="w-8 h-8 text-white" />
               </div>
@@ -142,9 +143,9 @@ const LandingPage = () => {
               <p className="text-muted-foreground">
                 Cosa scrivere per trasmettere professionalità e farti scegliere dai tuoi clienti
               </p>
-            </Card>
+            </GlowCard>
 
-            <Card className="bg-card/30 backdrop-blur-sm border-white/10 p-8 text-center">
+            <GlowCard glowColor="green" customSize className="w-full p-8 text-center aspect-auto h-auto">
               <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Check className="w-8 h-8 text-white" />
               </div>
@@ -152,7 +153,7 @@ const LandingPage = () => {
               <p className="text-muted-foreground">
                 Come creare un listino grafico accattivante e facile da aggiornare, direttamente con Canva
               </p>
-            </Card>
+            </GlowCard>
           </div>
         </div>
       </section>
@@ -250,45 +251,45 @@ const LandingPage = () => {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <Card className="bg-card/50 backdrop-blur-sm border-white/10 p-8">
+            <GlowCard glowColor="red" customSize className="w-full p-8 aspect-auto h-auto">
               <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mb-6">
                 <Award className="w-8 h-8 text-white" />
               </div>
               <h3 className="font-playfair text-xl font-bold mb-4 text-white">FORMAZIONE STRATEGICA</h3>
               <p className="text-muted-foreground">Per diventare imprenditori nel beauty</p>
-            </Card>
+            </GlowCard>
 
-            <Card className="bg-card/50 backdrop-blur-sm border-white/10 p-8">
+            <GlowCard glowColor="blue" customSize className="w-full p-8 aspect-auto h-auto">
               <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mb-6">
                 <BookOpen className="w-8 h-8 text-white" />
               </div>
               <h3 className="font-playfair text-xl font-bold mb-4 text-white">PIATTAFORMA DIGITALE</h3>
               <p className="text-muted-foreground">Con strumenti gestionali e supporto AI</p>
-            </Card>
+            </GlowCard>
 
-            <Card className="bg-card/50 backdrop-blur-sm border-white/10 p-8">
+            <GlowCard glowColor="purple" customSize className="w-full p-8 aspect-auto h-auto">
               <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mb-6">
                 <Headphones className="w-8 h-8 text-white" />
               </div>
               <h3 className="font-playfair text-xl font-bold mb-4 text-white">CONSULENZE PERSONALIZZATE</h3>
               <p className="text-muted-foreground">Per organizzazione, listino, marketing e posizionamento</p>
-            </Card>
+            </GlowCard>
 
-            <Card className="bg-card/50 backdrop-blur-sm border-white/10 p-8">
+            <GlowCard glowColor="orange" customSize className="w-full p-8 aspect-auto h-auto">
               <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mb-6">
                 <Play className="w-8 h-8 text-white" />
               </div>
               <h3 className="font-playfair text-xl font-bold mb-4 text-white">VIDEO CORSI</h3>
               <p className="text-muted-foreground">E materiali pratici da applicare subito nel tuo centro</p>
-            </Card>
+            </GlowCard>
 
-            <Card className="bg-card/50 backdrop-blur-sm border-white/10 p-8">
+            <GlowCard glowColor="green" customSize className="w-full p-8 aspect-auto h-auto">
               <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mb-6">
                 <Users className="w-8 h-8 text-white" />
               </div>
               <h3 className="font-playfair text-xl font-bold mb-4 text-white">COMMUNITY ESCLUSIVA</h3>
               <p className="text-muted-foreground">Per confrontarti con altri professionisti e crescere insieme</p>
-            </Card>
+            </GlowCard>
           </div>
         </div>
       </section>
