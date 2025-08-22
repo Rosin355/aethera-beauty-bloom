@@ -323,6 +323,47 @@ const LandingPage = () => {
                 hsl(220 90% 70% / 1), transparent 100%
               ) !important;
             }
+
+            /* Icon Circle Glow Effects */
+            .icon-circle-fuoco {
+              border: 2px solid hsl(24 100% 60% / 0.3);
+              box-shadow: 0 0 20px hsl(24 100% 60% / 0.4), inset 0 0 20px hsl(24 100% 60% / 0.1);
+              transition: all 0.3s ease;
+            }
+            .icon-circle-fuoco:hover {
+              border-color: hsl(24 100% 60% / 0.6);
+              box-shadow: 0 0 30px hsl(24 100% 60% / 0.6), inset 0 0 30px hsl(24 100% 60% / 0.2);
+            }
+
+            .icon-circle-terra {
+              border: 2px solid hsl(142 70% 45% / 0.3);
+              box-shadow: 0 0 20px hsl(142 70% 45% / 0.4), inset 0 0 20px hsl(142 70% 45% / 0.1);
+              transition: all 0.3s ease;
+            }
+            .icon-circle-terra:hover {
+              border-color: hsl(142 70% 45% / 0.6);
+              box-shadow: 0 0 30px hsl(142 70% 45% / 0.6), inset 0 0 30px hsl(142 70% 45% / 0.2);
+            }
+
+            .icon-circle-aria {
+              border: 2px solid hsl(200 80% 60% / 0.3);
+              box-shadow: 0 0 20px hsl(200 80% 60% / 0.4), inset 0 0 20px hsl(200 80% 60% / 0.1);
+              transition: all 0.3s ease;
+            }
+            .icon-circle-aria:hover {
+              border-color: hsl(200 80% 60% / 0.6);
+              box-shadow: 0 0 30px hsl(200 80% 60% / 0.6), inset 0 0 30px hsl(200 80% 60% / 0.2);
+            }
+
+            .icon-circle-acqua {
+              border: 2px solid hsl(220 90% 55% / 0.3);
+              box-shadow: 0 0 20px hsl(220 90% 55% / 0.4), inset 0 0 20px hsl(220 90% 55% / 0.1);
+              transition: all 0.3s ease;
+            }
+            .icon-circle-acqua:hover {
+              border-color: hsl(220 90% 55% / 0.6);
+              box-shadow: 0 0 30px hsl(220 90% 55% / 0.6), inset 0 0 30px hsl(220 90% 55% / 0.2);
+            }
           `}
         </style>
         <div className="container mx-auto">
@@ -337,7 +378,7 @@ const LandingPage = () => {
             <div className="service-card-fuoco">
               <GlowCard customSize className="w-full p-8 text-center aspect-auto h-auto min-h-[320px] flex flex-col">
                 <div className="flex flex-col items-center flex-1">
-                  <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6 icon-circle-fuoco">
                     <div className="text-white text-2xl font-bold">△</div>
                   </div>
                   <div className="h-16 flex items-center justify-center">
@@ -353,7 +394,7 @@ const LandingPage = () => {
             <div className="service-card-terra">
               <GlowCard customSize className="w-full p-8 text-center aspect-auto h-auto min-h-[320px] flex flex-col">
                 <div className="flex flex-col items-center flex-1">
-                  <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6 icon-circle-terra">
                     <div className="text-white text-xl font-bold relative">
                       <div>▽</div>
                       <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3 h-0.5 bg-white"></div>
@@ -372,7 +413,7 @@ const LandingPage = () => {
             <div className="service-card-aria">
               <GlowCard customSize className="w-full p-8 text-center aspect-auto h-auto min-h-[320px] flex flex-col">
                 <div className="flex flex-col items-center flex-1">
-                  <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6 icon-circle-aria">
                     <div className="text-white text-xl font-bold relative">
                       <div>△</div>
                       <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3 h-0.5 bg-white"></div>
@@ -391,7 +432,7 @@ const LandingPage = () => {
             <div className="service-card-acqua">
               <GlowCard customSize className="w-full p-8 text-center aspect-auto h-auto min-h-[320px] flex flex-col">
                 <div className="flex flex-col items-center flex-1">
-                  <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6 icon-circle-acqua">
                     <div className="text-white text-2xl font-bold">▽</div>
                   </div>
                   <div className="h-16 flex items-center justify-center">
