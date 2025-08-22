@@ -5,18 +5,17 @@ import { Card } from "@/components/ui/card";
 import { GlowCard } from "@/components/ui/spotlight-card";
 import { Check, Play, Users, Award, BookOpen, Headphones } from "lucide-react";
 import { Glow } from "@/components/ui/glow";
-
 const LandingPage = () => {
-  const [formData, setFormData] = useState({ name: "", email: "" });
-
+  const [formData, setFormData] = useState({
+    name: "",
+    email: ""
+  });
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     // Handle form submission here
     console.log("Form submitted:", formData);
   };
-
-  return (
-    <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
+  return <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
       <Glow variant="top" className="opacity-30" />
       
       {/* Header */}
@@ -24,7 +23,7 @@ const LandingPage = () => {
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-3">
             <img src="/4-elementi-logo.png" alt="4 Elementi Italia Logo" className="h-12 w-auto" />
-            <span className="font-playfair font-bold text-xl text-white">4 ELEMENTI ITALIA</span>
+            
           </div>
           <nav className="hidden md:flex space-x-8">
             <a href="#video" className="text-muted-foreground hover:text-foreground transition-colors">VIDEO GRATUITO</a>
@@ -88,19 +87,14 @@ const LandingPage = () => {
                   </div>
                   
                   <form onSubmit={handleSubmit} className="space-y-4">
-                    <Input
-                      placeholder="Il tuo nome"
-                      value={formData.name}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      className="bg-background/50 border-white/20"
-                    />
-                    <Input
-                      type="email"
-                      placeholder="La tua email"
-                      value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      className="bg-background/50 border-white/20"
-                    />
+                    <Input placeholder="Il tuo nome" value={formData.name} onChange={e => setFormData({
+                    ...formData,
+                    name: e.target.value
+                  })} className="bg-background/50 border-white/20" />
+                    <Input type="email" placeholder="La tua email" value={formData.email} onChange={e => setFormData({
+                    ...formData,
+                    email: e.target.value
+                  })} className="bg-background/50 border-white/20" />
                     <Button type="submit" className="w-full bg-white hover:bg-gray-200 text-black font-medium">
                       RICEVI IL VIDEO GRATUITO
                     </Button>
@@ -324,15 +318,13 @@ const LandingPage = () => {
         <div className="container mx-auto text-center">
           <div className="flex items-center justify-center space-x-3 mb-4">
             <img src="/4-elementi-logo.png" alt="4 Elementi Italia Logo" className="h-10 w-auto" />
-            <span className="font-playfair font-bold text-xl text-white">4 ELEMENTI ITALIA</span>
+            
           </div>
           <p className="text-muted-foreground">
             © 2024 4 Elementi Italia. Tutti i diritti riservati.
           </p>
         </div>
       </footer>
-    </div>
-  );
+    </div>;
 };
-
 export default LandingPage;
