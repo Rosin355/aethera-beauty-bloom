@@ -21,10 +21,8 @@ const LandingPage = () => {
       {/* Header */}
       <header className="relative z-10 px-4 py-6">
         <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-              <span className="text-black font-bold text-sm">4E</span>
-            </div>
+          <div className="flex items-center space-x-3">
+            <img src="/4-elementi-logo.png" alt="4 Elementi Italia Logo" className="h-12 w-auto" />
             <span className="font-playfair font-bold text-xl text-white">4 ELEMENTI ITALIA</span>
           </div>
           <nav className="hidden md:flex space-x-8">
@@ -43,8 +41,8 @@ const LandingPage = () => {
             <div className="space-y-8">
               <div className="space-y-4">
                 <h1 className="font-playfair text-4xl lg:text-6xl font-bold leading-tight text-white">
-                  SEI UN'ESTETISTA O UN 
-                  <span className="gradient-text"> PARRUCCHIERE?</span>
+                  SEI UN'ESTETISTA
+                  <span className="gradient-text"> PROFESSIONISTA?</span>
                 </h1>
                 <p className="text-xl text-muted-foreground leading-relaxed">
                   Ecco come strutturare il tuo listino in modo strategico (senza stress)
@@ -53,7 +51,7 @@ const LandingPage = () => {
               
               <div className="space-y-6">
                 <p className="text-muted-foreground leading-relaxed">
-                  Ciao! Se sei un'estetista professionista o un parrucchiere e ti stai chiedendo come strutturare un listino prezzi che sia chiaro, professionale e che valorizzi davvero i tuoi servizi... sei nel posto giusto.
+                  Ciao! Se sei un'estetista professionista e ti stai chiedendo come strutturare un listino prezzi che sia chiaro, professionale e che valorizzi davvero i tuoi servizi... sei nel posto giusto.
                 </p>
                 <p className="text-muted-foreground leading-relaxed">
                   Mi chiamo <strong className="text-white">Davide</strong> e con <strong className="text-white">4 Elementi Italia</strong> aiutiamo estetiste e professionisti del benessere a diventare imprenditori consapevoli, strategici e autonomi – senza stress, senza perdere tempo in corsi complicati o contenuti poco chiari.
@@ -116,7 +114,7 @@ const LandingPage = () => {
               <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Check className="w-8 h-8 text-white" />
               </div>
-              <h3 className="font-playfair text-xl font-bold mb-4 text-white">ORGANIZZAZIONE STRATEGICA</h3>
+              <h3 className="font-playfair text-xl font-bold mb-4 text-white">CALCOLO DEL COSTO ORARIO</h3>
               <p className="text-muted-foreground">
                 Come organizzare il tuo listino in modo strategico (anche se non sei brava con i numeri o il marketing)
               </p>
@@ -126,7 +124,7 @@ const LandingPage = () => {
               <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Check className="w-8 h-8 text-white" />
               </div>
-              <h3 className="font-playfair text-xl font-bold mb-4 text-white">COMUNICAZIONE PROFESSIONALE</h3>
+              <h3 className="font-playfair text-xl font-bold mb-4 text-white">CALCOLO DEL PRODOTTO</h3>
               <p className="text-muted-foreground">
                 Cosa scrivere per trasmettere professionalità e farti scegliere dai tuoi clienti
               </p>
@@ -136,7 +134,7 @@ const LandingPage = () => {
               <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Check className="w-8 h-8 text-white" />
               </div>
-              <h3 className="font-playfair text-xl font-bold mb-4 text-white">DESIGN ACCATTIVANTE</h3>
+              <h3 className="font-playfair text-xl font-bold mb-4 text-white">CREA IL LISTINO PREZZI EFFICACE</h3>
               <p className="text-muted-foreground">
                 Come creare un listino grafico accattivante e facile da aggiornare, direttamente con Canva
               </p>
@@ -213,7 +211,7 @@ const LandingPage = () => {
             <Card className="bg-card/30 backdrop-blur-sm border-white/10 p-8 lg:p-12">
               <div className="space-y-6 text-center">
                 <p className="text-lg text-muted-foreground leading-relaxed">
-                  <strong className="text-white">4 Elementi Italia</strong> è una realtà nata per trasformare i centri estetici e i professionisti del beauty in vere imprese consapevoli. Con oltre <strong className="text-white">10 anni di esperienza</strong> nel settore, uniamo formazione, strategia e strumenti digitali per supportare estetiste, parrucchieri e professionisti del benessere nel loro percorso di crescita.
+                  <strong className="text-white">4 Elementi Italia</strong> è una realtà nata per trasformare i centri estetici e i professionisti del beauty in vere imprese consapevoli. Con oltre <strong className="text-white">10 anni di esperienza</strong> nel settore, uniamo formazione, strategia e strumenti digitali per supportare estetiste e professionisti del benessere nel loro percorso di crescita.
                 </p>
                 <p className="text-lg text-muted-foreground leading-relaxed">
                   Il nostro metodo è <strong className="text-white">personalizzato, pratico e accessibile</strong>. Crediamo che ogni centro debba avere una visione chiara, un'identità forte e una gestione organizzata.
@@ -309,10 +307,8 @@ const LandingPage = () => {
       {/* Footer */}
       <footer className="relative z-10 px-4 py-8 border-t border-white/10">
         <div className="container mx-auto text-center">
-          <div className="flex items-center justify-center space-x-2 mb-4">
-            <div className="w-8 h-8 bg-white rounded-full flex items-center justify-center">
-              <span className="text-black font-bold text-sm">4E</span>
-            </div>
+          <div className="flex items-center justify-center space-x-3 mb-4">
+            <img src="/4-elementi-logo.png" alt="4 Elementi Italia Logo" className="h-10 w-auto" />
             <span className="font-playfair font-bold text-xl text-white">4 ELEMENTI ITALIA</span>
           </div>
           <p className="text-muted-foreground">

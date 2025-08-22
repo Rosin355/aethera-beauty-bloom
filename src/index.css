@@ -49,13 +49,13 @@
     --brand: 0 0% 100%;
     --brand-foreground: 0 0% 80%;
     
-    /* Brand Colors */
+    /* Brand Colors - Estratti dal logo */
     --brand-graphite: 0 0% 11%;
     --brand-cream: 40 28% 95%;
-    --brand-water: 196 35% 55%;
-    --brand-fire: 16 74% 56%;
-    --brand-air: 156 16% 72%;
-    --brand-earth: 28 25% 62%;
+    --brand-water: 200 45% 60%; /* Azzurro acqua */
+    --brand-fire: 20 85% 55%; /* Rosso fuoco */
+    --brand-air: 160 25% 75%; /* Verde aria */
+    --brand-earth: 30 35% 65%; /* Marrone terra */
   }
 }
 
@@ -99,7 +99,22 @@
   }
   
   .gradient-text {
-    @apply bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent;
+    background: linear-gradient(135deg, 
+      hsl(var(--brand-fire)) 0%, 
+      hsl(var(--brand-earth)) 25%, 
+      hsl(var(--brand-water)) 50%, 
+      hsl(var(--brand-air)) 75%, 
+      hsl(var(--brand-fire)) 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-size: 200% 100%;
+    animation: gradient-shift 8s ease-in-out infinite;
+  }
+  
+  @keyframes gradient-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
   }
   
   .animated-element {
@@ -130,7 +145,20 @@
   }
   
   .card-hover {
-    @apply transition-all duration-300 hover:scale-105 hover:shadow-2xl hover:bg-white/10;
+    @apply transition-all duration-300 hover:scale-105 hover:shadow-2xl;
+    background: linear-gradient(135deg, 
+      rgba(255, 255, 255, 0.05) 0%, 
+      hsla(var(--brand-water), 0.03) 25%,
+      hsla(var(--brand-air), 0.03) 75%,
+      rgba(255, 255, 255, 0.05) 100%);
+  }
+  
+  .card-hover:hover {
+    background: linear-gradient(135deg, 
+      rgba(255, 255, 255, 0.1) 0%, 
+      hsla(var(--brand-fire), 0.05) 25%,
+      hsla(var(--brand-earth), 0.05) 75%,
+      rgba(255, 255, 255, 0.1) 100%);
   }
 
   .container-scroll {
