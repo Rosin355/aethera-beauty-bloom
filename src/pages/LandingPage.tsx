@@ -41,11 +41,11 @@ const LandingPage = () => {
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-8">
               <div className="space-y-4">
-                <h1 className="font-playfair text-4xl lg:text-6xl font-bold leading-tight text-foreground">
+                <h1 className="font-playfair text-4xl lg:text-6xl font-bold leading-tight text-white">
                   SEI UN'ESTETISTA
                   <span className="gradient-text"> PROFESSIONISTA?</span>
                 </h1>
-                <p className="text-xl text-muted-foreground leading-relaxed">
+                <p className="text-xl text-gray-300 leading-relaxed">
                   Ecco come strutturare il tuo listino in modo strategico (senza stress)
                 </p>
               </div>
