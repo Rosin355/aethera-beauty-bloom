@@ -247,7 +247,7 @@ const LandingPage = () => {
               <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mb-6">
                 <Award className="w-8 h-8 text-white" />
               </div>
-              <h3 className="font-playfair text-xl font-bold mb-4 text-white">FORMAZIONE STRATEGICA</h3>
+              <h3 className="font-playfair text-xl font-bold mb-4 text-white">FORMAZIONE<br />STRATEGICA</h3>
               <p className="text-muted-foreground">Per diventare imprenditori nel beauty</p>
             </GlowCard>
 
