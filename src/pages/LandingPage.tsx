@@ -36,9 +36,6 @@ const LandingPage = () => {
 
       {/* Hero Section */}
       <section className="relative z-10 px-4 py-16 overflow-hidden">
-        <div className="absolute inset-0 overflow-hidden">
-          <div className="absolute -inset-[10px] opacity-30 will-change-transform [--aurora:repeating-linear-gradient(100deg,hsl(var(--brand-fire))_10%,hsl(var(--brand-water))_15%,hsl(var(--brand-air))_20%,hsl(var(--brand-earth))_25%,hsl(var(--brand-fire))_30%)] [background-image:var(--aurora)] [background-size:300%,_200%] [background-position:50%_50%] filter blur-[10px] animate-aurora pointer-events-none"></div>
-        </div>
         <div className="container mx-auto">
           <div className="grid lg:grid-cols-2 gap-12 items-center">
             <div className="space-y-8">
