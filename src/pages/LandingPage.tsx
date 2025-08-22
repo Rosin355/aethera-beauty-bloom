@@ -243,42 +243,50 @@ const LandingPage = () => {
           </div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <GlowCard glowColor="orange" customSize className="w-full p-8 text-center aspect-auto h-auto">
-              <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <div className="text-white text-2xl font-bold">△</div>
-              </div>
-              <h3 className="font-playfair text-xl font-bold mb-4 text-white">FUOCO</h3>
-              <p className="text-muted-foreground">Piattaforma 4 Elementi Italia Srl e consulenza.</p>
-            </GlowCard>
-
-            <GlowCard glowColor="green" customSize className="w-full p-8 text-center aspect-auto h-auto">
-              <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <div className="text-white text-xl font-bold relative">
-                  <div>▽</div>
-                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3 h-0.5 bg-white"></div>
+            <GlowCard glowColor="orange" customSize className="w-full p-8 text-center aspect-auto h-auto min-h-[280px] flex flex-col justify-between">
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <div className="text-white text-2xl font-bold">△</div>
                 </div>
+                <h3 className="font-playfair text-xl font-bold mb-4 text-white">FUOCO</h3>
               </div>
-              <h3 className="font-playfair text-xl font-bold mb-4 text-white">TERRA</h3>
-              <p className="text-muted-foreground">Azienda riqualificazione centro estetico, restyling arredamento e sistema operativo.</p>
+              <p className="text-muted-foreground text-center">Piattaforma 4 Elementi Italia Srl e consulenza.</p>
             </GlowCard>
 
-            <GlowCard glowColor="blue" customSize className="w-full p-8 text-center aspect-auto h-auto">
-              <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <div className="text-white text-xl font-bold relative">
-                  <div>△</div>
-                  <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3 h-0.5 bg-white"></div>
+            <GlowCard glowColor="green" customSize className="w-full p-8 text-center aspect-auto h-auto min-h-[280px] flex flex-col justify-between">
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <div className="text-white text-xl font-bold relative">
+                    <div>▽</div>
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3 h-0.5 bg-white"></div>
+                  </div>
                 </div>
+                <h3 className="font-playfair text-xl font-bold mb-4 text-white">TERRA</h3>
               </div>
-              <h3 className="font-playfair text-xl font-bold mb-4 text-white">ARIA</h3>
-              <p className="text-muted-foreground">Marketing specifico per settore beauty.</p>
+              <p className="text-muted-foreground text-center">Azienda riqualificazione centro estetico, restyling arredamento e sistema operativo.</p>
             </GlowCard>
 
-            <GlowCard glowColor="blue" customSize className="w-full p-8 text-center aspect-auto h-auto">
-              <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <div className="text-white text-2xl font-bold">▽</div>
+            <GlowCard glowColor="blue" customSize className="w-full p-8 text-center aspect-auto h-auto min-h-[280px] flex flex-col justify-between">
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <div className="text-white text-xl font-bold relative">
+                    <div>△</div>
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3 h-0.5 bg-white"></div>
+                  </div>
+                </div>
+                <h3 className="font-playfair text-xl font-bold mb-4 text-white">ARIA</h3>
               </div>
-              <h3 className="font-playfair text-xl font-bold mb-4 text-white">ACQUA</h3>
-              <p className="text-muted-foreground">Partnership con Tokyo Top Air, Nee Make Up Milano e EvertlinerSpa.</p>
+              <p className="text-muted-foreground text-center">Marketing specifico per settore beauty.</p>
+            </GlowCard>
+
+            <GlowCard glowColor="purple" customSize className="w-full p-8 text-center aspect-auto h-auto min-h-[280px] flex flex-col justify-between">
+              <div className="flex flex-col items-center">
+                <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
+                  <div className="text-white text-2xl font-bold">▽</div>
+                </div>
+                <h3 className="font-playfair text-xl font-bold mb-4 text-white">ACQUA</h3>
+              </div>
+              <p className="text-muted-foreground text-center">Partnership con Tokyo Top Air, Nee Make Up Milano e EvertlinerSpa.</p>
             </GlowCard>
           </div>
         </div>
