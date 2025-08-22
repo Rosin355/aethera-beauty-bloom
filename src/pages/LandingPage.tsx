@@ -236,32 +236,92 @@ const LandingPage = () => {
       <section id="services" className="relative z-10 px-4 py-16 bg-card/20">
         <style>
           {`
+            .service-card-fuoco [data-glow] {
+              --base: 24 !important;
+              --saturation: 100 !important;
+              --lightness: 60 !important;
+            }
             .service-card-fuoco [data-glow]:before {
-              background: radial-gradient(800px circle at var(--x) var(--y), hsl(24 100% 60% / 0.15), transparent 40%);
+              background-image: radial-gradient(
+                calc(var(--spotlight-size) * 0.75) calc(var(--spotlight-size) * 0.75) at
+                calc(var(--x, 0) * 1px)
+                calc(var(--y, 0) * 1px),
+                hsl(24 100% 50% / 0.8), transparent 100%
+              ) !important;
             }
             .service-card-fuoco [data-glow]:after {
-              background: radial-gradient(400px circle at var(--x) var(--y), hsl(24 100% 60% / 0.4), transparent 40%);
+              background-image: radial-gradient(
+                calc(var(--spotlight-size) * 0.5) calc(var(--spotlight-size) * 0.5) at
+                calc(var(--x, 0) * 1px)
+                calc(var(--y, 0) * 1px),
+                hsl(24 100% 70% / 1), transparent 100%
+              ) !important;
             }
             
+            .service-card-terra [data-glow] {
+              --base: 142 !important;
+              --saturation: 70 !important;
+              --lightness: 45 !important;
+            }
             .service-card-terra [data-glow]:before {
-              background: radial-gradient(800px circle at var(--x) var(--y), hsl(142 70% 45% / 0.15), transparent 40%);
+              background-image: radial-gradient(
+                calc(var(--spotlight-size) * 0.75) calc(var(--spotlight-size) * 0.75) at
+                calc(var(--x, 0) * 1px)
+                calc(var(--y, 0) * 1px),
+                hsl(142 70% 40% / 0.8), transparent 100%
+              ) !important;
             }
             .service-card-terra [data-glow]:after {
-              background: radial-gradient(400px circle at var(--x) var(--y), hsl(142 70% 45% / 0.4), transparent 40%);
+              background-image: radial-gradient(
+                calc(var(--spotlight-size) * 0.5) calc(var(--spotlight-size) * 0.5) at
+                calc(var(--x, 0) * 1px)
+                calc(var(--y, 0) * 1px),
+                hsl(142 70% 60% / 1), transparent 100%
+              ) !important;
             }
             
+            .service-card-aria [data-glow] {
+              --base: 200 !important;
+              --saturation: 80 !important;
+              --lightness: 60 !important;
+            }
             .service-card-aria [data-glow]:before {
-              background: radial-gradient(800px circle at var(--x) var(--y), hsl(200 80% 60% / 0.15), transparent 40%);
+              background-image: radial-gradient(
+                calc(var(--spotlight-size) * 0.75) calc(var(--spotlight-size) * 0.75) at
+                calc(var(--x, 0) * 1px)
+                calc(var(--y, 0) * 1px),
+                hsl(200 80% 55% / 0.8), transparent 100%
+              ) !important;
             }
             .service-card-aria [data-glow]:after {
-              background: radial-gradient(400px circle at var(--x) var(--y), hsl(200 80% 60% / 0.4), transparent 40%);
+              background-image: radial-gradient(
+                calc(var(--spotlight-size) * 0.5) calc(var(--spotlight-size) * 0.5) at
+                calc(var(--x, 0) * 1px)
+                calc(var(--y, 0) * 1px),
+                hsl(200 80% 75% / 1), transparent 100%
+              ) !important;
             }
             
+            .service-card-acqua [data-glow] {
+              --base: 220 !important;
+              --saturation: 90 !important;
+              --lightness: 55 !important;
+            }
             .service-card-acqua [data-glow]:before {
-              background: radial-gradient(800px circle at var(--x) var(--y), hsl(220 90% 55% / 0.15), transparent 40%);
+              background-image: radial-gradient(
+                calc(var(--spotlight-size) * 0.75) calc(var(--spotlight-size) * 0.75) at
+                calc(var(--x, 0) * 1px)
+                calc(var(--y, 0) * 1px),
+                hsl(220 90% 50% / 0.8), transparent 100%
+              ) !important;
             }
             .service-card-acqua [data-glow]:after {
-              background: radial-gradient(400px circle at var(--x) var(--y), hsl(220 90% 55% / 0.4), transparent 40%);
+              background-image: radial-gradient(
+                calc(var(--spotlight-size) * 0.5) calc(var(--spotlight-size) * 0.5) at
+                calc(var(--x, 0) * 1px)
+                calc(var(--y, 0) * 1px),
+                hsl(220 90% 70% / 1), transparent 100%
+              ) !important;
             }
           `}
         </style>
