@@ -74,7 +74,8 @@ export const useAuth = () => {
   const signUp = async (email: string, password: string, displayName?: string) => {
     setLoading(true);
     
-    const redirectUrl = `${window.location.origin}/`;
+    // Use the correct sandbox URL instead of localhost
+    const redirectUrl = "https://3c37cda4-be73-48a8-a792-03ed1a7f45e8.sandbox.lovable.dev/dashboard";
     
     const { error } = await supabase.auth.signUp({
       email,
@@ -121,7 +122,7 @@ export const useAuth = () => {
   };
 
   const resetPassword = async (email: string) => {
-    const redirectUrl = `${window.location.origin}/reset-password`;
+    const redirectUrl = "https://3c37cda4-be73-48a8-a792-03ed1a7f45e8.sandbox.lovable.dev/reset-password";
     
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: redirectUrl
