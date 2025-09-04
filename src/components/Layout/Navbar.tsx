@@ -2,7 +2,8 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogOut, Settings, User } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 import Logo from "./Logo";
 
 import { cn } from "@/lib/utils";
@@ -11,12 +12,18 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
+  const { user, signOut, isAdmin } = useAuth();
 
   const isActive = (path: string) => {
     return location.pathname === path;
   };
 
-  const navLinks = [
+  const navLinks = user ? [
+    { name: "Dashboard", path: "/dashboard" },
+    { name: "Gestione", path: "/dashboard/management" },
+    { name: "Community", path: "/dashboard/community" },
+    ...(isAdmin ? [{ name: "Admin", path: "/admin/dashboard" }] : []),
+  ] : [
     { name: "Home", path: "/" },
     { name: "Formazione", path: "/training" },
     { name: "Gestione", path: "/management" },
@@ -24,6 +31,11 @@ const Navbar = () => {
     { name: "Supporto", path: "/support" },
   ];
 
+  const handleLogout = async () => {
+    await signOut();
+    setIsMenuOpen(false);
+  };
+  
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
@@ -79,16 +91,36 @@ const Navbar = () => {
 
           {/* Auth buttons */}
           <div className="hidden md:flex md:items-center md:space-x-4">
-            <Link to="/login">
-              <Button variant={scrolled ? "outline" : "secondary"}>
-                Accedi
-              </Button>
-            </Link>
-            <Link to="/signup">
-              <Button className="bg-white hover:bg-gray-200 text-black">
-                Registrati
-              </Button>
-            </Link>
+            {user ? (
+              <>
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <User size={16} />
+                  <span>Ciao, {user.email}</span>
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={handleLogout}
+                  className="flex items-center gap-2"
+                >
+                  <LogOut size={16} />
+                  Esci
+                </Button>
+              </>
+            ) : (
+              <>
+                <Link to="/login">
+                  <Button variant={scrolled ? "outline" : "secondary"}>
+                    Accedi
+                  </Button>
+                </Link>
+                <Link to="/signup">
+                  <Button className="bg-white hover:bg-gray-200 text-black">
+                    Registrati
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -126,16 +158,35 @@ const Navbar = () => {
               </Link>
             ))}
             <div className="pt-4 pb-2 border-t border-border flex flex-col space-y-2">
-              <Link to="/login" onClick={() => setIsMenuOpen(false)}>
-                <Button variant="outline" className="w-full">
-                  Accedi
-                </Button>
-              </Link>
-              <Link to="/signup" onClick={() => setIsMenuOpen(false)}>
-                <Button className="w-full bg-white hover:bg-gray-200 text-black">
-                  Registrati
-                </Button>
-              </Link>
+              {user ? (
+                <>
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground p-2">
+                    <User size={16} />
+                    <span>Ciao, {user.email}</span>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-2"
+                  >
+                    <LogOut size={16} />
+                    Esci
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link to="/login" onClick={() => setIsMenuOpen(false)}>
+                    <Button variant="outline" className="w-full">
+                      Accedi
+                    </Button>
+                  </Link>
+                  <Link to="/signup" onClick={() => setIsMenuOpen(false)}>
+                    <Button className="w-full bg-white hover:bg-gray-200 text-black">
+                      Registrati
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

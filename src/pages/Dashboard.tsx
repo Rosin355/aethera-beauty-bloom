@@ -3,6 +3,7 @@ import DashboardLayout from "@/components/Dashboard/DashboardLayout";
 import WelcomeCard from "@/components/Dashboard/WelcomeCard";
 import StatCard from "@/components/Dashboard/StatCard";
 import FeaturePreview from "@/components/Dashboard/FeaturePreview";
+import BecomeAdminButton from "@/components/Auth/BecomeAdminButton";
 import { BookOpen, Calendar, Users, MessageSquare, ChartPie, Layout } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -11,6 +12,7 @@ const Dashboard = () => {
   return (
     <DashboardLayout>
       <WelcomeCard />
+      <BecomeAdminButton />
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <StatCard 

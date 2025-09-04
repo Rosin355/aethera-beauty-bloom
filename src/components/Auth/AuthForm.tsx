@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 interface AuthFormProps {
   type: "login" | "signup";
@@ -15,31 +17,42 @@ const AuthForm = ({ type }: AuthFormProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
+  const { signUp, signIn, loading } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
-    // Simulate authentication process
-    setTimeout(() => {
-      setLoading(false);
+    try {
       if (type === "login") {
-        toast({
-          title: "Bentornato!",
-          description: "Hai effettuato l'accesso con successo.",
-        });
+        const { error } = await signIn(email, password);
+        if (error) {
+          if (error.message.includes("Invalid login credentials")) {
+            toast.error("Email o password non corretti");
+          } else {
+            toast.error("Errore durante l'accesso: " + error.message);
+          }
+          return;
+        }
+        toast.success("Bentornato!");
         navigate("/dashboard");
       } else {
-        toast({
-          title: "Account creato!",
-          description: "Il tuo account è stato creato con successo.",
-        });
-        navigate("/onboarding");
+        const { error } = await signUp(email, password, name);
+        if (error) {
+          if (error.message.includes("User already registered")) {
+            toast.error("Questo indirizzo email è già registrato");
+          } else {
+            toast.error("Errore durante la registrazione: " + error.message);
+          }
+          return;
+        }
+        toast.success("Account creato! Controlla la tua email per confermare l'account.");
+        navigate("/dashboard");
       }
-    }, 1500);
+    } catch (error) {
+      toast.error("Si è verificato un errore imprevisto");
+      console.error("Auth error:", error);
+    }
   };
 
   return (
