@@ -13,10 +13,10 @@ import { UserPlus, Mail, Trash2 } from 'lucide-react';
 
 interface Profile {
   id: string;
+  user_id: string;
   display_name: string;
-  email: string;
   created_at: string;
-  user_roles: { role: string }[];
+  user_roles?: { role: string }[];
 }
 
 const CollaboratorManagement = () => {
@@ -32,19 +32,28 @@ const CollaboratorManagement = () => {
 
   const fetchProfiles = async () => {
     try {
-      const { data, error } = await supabase
+      // First fetch all profiles
+      const { data: profilesData, error: profilesError } = await supabase
         .from('profiles')
-        .select(`
-          id,
-          display_name,
-          email,
-          created_at,
-          user_roles (role)
-        `)
+        .select('id, user_id, display_name, created_at')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      setProfiles(data || []);
+      if (profilesError) throw profilesError;
+
+      // Then fetch all user roles
+      const { data: rolesData, error: rolesError } = await supabase
+        .from('user_roles')
+        .select('user_id, role');
+
+      if (rolesError) throw rolesError;
+
+      // Combine the data
+      const profilesWithRoles = (profilesData || []).map(profile => ({
+        ...profile,
+        user_roles: rolesData?.filter(role => role.user_id === profile.user_id) || []
+      }));
+
+      setProfiles(profilesWithRoles);
     } catch (error) {
       toast.error('Errore nel caricamento utenti');
       console.error('Error fetching profiles:', error);
@@ -64,7 +73,7 @@ const CollaboratorManagement = () => {
       // Add new role
       const { error } = await supabase
         .from('user_roles')
-        .insert({ user_id: userId, role: newRole });
+        .insert({ user_id: userId, role: newRole as 'user' | 'collaborator' | 'admin' });
 
       if (error) throw error;
 
@@ -207,7 +216,6 @@ const CollaboratorManagement = () => {
             <TableHeader>
               <TableRow>
                 <TableHead>Nome</TableHead>
-                <TableHead>Email</TableHead>
                 <TableHead>Ruolo</TableHead>
                 <TableHead>Data Registrazione</TableHead>
                 <TableHead>Azioni</TableHead>
@@ -215,13 +223,12 @@ const CollaboratorManagement = () => {
             </TableHeader>
             <TableBody>
               {profiles.map((profile) => {
-                const userRole = profile.user_roles[0]?.role || 'user';
+                const userRole = profile.user_roles?.[0]?.role || 'user';
                 return (
                   <TableRow key={profile.id}>
                     <TableCell className="font-medium">
                       {profile.display_name}
                     </TableCell>
-                    <TableCell>{profile.email}</TableCell>
                     <TableCell>
                       <Badge variant={getRoleBadgeVariant(userRole)}>
                         {getRoleLabel(userRole)}
@@ -233,7 +240,7 @@ const CollaboratorManagement = () => {
                     <TableCell>
                       <Select
                         value={userRole}
-                        onValueChange={(newRole) => updateUserRole(profile.id, newRole)}
+                        onValueChange={(newRole) => updateUserRole(profile.user_id, newRole)}
                       >
                         <SelectTrigger className="w-[120px]">
                           <SelectValue />
