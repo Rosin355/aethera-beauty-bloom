@@ -22,6 +22,12 @@ const ResetPassword = () => {
     const parseHashParams = () => {
       const hash = window.location.hash.substring(1);
       const params = new URLSearchParams(hash);
+      console.log('Hash params:', {
+        hash,
+        accessToken: params.get('access_token'),
+        refreshToken: params.get('refresh_token'),
+        type: params.get('type')
+      });
       return {
         accessToken: params.get('access_token'),
         refreshToken: params.get('refresh_token'),
@@ -29,31 +35,59 @@ const ResetPassword = () => {
       };
     };
 
+    const parseUrlParams = () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      console.log('URL params:', {
+        accessToken: urlParams.get('access_token'),
+        refreshToken: urlParams.get('refresh_token'),
+        type: urlParams.get('type')
+      });
+      return {
+        accessToken: urlParams.get('access_token'),
+        refreshToken: urlParams.get('refresh_token'),
+        type: urlParams.get('type')
+      };
+    };
+
     const handlePasswordReset = async () => {
-      const { accessToken, refreshToken, type } = parseHashParams();
+      // Try both hash and URL params
+      let tokens = parseHashParams();
+      if (!tokens.accessToken || !tokens.refreshToken) {
+        tokens = parseUrlParams();
+      }
+      
+      const { accessToken, refreshToken, type } = tokens;
+      console.log('Final tokens:', { accessToken: !!accessToken, refreshToken: !!refreshToken, type });
       
       if (accessToken && refreshToken && type === 'recovery') {
         try {
-          const { error } = await supabase.auth.setSession({
+          console.log('Setting session with tokens...');
+          const { data, error } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken
           });
 
+          console.log('Session result:', { data: !!data.session, error });
+
           if (error) {
-            toast.error("Link di reset non valido o scaduto");
-            navigate('/forgot-password');
+            console.error('Session error:', error);
+            toast.error("Link di reset non valido o scaduto: " + error.message);
+            setTimeout(() => navigate('/forgot-password'), 2000);
           } else {
+            console.log('Session set successfully');
             setValidSession(true);
-            // Clear the hash from the URL
+            // Clear the hash and params from the URL
             window.history.replaceState(null, '', window.location.pathname);
           }
         } catch (error) {
+          console.error('Catch error:', error);
           toast.error("Errore nel processare il link di reset");
-          navigate('/forgot-password');
+          setTimeout(() => navigate('/forgot-password'), 2000);
         }
       } else {
+        console.log('Missing tokens or wrong type');
         toast.error("Link di reset non valido o scaduto");
-        navigate('/forgot-password');
+        setTimeout(() => navigate('/forgot-password'), 2000);
       }
       setSessionLoading(false);
     };
