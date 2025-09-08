@@ -122,8 +122,9 @@ export const useAuth = () => {
   };
 
   const resetPassword = async (email: string) => {
-    // Force the correct sandbox URL with a timestamp to avoid caching
-    const redirectUrl = `https://3c37cda4-be73-48a8-a792-03ed1a7f45e8.sandbox.lovable.dev/reset-password?t=${Date.now()}`;
+    // Use the exact current origin without additional parameters
+    const redirectUrl = `${window.location.origin}/reset-password`;
+    console.log('Reset password redirect URL:', redirectUrl);
     
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
       redirectTo: redirectUrl
