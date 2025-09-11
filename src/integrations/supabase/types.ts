@@ -251,6 +251,65 @@ export type Database = {
         }
         Relationships: []
       }
+      mailing_list: {
+        Row: {
+          access_token: string | null
+          created_at: string
+          email: string
+          id: string
+          name: string
+          source: string | null
+        }
+        Insert: {
+          access_token?: string | null
+          created_at?: string
+          email: string
+          id?: string
+          name: string
+          source?: string | null
+        }
+        Update: {
+          access_token?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          name?: string
+          source?: string | null
+        }
+        Relationships: []
+      }
+      newsletter_subscriptions: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          mailing_list_id: string | null
+          name: string | null
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id?: string
+          mailing_list_id?: string | null
+          name?: string | null
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          mailing_list_id?: string | null
+          name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "newsletter_subscriptions_mailing_list_id_fkey"
+            columns: ["mailing_list_id"]
+            isOneToOne: false
+            referencedRelation: "mailing_list"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           avatar_url: string | null
