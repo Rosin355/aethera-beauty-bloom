@@ -122,8 +122,9 @@ const LandingPage = () => {
               <div className="w-full aspect-video bg-card/30 backdrop-blur-sm border-white/10 border rounded-lg overflow-hidden">
                 <video 
                   controls 
-                  poster="/video-thumbnail.jpg"
-                  className="w-full h-full object-cover"
+                  preload="metadata"
+                  className="w-full h-full"
+                  style={{ backgroundColor: '#000' }}
                 >
                   <source src="/video-anteprima.mp4" type="video/mp4" />
                   Il tuo browser non supporta il tag video.

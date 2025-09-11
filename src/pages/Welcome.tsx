@@ -176,9 +176,9 @@ const Welcome = () => {
               <div className="aspect-video rounded-lg overflow-hidden">
                 <video 
                   controls 
-                  poster="/video-thumbnail-full.jpg"
-                  className="w-full h-full object-cover"
-                  autoPlay
+                  preload="metadata"
+                  className="w-full h-full"
+                  style={{ backgroundColor: '#000' }}
                 >
                   <source src="/video-completo.mp4" type="video/mp4" />
                   Il tuo browser non supporta il tag video.
