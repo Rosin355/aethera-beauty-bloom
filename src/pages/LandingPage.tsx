@@ -125,6 +125,10 @@ const LandingPage = () => {
                   preload="metadata"
                   className="w-full h-full"
                   style={{ backgroundColor: '#000' }}
+                  onLoadStart={() => console.log('Video: Load started')}
+                  onCanPlay={() => console.log('Video: Can play')}
+                  onError={(e) => console.error('Video error:', e)}
+                  onLoadedMetadata={() => console.log('Video: Metadata loaded')}
                 >
                   <source src="/video-anteprima.mp4" type="video/mp4" />
                   Il tuo browser non supporta il tag video.

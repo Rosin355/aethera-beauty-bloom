@@ -179,6 +179,10 @@ const Welcome = () => {
                   preload="metadata"
                   className="w-full h-full"
                   style={{ backgroundColor: '#000' }}
+                  onLoadStart={() => console.log('Video Completo: Load started')}
+                  onCanPlay={() => console.log('Video Completo: Can play')}
+                  onError={(e) => console.error('Video Completo error:', e)}
+                  onLoadedMetadata={() => console.log('Video Completo: Metadata loaded')}
                 >
                   <source src="/video-completo.mp4" type="video/mp4" />
                   Il tuo browser non supporta il tag video.
