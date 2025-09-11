@@ -21,6 +21,7 @@ import AdminDashboard from "./pages/Admin/Dashboard";
 import ClientDetail from "./pages/Admin/ClientDetail";
 import CollaboratorManagement from "./pages/Admin/CollaboratorManagement";
 import LandingPage from "./pages/LandingPage";
+import Welcome from "./pages/Welcome";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +68,7 @@ const App = () => (
           
           {/* Landing page isolata */}
           <Route path="/landing" element={<LandingPage />} />
+          <Route path="/welcome" element={<Welcome />} />
           
           {/* Admin routes */}
           <Route path="/admin/dashboard" element={

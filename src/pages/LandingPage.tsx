@@ -6,15 +6,67 @@ import { GlowCard } from "@/components/ui/spotlight-card";
 import { AuroraBackground } from "@/components/ui/aurora-background";
 import { Check, Play, Users, Award, BookOpen, Headphones } from "lucide-react";
 import { Glow } from "@/components/ui/glow";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 const LandingPage = () => {
   const [formData, setFormData] = useState({
     name: "",
     email: ""
   });
-  const handleSubmit = (e: React.FormEvent) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const { toast } = useToast();
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Handle form submission here
-    console.log("Form submitted:", formData);
+    if (!formData.name.trim() || !formData.email.trim()) {
+      toast({
+        title: "Campi obbligatori",
+        description: "Inserisci nome e email per continuare",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      const { data, error } = await supabase
+        .from('mailing_list')
+        .insert([{
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          source: 'landing_page'
+        }])
+        .select()
+        .single();
+
+      if (error) {
+        if (error.code === '23505') {
+          toast({
+            title: "Email già registrata",
+            description: "Questa email è già registrata. Controlla la tua casella per il link al video.",
+            variant: "destructive"
+          });
+        } else {
+          throw error;
+        }
+        return;
+      }
+
+      // Redirect to welcome page with token
+      if (data?.access_token) {
+        window.location.href = `/welcome?token=${data.access_token}`;
+      }
+
+    } catch (error) {
+      console.error('Errore durante la registrazione:', error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore. Riprova tra qualche minuto.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
   return <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
       <Glow variant="top" className="opacity-30" />
@@ -66,15 +118,16 @@ const LandingPage = () => {
             </div>
 
             <div className="relative space-y-6">
-              {/* Video Placeholder */}
-              <div className="w-full aspect-video bg-card/30 backdrop-blur-sm border-white/10 border rounded-lg flex items-center justify-center">
-                <div className="text-center space-y-4">
-                  <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mx-auto">
-                    <Play className="w-10 h-10 text-white" />
-                  </div>
-                  <p className="text-white font-medium">Video Tutorial Gratuito</p>
-                  <p className="text-muted-foreground text-sm">Il video apparirà qui</p>
-                </div>
+              {/* Video Anteprima */}
+              <div className="w-full aspect-video bg-card/30 backdrop-blur-sm border-white/10 border rounded-lg overflow-hidden">
+                <video 
+                  controls 
+                  poster="/video-thumbnail.jpg"
+                  className="w-full h-full object-cover"
+                >
+                  <source src="/video-anteprima.mp4" type="video/mp4" />
+                  Il tuo browser non supporta il tag video.
+                </video>
               </div>
               
               <Card className="bg-card/50 backdrop-blur-sm border-white/10 p-8">
@@ -93,8 +146,12 @@ const LandingPage = () => {
                     ...formData,
                     email: e.target.value
                   })} className="bg-background/50 border-white/20" />
-                    <Button type="submit" className="w-full bg-white hover:bg-gray-200 text-black font-medium">
-                      RICEVI IL VIDEO GRATUITO
+                    <Button 
+                      type="submit" 
+                      disabled={isSubmitting}
+                      className="w-full bg-white hover:bg-gray-200 text-black font-medium"
+                    >
+                      {isSubmitting ? "INVIO IN CORSO..." : "RICEVI IL VIDEO GRATUITO"}
                     </Button>
                   </form>
                 </div>
