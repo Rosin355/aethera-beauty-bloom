@@ -16,6 +16,7 @@ import Dashboard from "./pages/Dashboard";
 import PersonalizedDashboard from "./pages/PersonalizedDashboard";
 import ManagementTools from "./pages/ManagementTools";
 import Community from "./pages/Community";
+import Training from "./pages/Training";
 import Onboarding from "./pages/Onboarding";
 import AdminDashboard from "./pages/Admin/Dashboard";
 import ClientDetail from "./pages/Admin/ClientDetail";
@@ -61,6 +62,11 @@ const App = () => (
               <Community />
             </ProtectedRoute>
           } />
+          <Route path="/dashboard/training" element={
+            <ProtectedRoute>
+              <Training />
+            </ProtectedRoute>
+          } />
           <Route path="/onboarding" element={
             <ProtectedRoute>
               <Onboarding />
@@ -87,7 +93,7 @@ const App = () => (
               <CollaboratorManagement />
             </ProtectedRoute>
           } />
-          <Route path="/admin/video" element={
+          <Route path="/admin/video-management" element={
             <ProtectedRoute requireAdmin>
               <VideoManagementPage />
             </ProtectedRoute>
