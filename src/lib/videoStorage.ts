@@ -50,7 +50,7 @@ export const uploadVideo = async (
     // Use TUS for chunked resumable upload
     return new Promise((resolve, reject) => {
       const upload = new tus.Upload(file, {
-        endpoint: `${window.location.origin}/functions/v1/video-upload`,
+        endpoint: `https://jybewogjncaoscrnlqum.functions.supabase.co/video-upload`,
         retryDelays: [0, 3000, 5000, 10000, 20000],
         chunkSize: 5 * 1024 * 1024, // 5MB chunks
         metadata: {
@@ -81,7 +81,7 @@ export const uploadVideo = async (
           try {
             // Finalize the upload
             const finalizeResponse = await fetch(
-              `${window.location.origin}/functions/v1/video-upload?finalize=true&id=${upload.url?.split('/').pop()}&filename=${fileName}`,
+              `https://jybewogjncaoscrnlqum.functions.supabase.co/video-upload?finalize=true&id=${upload.url?.split('/').pop()}&filename=${fileName}`,
               {
                 method: 'PUT',
                 headers: {
