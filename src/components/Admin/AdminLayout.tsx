@@ -33,7 +33,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
     { name: "Dashboard", path: "/admin/dashboard", icon: ChartPie },
     { name: "Clienti", path: "/admin/clients", icon: Users },
     { name: "Contenuti", path: "/admin/content", icon: BookOpen },
-    { name: "Video", path: "/admin/video", icon: Video },
+    { name: "Video", path: "/admin/video-management", icon: Video },
     { name: "Dati AI", path: "/admin/ai-data", icon: Database },
     { name: "Monitoraggio", path: "/admin/monitoring", icon: File },
     { name: "Impostazioni", path: "/admin/settings", icon: Settings },
