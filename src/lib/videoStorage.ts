@@ -27,10 +27,12 @@ export const uploadVideo = async (
   onProgress?: (progress: number) => void
 ): Promise<string | null> => {
   try {
-    // Validate file size (400MB limit)
-    const maxSize = 400 * 1024 * 1024; // 400MB
+    // Validate file size (100MB limit to avoid server issues)
+    const maxSize = 100 * 1024 * 1024; // 100MB
+    const fileSizeMB = Math.round(file.size / (1024 * 1024));
+    
     if (file.size > maxSize) {
-      throw new Error('Il file supera la dimensione massima di 400MB');
+      throw new Error(`Il file è troppo grande (${fileSizeMB}MB). La dimensione massima consentita è 100MB. Comprimi il video prima di caricarlo.`);
     }
 
     // Validate file type
