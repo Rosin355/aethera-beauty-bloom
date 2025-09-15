@@ -40,13 +40,15 @@ const VideoManagement = () => {
     setUploading(true);
     setUploadProgress(prev => ({ ...prev, [progressKey]: 0 }));
     
+    // Interval declared outside to ensure cleanup
+    let progressInterval: number | undefined;
     try {
       // Enhanced progress simulation with time estimates
       const startTime = Date.now();
       const fileSize = file.size;
       const estimatedUploadTimeMs = Math.max(fileSize / (2 * 1024 * 1024), 3000); // Rough estimate: 2MB/s min 3s
       
-      const progressInterval = setInterval(() => {
+      progressInterval = window.setInterval(() => {
         const elapsed = Date.now() - startTime;
         const progressPercentage = Math.min((elapsed / estimatedUploadTimeMs) * 85, 85);
         
@@ -56,12 +58,8 @@ const VideoManagement = () => {
         }));
       }, 200);
 
-      // Call upload with progress callback
-      const url = await uploadVideo(file, fileName, (progress) => {
-        setUploadProgress(prev => ({ ...prev, [progressKey]: Math.min(progress, 95) }));
-      });
-      
-      clearInterval(progressInterval);
+      // Call upload (finalization depends on server)
+      const url = await uploadVideo(file, fileName);
       
       setUploadProgress(prev => ({ ...prev, [progressKey]: 100 }));
       toast({
@@ -85,6 +83,9 @@ const VideoManagement = () => {
         variant: "destructive",
       });
     } finally {
+      if (progressInterval) {
+        clearInterval(progressInterval);
+      }
       setUploading(false);
     }
   };
@@ -212,11 +213,12 @@ const VideoManagement = () => {
                   {progress < 20 && "Preparazione upload..."}
                   {progress >= 20 && progress < 50 && "Invio dati..."}
                   {progress >= 50 && progress < 85 && "Upload in corso..."}
-                  {progress >= 85 && progress < 100 && "Finalizzazione..."}
+                  {progress >= 85 && progress < 100 && "Finalizzazione (potrebbe richiedere alcuni minuti)..."}
                   {progress === 100 && "Completato!"}
                 </span>
                 <span>
-                  {progress < 100 && "Tempo stimato: " + Math.max(1, Math.round((100 - progress) / 10)) + "s"}
+                  {progress < 85 && "Tempo stimato: " + Math.max(1, Math.round((100 - progress) / 8)) + "s"}
+                  {progress >= 85 && progress < 100 && "In attesa del server..."}
                   {progress === 100 && "✓ Fatto"}
                 </span>
               </div>
