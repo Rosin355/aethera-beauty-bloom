@@ -6,6 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useToast } from "@/components/ui/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { toast } from "sonner";
 
 interface AuthFormProps {
   type: "login" | "signup";
@@ -15,40 +17,51 @@ const AuthForm = ({ type }: AuthFormProps) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const [loading, setLoading] = useState(false);
-  const { toast } = useToast();
+  const { signUp, signIn, loading } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
-    // Simulate authentication process
-    setTimeout(() => {
-      setLoading(false);
+    try {
       if (type === "login") {
-        toast({
-          title: "Bentornato!",
-          description: "Hai effettuato l'accesso con successo.",
-        });
+        const { error } = await signIn(email, password);
+        if (error) {
+          if (error.message.includes("Invalid login credentials")) {
+            toast.error("Email o password non corretti");
+          } else {
+            toast.error("Errore durante l'accesso: " + error.message);
+          }
+          return;
+        }
+        toast.success("Bentornato!");
         navigate("/dashboard");
       } else {
-        toast({
-          title: "Account creato!",
-          description: "Il tuo account è stato creato con successo.",
-        });
-        navigate("/onboarding");
+        const { error } = await signUp(email, password, name);
+        if (error) {
+          if (error.message.includes("User already registered")) {
+            toast.error("Questo indirizzo email è già registrato");
+          } else {
+            toast.error("Errore durante la registrazione: " + error.message);
+          }
+          return;
+        }
+        toast.success("Account creato! Controlla la tua email per confermare l'account.");
+        navigate("/dashboard");
       }
-    }, 1500);
+    } catch (error) {
+      toast.error("Si è verificato un errore imprevisto");
+      console.error("Auth error:", error);
+    }
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
+    <div className="glass-strong rounded-lg p-8 w-full max-w-md">
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold font-playfair">
           {type === "login" ? "Bentornato" : "Crea Account"}
         </h1>
-        <p className="text-gray-600 mt-2">
+        <p className="text-muted-foreground mt-2">
           {type === "login"
             ? "Inserisci le tue credenziali per accedere al tuo account"
             : "Inserisci i tuoi dati per creare un account"}
@@ -66,7 +79,7 @@ const AuthForm = ({ type }: AuthFormProps) => {
               onChange={(e) => setName(e.target.value)}
               placeholder="Inserisci il tuo nome completo"
               required
-              className="border-gray-300"
+              className=""
             />
           </div>
         )}
@@ -80,7 +93,7 @@ const AuthForm = ({ type }: AuthFormProps) => {
             onChange={(e) => setEmail(e.target.value)}
             placeholder="Inserisci la tua email"
             required
-            className="border-gray-300"
+            className=""
           />
         </div>
 
@@ -90,7 +103,7 @@ const AuthForm = ({ type }: AuthFormProps) => {
             {type === "login" && (
               <Link
                 to="/forgot-password"
-                className="text-sm text-brand-fire hover:underline"
+                className="text-sm text-accent hover:underline"
               >
                 Password dimenticata?
               </Link>
@@ -105,7 +118,7 @@ const AuthForm = ({ type }: AuthFormProps) => {
               type === "login" ? "Inserisci la tua password" : "Crea una password"
             }
             required
-            className="border-gray-300"
+            className=""
           />
         </div>
 
@@ -117,11 +130,11 @@ const AuthForm = ({ type }: AuthFormProps) => {
               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
               Accetto i{" "}
-              <Link to="/terms" className="text-brand-fire hover:underline">
+              <Link to="/terms" className="text-accent hover:underline">
                 Termini di Servizio
               </Link>{" "}
               e la{" "}
-              <Link to="/privacy" className="text-brand-fire hover:underline">
+              <Link to="/privacy" className="text-accent hover:underline">
                 Privacy Policy
               </Link>
             </label>
@@ -130,7 +143,7 @@ const AuthForm = ({ type }: AuthFormProps) => {
 
         <Button
           type="submit"
-          className="w-full bg-brand-fire hover:bg-brand-fire/90 text-white mt-6"
+          className="w-full bg-accent hover:bg-accent/90 text-accent-foreground mt-6"
           disabled={loading}
         >
           {loading ? (
@@ -166,21 +179,21 @@ const AuthForm = ({ type }: AuthFormProps) => {
       </form>
 
       <div className="mt-8 text-center">
-        <p className="text-gray-600">
+        <p className="text-muted-foreground">
           {type === "login" ? "Non hai un account?" : "Hai già un account?"}
           <Link
             to={type === "login" ? "/signup" : "/login"}
-            className="ml-1 text-brand-fire hover:underline font-medium"
+            className="ml-1 text-accent hover:underline font-medium"
           >
             {type === "login" ? "Registrati" : "Accedi"}
           </Link>
         </p>
       </div>
 
-      <div className="mt-8 pt-6 border-t border-gray-200">
+      <div className="mt-8 pt-6 border-t border-border">
         <Button
           variant="outline"
-          className="w-full border-gray-300 hover:bg-gray-50 mb-3"
+          className="w-full mb-3"
           type="button"
         >
           <svg
@@ -196,7 +209,7 @@ const AuthForm = ({ type }: AuthFormProps) => {
 
         <Button
           variant="outline"
-          className="w-full border-gray-300 hover:bg-gray-50"
+          className="w-full"
           type="button"
         >
           <svg

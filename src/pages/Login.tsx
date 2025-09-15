@@ -4,7 +4,7 @@ import Logo from "@/components/Layout/Logo";
 
 const Login = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-brand-cream to-white flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       <div className="p-4">
         <Logo />
       </div>

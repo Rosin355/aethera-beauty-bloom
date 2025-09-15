@@ -80,7 +80,7 @@ const Onboarding = () => {
   const progress = ((currentStep + 1) / steps.length) * 100;
   
   return (
-    <div className="min-h-screen bg-gradient-to-b from-brand-cream to-white flex flex-col">
+    <div className="min-h-screen bg-background flex flex-col">
       <div className="p-4">
         <Logo />
       </div>
@@ -101,9 +101,9 @@ const Onboarding = () => {
           </CardHeader>
           
           {/* Progress bar */}
-          <div className="w-full bg-gray-200 h-1">
+          <div className="w-full bg-muted h-1">
             <div 
-              className="bg-brand-fire h-1 transition-all duration-300 ease-in-out" 
+              className="bg-accent h-1 transition-all duration-300 ease-in-out" 
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -135,7 +135,7 @@ const Onboarding = () => {
             </div>
             <Button 
               onClick={handleNext}
-              className={`bg-brand-fire hover:bg-brand-fire/90 ${currentStep === 0 && !isStepValid ? 'opacity-70' : ''}`}
+              className={`bg-accent hover:bg-accent/90 ${currentStep === 0 && !isStepValid ? 'opacity-70' : ''}`}
               disabled={currentStep === 0 && !isStepValid}
             >
               {currentStep === steps.length - 1 ? "Completa" : "Continua"}

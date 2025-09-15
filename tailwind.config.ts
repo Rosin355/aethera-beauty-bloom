@@ -1,6 +1,10 @@
 
 import type { Config } from "tailwindcss";
 
+const {
+  default: flattenColorPalette,
+} = require("tailwindcss/lib/util/flattenColorPalette");
+
 export default {
 	darkMode: ["class"],
 	content: [
@@ -74,6 +78,11 @@ export default {
 				'brand-fire': '#E46A39',
 				'brand-air': '#CBD8D4',
 				'brand-earth': '#C2977E',
+				brand: "hsl(var(--brand))",
+				"brand-foreground": "hsl(var(--brand-foreground))",
+			},
+			maxWidth: {
+				'container': '1200px',
 			},
 			borderRadius: {
 				lg: 'var(--radius)',
@@ -104,15 +113,46 @@ export default {
 				slideUp: {
 					'0%': { transform: 'translateY(20px)', opacity: '0' },
 					'100%': { transform: 'translateY(0)', opacity: '1' }
-				}
+				},
+				appear: {
+					"0%": { opacity: "0", transform: "translateY(10px)" },
+					"100%": { opacity: "1", transform: "translateY(0)" }
+				},
+				"appear-zoom": {
+					"0%": { opacity: "0", transform: "scale(0.95)" },
+					"100%": { opacity: "1", transform: "scale(1)" }
+				},
+				aurora: {
+					from: {
+						backgroundPosition: "50% 50%, 50% 50%",
+					},
+					to: {
+						backgroundPosition: "350% 50%, 350% 50%",
+					},
+				},
 			},
 			animation: {
 				'accordion-down': 'accordion-down 0.2s ease-out',
 				'accordion-up': 'accordion-up 0.2s ease-out',
 				'fade-in': 'fadeIn 0.5s ease-out forwards',
-				'slide-up': 'slideUp 0.5s ease-out forwards'
+				'slide-up': 'slideUp 0.5s ease-out forwards',
+				appear: "appear 0.5s ease-out forwards",
+				"appear-zoom": "appear-zoom 0.5s ease-out forwards",
+				aurora: "aurora 60s linear infinite",
 			}
 		}
 	},
-	plugins: [require("tailwindcss-animate")],
+	plugins: [require("tailwindcss-animate"), addVariablesForColors],
 } satisfies Config;
+
+// This plugin adds each Tailwind color as a global CSS variable, e.g. var(--gray-200).
+function addVariablesForColors({ addBase, theme }: any) {
+  let allColors = flattenColorPalette(theme("colors"));
+  let newVars = Object.fromEntries(
+    Object.entries(allColors).map(([key, val]) => [`--${key}`, val])
+  );
+
+  addBase({
+    ":root": newVars,
+  });
+}
