@@ -269,7 +269,8 @@ const VideoManagement = () => {
         <CardContent className="text-sm text-muted-foreground space-y-2">
           <p>• I video vengono serviti tramite Supabase Storage per migliori performance</p>
           <p>• Formato consigliato: MP4 con codec H.264</p>
-          <p>• Dimensione massima consentita: 100MB per video</p>
+          <p>• Dimensione massima consentita: 400MB per video (upload chunked)</p>
+          <p>• Upload resumable: puoi interrompere e riprendere il caricamento</p>
           <p>• I video sono pubblicamente accessibili una volta caricati</p>
         </CardContent>
       </Card>
