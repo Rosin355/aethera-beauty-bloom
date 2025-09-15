@@ -20,7 +20,7 @@ const Welcome = () => {
     name: ""
   });
   const [isSubmittingNewsletter, setIsSubmittingNewsletter] = useState(false);
-  const [useIframeFull, setUseIframeFull] = useState(false);
+  const [useIframeFull, setUseIframeFull] = useState(true);
 
   const token = searchParams.get('token');
 

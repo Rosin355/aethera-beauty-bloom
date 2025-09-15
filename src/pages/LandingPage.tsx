@@ -15,7 +15,7 @@ const LandingPage = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
-  const [useIframePreview, setUseIframePreview] = useState(false);
+  const [useIframePreview, setUseIframePreview] = useState(true);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
