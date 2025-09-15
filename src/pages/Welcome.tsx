@@ -20,6 +20,7 @@ const Welcome = () => {
     name: ""
   });
   const [isSubmittingNewsletter, setIsSubmittingNewsletter] = useState(false);
+  const [useIframeFull, setUseIframeFull] = useState(false);
 
   const token = searchParams.get('token');
 
@@ -174,19 +175,30 @@ const Welcome = () => {
           <div className="mb-12">
             <Card className="bg-card/30 backdrop-blur-sm border-white/10 p-4">
               <div className="aspect-video rounded-lg overflow-hidden">
-                <video 
-                  controls 
-                  preload="metadata"
-                  className="w-full h-full"
-                  style={{ backgroundColor: '#000' }}
-                  onLoadStart={() => console.log('Video Completo: Load started')}
-                  onCanPlay={() => console.log('Video Completo: Can play')}
-                  onError={(e) => console.error('Video Completo error:', e)}
-                  onLoadedMetadata={() => console.log('Video Completo: Metadata loaded')}
-                >
-                  <source src="/video-completo.mp4" type="video/mp4" />
-                  Il tuo browser non supporta il tag video.
-                </video>
+                {useIframeFull ? (
+                  <iframe
+                    src="https://drive.google.com/file/d/1d2LJ8HRZ6sC-Pnp-CUDZJhhXLgr4gtHR/preview"
+                    className="w-full h-full"
+                    allow="autoplay; encrypted-media"
+                    allowFullScreen
+                    title="Video completo"
+                    style={{ backgroundColor: '#000' }}
+                  />
+                ) : (
+                  <video 
+                    controls 
+                    preload="metadata"
+                    className="w-full h-full"
+                    style={{ backgroundColor: '#000' }}
+                    onLoadStart={() => console.log('Video Completo: Load started')}
+                    onCanPlay={() => console.log('Video Completo: Can play')}
+                    onError={(e) => { console.error('Video Completo error:', e); setUseIframeFull(true); }}
+                    onLoadedMetadata={() => console.log('Video Completo: Metadata loaded')}
+                  >
+                    <source src="/video-completo.mp4" type="video/mp4" />
+                    Il tuo browser non supporta il tag video.
+                  </video>
+                )}
               </div>
             </Card>
           </div>

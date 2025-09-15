@@ -15,6 +15,7 @@ const LandingPage = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const [useIframePreview, setUseIframePreview] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -120,19 +121,30 @@ const LandingPage = () => {
             <div className="relative space-y-6">
               {/* Video Anteprima */}
               <div className="w-full aspect-video bg-card/30 backdrop-blur-sm border-white/10 border rounded-lg overflow-hidden">
-                <video 
-                  controls 
-                  preload="metadata"
-                  className="w-full h-full"
-                  style={{ backgroundColor: '#000' }}
-                  onLoadStart={() => console.log('Video: Load started')}
-                  onCanPlay={() => console.log('Video: Can play')}
-                  onError={(e) => console.error('Video error:', e)}
-                  onLoadedMetadata={() => console.log('Video: Metadata loaded')}
-                >
-                  <source src="/video-anteprima.mp4" type="video/mp4" />
-                  Il tuo browser non supporta il tag video.
-                </video>
+                {useIframePreview ? (
+                  <iframe
+                    src="https://drive.google.com/file/d/1uUjhPnxnqhI7YuYlgUBECX0D4Umzd-X_/preview"
+                    className="w-full h-full"
+                    allow="autoplay; encrypted-media"
+                    allowFullScreen
+                    title="Video anteprima"
+                    style={{ backgroundColor: '#000' }}
+                  />
+                ) : (
+                  <video 
+                    controls 
+                    preload="metadata"
+                    className="w-full h-full"
+                    style={{ backgroundColor: '#000' }}
+                    onLoadStart={() => console.log('Video: Load started')}
+                    onCanPlay={() => console.log('Video: Can play')}
+                    onError={(e) => { console.error('Video error:', e); setUseIframePreview(true); }}
+                    onLoadedMetadata={() => console.log('Video: Metadata loaded')}
+                  >
+                    <source src="/video-anteprima.mp4" type="video/mp4" />
+                    Il tuo browser non supporta il tag video.
+                  </video>
+                )}
               </div>
               
               <Card className="bg-card/50 backdrop-blur-sm border-white/10 p-8">
