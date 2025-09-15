@@ -5,10 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Play, Clock, CheckCircle, Lock } from "lucide-react";
 import { checkVideoExists, getVideoUrl } from "@/lib/videoStorage";
+import { Helmet } from "react-helmet";
+import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 const Training = () => {
   const [previewVideoExists, setPreviewVideoExists] = useState(false);
   const [fullVideoExists, setFullVideoExists] = useState(false);
+  const { isAdmin } = useAuth();
 
   useEffect(() => {
     checkVideos();
@@ -53,6 +57,11 @@ const Training = () => {
 
   return (
     <DashboardLayout>
+      <Helmet>
+        <title>Formazione video | 4 elementi Italia</title>
+        <meta name="description" content="Formazione video per estetiste: anteprima e corso completo sui 4 elementi." />
+        <link rel="canonical" href="/dashboard/training" />
+      </Helmet>
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
@@ -63,6 +72,11 @@ const Training = () => {
               Accedi ai corsi video sui 4 elementi per migliorare le tue competenze professionali
             </p>
           </div>
+          {isAdmin && (
+            <Link to="/admin/video-management">
+              <Button variant="outline">Gestisci Video</Button>
+            </Link>
+          )}
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
