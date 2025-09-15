@@ -51,7 +51,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
     <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
       <aside
-        className={`bg-brand-earth dark:bg-gray-900 text-white w-64 transition-all duration-300 ease-in-out fixed inset-y-0 left-0 z-30 md:relative ${
+        className={`bg-gray-900 text-white w-64 transition-all duration-300 ease-in-out fixed inset-y-0 left-0 z-30 md:relative ${
           isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0 md:w-20"
         }`}
       >
@@ -103,7 +103,11 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
                   <span className="text-white font-bold">AM</span>
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm font-medium text-white">Admin</p>
+                  <div className="flex items-center gap-2">
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-brand-fire text-white">
+                      Admin
+                    </span>
+                  </div>
                   <p className="text-xs text-gray-400">Amministratore</p>
                 </div>
               </div>
@@ -165,10 +169,12 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
             </Button>
             <div className="hidden md:block h-8 w-px bg-gray-200 dark:bg-gray-700"></div>
             <div className="hidden md:flex items-center space-x-2">
-              <div className="w-8 h-8 rounded-full bg-brand-earth flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-gray-700 flex items-center justify-center">
                 <span className="text-white font-bold text-sm">AM</span>
               </div>
-              <span className="text-sm font-medium dark:text-gray-200">Admin</span>
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-brand-fire text-white">
+                Admin
+              </span>
             </div>
           </div>
         </header>

@@ -3,8 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, Video, Trash2, Eye } from "lucide-react";
+import { Upload, Video, Trash2, Eye, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { uploadVideo, deleteVideo, getVideoUrl, checkVideoExists } from "@/lib/videoStorage";
 
 const VideoManagement = () => {
@@ -12,6 +13,8 @@ const VideoManagement = () => {
   const [uploadingFull, setUploadingFull] = useState(false);
   const [previewExists, setPreviewExists] = useState(false);
   const [fullExists, setFullExists] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState({ preview: 0, full: 0 });
+  const [uploadError, setUploadError] = useState({ preview: '', full: '' });
   const { toast } = useToast();
 
   useEffect(() => {
@@ -28,23 +31,75 @@ const VideoManagement = () => {
   const handleVideoUpload = async (file: File, isPreview: boolean) => {
     const fileName = isPreview ? 'video-anteprima.mp4' : 'video-completo.mp4';
     const setUploading = isPreview ? setUploadingPreview : setUploadingFull;
+    const progressKey = isPreview ? 'preview' : 'full';
+    const errorKey = isPreview ? 'preview' : 'full';
+    
+    // Reset error state
+    setUploadError(prev => ({ ...prev, [errorKey]: '' }));
+    
+    // Validate file
+    if (!file.type.startsWith('video/')) {
+      const errorMsg = 'Per favore seleziona un file video valido (MP4, MOV, AVI, etc.)';
+      setUploadError(prev => ({ ...prev, [errorKey]: errorMsg }));
+      toast({
+        title: "Errore formato file",
+        description: errorMsg,
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Check file size (100MB limit)
+    const maxSize = 100 * 1024 * 1024; // 100MB
+    if (file.size > maxSize) {
+      const errorMsg = 'Il file è troppo grande. Dimensione massima: 100MB';
+      setUploadError(prev => ({ ...prev, [errorKey]: errorMsg }));
+      toast({
+        title: "File troppo grande",
+        description: errorMsg,
+        variant: "destructive",
+      });
+      return;
+    }
     
     setUploading(true);
+    setUploadProgress(prev => ({ ...prev, [progressKey]: 0 }));
+    
     try {
+      // Simulate progress for better UX
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => ({
+          ...prev,
+          [progressKey]: Math.min(prev[progressKey] + Math.random() * 15, 85)
+        }));
+      }, 500);
+      
       const url = await uploadVideo(file, fileName);
+      
+      clearInterval(progressInterval);
+      
       if (url) {
+        setUploadProgress(prev => ({ ...prev, [progressKey]: 100 }));
         toast({
           title: "Successo",
           description: `Video ${isPreview ? 'anteprima' : 'completo'} caricato con successo!`,
         });
         checkVideos();
+        
+        // Reset progress after success
+        setTimeout(() => {
+          setUploadProgress(prev => ({ ...prev, [progressKey]: 0 }));
+        }, 2000);
       } else {
-        throw new Error('Upload fallito');
+        throw new Error('Upload fallito - risposta server non valida');
       }
-    } catch (error) {
+    } catch (error: any) {
+      setUploadProgress(prev => ({ ...prev, [progressKey]: 0 }));
+      const errorMsg = error?.message || 'Errore sconosciuto durante il caricamento';
+      setUploadError(prev => ({ ...prev, [errorKey]: errorMsg }));
       toast({
-        title: "Errore",
-        description: `Errore durante il caricamento del video: ${error}`,
+        title: "Errore caricamento",
+        description: `Errore durante il caricamento del video: ${errorMsg}`,
         variant: "destructive",
       });
     } finally {
@@ -80,6 +135,8 @@ const VideoManagement = () => {
     fileName, 
     exists, 
     isUploading, 
+    progress,
+    error,
     onUpload, 
     onDelete 
   }: {
@@ -87,6 +144,8 @@ const VideoManagement = () => {
     fileName: string;
     exists: boolean;
     isUploading: boolean;
+    progress: number;
+    error: string;
     onUpload: (file: File) => void;
     onDelete: () => void;
   }) => (
@@ -100,7 +159,14 @@ const VideoManagement = () => {
       <CardContent className="space-y-4">
         <div className="flex items-center gap-2 text-sm">
           <div className={`w-2 h-2 rounded-full ${exists ? 'bg-green-500' : 'bg-red-500'}`} />
-          {exists ? 'Video presente' : 'Video mancante'}
+          {exists ? (
+            <span className="flex items-center gap-1 text-green-600">
+              <CheckCircle2 className="w-3 h-3" />
+              Video presente
+            </span>
+          ) : (
+            'Video mancante'
+          )}
         </div>
         
         {exists && (
@@ -141,10 +207,27 @@ const VideoManagement = () => {
             }}
             disabled={isUploading}
           />
+          
+          {error && (
+            <div className="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded-md text-sm text-red-600">
+              <AlertTriangle className="w-4 h-4" />
+              {error}
+            </div>
+          )}
+          
           {isUploading && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Upload className="w-4 h-4 animate-spin" />
-              Caricamento in corso...
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Upload className="w-4 h-4 animate-spin" />
+                Caricamento in corso... {progress > 0 && `${Math.round(progress)}%`}
+              </div>
+              <Progress value={progress} className="w-full" />
+              <div className="text-xs text-muted-foreground">
+                {progress < 50 && "Preparazione upload..."}
+                {progress >= 50 && progress < 85 && "Upload in corso..."}
+                {progress >= 85 && progress < 100 && "Finalizzazione..."}
+                {progress === 100 && "Completato!"}
+              </div>
             </div>
           )}
         </div>
@@ -167,6 +250,8 @@ const VideoManagement = () => {
           fileName="video-anteprima.mp4"
           exists={previewExists}
           isUploading={uploadingPreview}
+          progress={uploadProgress.preview}
+          error={uploadError.preview}
           onUpload={(file) => handleVideoUpload(file, true)}
           onDelete={() => handleVideoDelete(true)}
         />
@@ -176,6 +261,8 @@ const VideoManagement = () => {
           fileName="video-completo.mp4"
           exists={fullExists}
           isUploading={uploadingFull}
+          progress={uploadProgress.full}
+          error={uploadError.full}
           onUpload={(file) => handleVideoUpload(file, false)}
           onDelete={() => handleVideoDelete(false)}
         />
