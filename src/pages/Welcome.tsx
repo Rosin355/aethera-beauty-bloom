@@ -1,12 +1,13 @@
-import { useState, useEffect } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from 'react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
 import { Glow } from "@/components/ui/glow";
 import { Check, ArrowLeft, Users } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { getVideoUrl, checkVideoExists } from '@/lib/videoStorage';
 
 const Welcome = () => {
   const [searchParams] = useSearchParams();
@@ -21,6 +22,7 @@ const Welcome = () => {
   });
   const [isSubmittingNewsletter, setIsSubmittingNewsletter] = useState(false);
   const [useIframeFull, setUseIframeFull] = useState(true);
+  const [fullVideoUrl, setFullVideoUrl] = useState<string>('');
 
   const token = searchParams.get('token');
 
@@ -59,6 +61,13 @@ const Welcome = () => {
           email: data.email, 
           name: data.name 
         });
+        
+        // Initialize video URL
+        const exists = await checkVideoExists('video-completo.mp4');
+        if (exists) {
+          setFullVideoUrl(getVideoUrl('video-completo.mp4'));
+          setUseIframeFull(false);
+        }
       } catch (error) {
         console.error('Errore validazione token:', error);
         navigate('/landing');
@@ -175,16 +184,7 @@ const Welcome = () => {
           <div className="mb-12">
             <Card className="bg-card/30 backdrop-blur-sm border-white/10 p-4">
               <div className="aspect-video rounded-lg overflow-hidden">
-                {useIframeFull ? (
-                  <iframe
-                    src="https://drive.google.com/file/d/1d2LJ8HRZ6sC-Pnp-CUDZJhhXLgr4gtHR/preview"
-                    className="w-full h-full"
-                    allow="autoplay; encrypted-media"
-                    allowFullScreen
-                    title="Video completo"
-                    style={{ backgroundColor: '#000' }}
-                  />
-                ) : (
+                {fullVideoUrl && !useIframeFull ? (
                   <video 
                     controls 
                     preload="metadata"
@@ -195,9 +195,18 @@ const Welcome = () => {
                     onError={(e) => { console.error('Video Completo error:', e); setUseIframeFull(true); }}
                     onLoadedMetadata={() => console.log('Video Completo: Metadata loaded')}
                   >
-                    <source src="/video-completo.mp4" type="video/mp4" />
+                    <source src={fullVideoUrl} type="video/mp4" />
                     Il tuo browser non supporta il tag video.
                   </video>
+                ) : (
+                  <iframe
+                    src="https://drive.google.com/file/d/1d2LJ8HRZ6sC-Pnp-CUDZJhhXLgr4gtHR/preview"
+                    className="w-full h-full"
+                    allow="autoplay; encrypted-media"
+                    allowFullScreen
+                    title="Video completo"
+                    style={{ backgroundColor: '#000' }}
+                  />
                 )}
               </div>
             </Card>

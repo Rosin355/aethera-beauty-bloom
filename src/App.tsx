@@ -20,6 +20,7 @@ import Onboarding from "./pages/Onboarding";
 import AdminDashboard from "./pages/Admin/Dashboard";
 import ClientDetail from "./pages/Admin/ClientDetail";
 import CollaboratorManagement from "./pages/Admin/CollaboratorManagement";
+import VideoManagementPage from "./pages/Admin/VideoManagement";
 import LandingPage from "./pages/LandingPage";
 import Welcome from "./pages/Welcome";
 
@@ -84,6 +85,11 @@ const App = () => (
           <Route path="/admin/collaboratori" element={
             <ProtectedRoute requireAdmin>
               <CollaboratorManagement />
+            </ProtectedRoute>
+          } />
+          <Route path="/admin/video" element={
+            <ProtectedRoute requireAdmin>
+              <VideoManagementPage />
             </ProtectedRoute>
           } />
           
