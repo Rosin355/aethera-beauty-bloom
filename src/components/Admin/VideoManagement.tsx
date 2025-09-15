@@ -49,10 +49,10 @@ const VideoManagement = () => {
       return;
     }
     
-    // Check file size (100MB limit)
-    const maxSize = 100 * 1024 * 1024; // 100MB
+    // Check file size (400MB limit)
+    const maxSize = 400 * 1024 * 1024; // 400MB
     if (file.size > maxSize) {
-      const errorMsg = 'Il file è troppo grande. Dimensione massima: 100MB';
+      const errorMsg = 'Il file è troppo grande. Dimensione massima: 400MB';
       setUploadError(prev => ({ ...prev, [errorKey]: errorMsg }));
       toast({
         title: "File troppo grande",
@@ -275,7 +275,7 @@ const VideoManagement = () => {
         <CardContent className="text-sm text-muted-foreground space-y-2">
           <p>• I video vengono serviti tramite Supabase Storage per migliori performance</p>
           <p>• Formato consigliato: MP4 con codec H.264</p>
-          <p>• Dimensione massima consigliata: 100MB per video</p>
+          <p>• Dimensione massima consigliata: 400MB per video</p>
           <p>• I video sono pubblicamente accessibili una volta caricati</p>
         </CardContent>
       </Card>
