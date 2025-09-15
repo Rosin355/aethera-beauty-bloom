@@ -37,69 +37,51 @@ const VideoManagement = () => {
     // Reset error state
     setUploadError(prev => ({ ...prev, [errorKey]: '' }));
     
-    // Validate file
-    if (!file.type.startsWith('video/')) {
-      const errorMsg = 'Per favore seleziona un file video valido (MP4, MOV, AVI, etc.)';
-      setUploadError(prev => ({ ...prev, [errorKey]: errorMsg }));
-      toast({
-        title: "Errore formato file",
-        description: errorMsg,
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    // Check file size (400MB limit)
-    const maxSize = 400 * 1024 * 1024; // 400MB
-    if (file.size > maxSize) {
-      const errorMsg = 'Il file è troppo grande. Dimensione massima: 400MB';
-      setUploadError(prev => ({ ...prev, [errorKey]: errorMsg }));
-      toast({
-        title: "File troppo grande",
-        description: errorMsg,
-        variant: "destructive",
-      });
-      return;
-    }
-    
     setUploading(true);
     setUploadProgress(prev => ({ ...prev, [progressKey]: 0 }));
     
     try {
-      // Simulate progress for better UX
+      // Enhanced progress simulation with time estimates
+      const startTime = Date.now();
+      const fileSize = file.size;
+      const estimatedUploadTimeMs = Math.max(fileSize / (2 * 1024 * 1024), 3000); // Rough estimate: 2MB/s min 3s
+      
       const progressInterval = setInterval(() => {
+        const elapsed = Date.now() - startTime;
+        const progressPercentage = Math.min((elapsed / estimatedUploadTimeMs) * 85, 85);
+        
         setUploadProgress(prev => ({
           ...prev,
-          [progressKey]: Math.min(prev[progressKey] + Math.random() * 15, 85)
+          [progressKey]: progressPercentage
         }));
-      }, 500);
-      
-      const url = await uploadVideo(file, fileName);
+      }, 200);
+
+      // Call upload with progress callback
+      const url = await uploadVideo(file, fileName, (progress) => {
+        setUploadProgress(prev => ({ ...prev, [progressKey]: Math.min(progress, 95) }));
+      });
       
       clearInterval(progressInterval);
       
-      if (url) {
-        setUploadProgress(prev => ({ ...prev, [progressKey]: 100 }));
-        toast({
-          title: "Successo",
-          description: `Video ${isPreview ? 'anteprima' : 'completo'} caricato con successo!`,
-        });
-        checkVideos();
-        
-        // Reset progress after success
-        setTimeout(() => {
-          setUploadProgress(prev => ({ ...prev, [progressKey]: 0 }));
-        }, 2000);
-      } else {
-        throw new Error('Upload fallito - risposta server non valida');
-      }
+      setUploadProgress(prev => ({ ...prev, [progressKey]: 100 }));
+      toast({
+        title: "Successo",
+        description: `Video ${isPreview ? 'anteprima' : 'completo'} caricato con successo!`,
+      });
+      checkVideos();
+      
+      // Reset progress after success
+      setTimeout(() => {
+        setUploadProgress(prev => ({ ...prev, [progressKey]: 0 }));
+      }, 2000);
+      
     } catch (error: any) {
       setUploadProgress(prev => ({ ...prev, [progressKey]: 0 }));
       const errorMsg = error?.message || 'Errore sconosciuto durante il caricamento';
       setUploadError(prev => ({ ...prev, [errorKey]: errorMsg }));
       toast({
         title: "Errore caricamento",
-        description: `Errore durante il caricamento del video: ${errorMsg}`,
+        description: errorMsg,
         variant: "destructive",
       });
     } finally {
@@ -216,17 +198,27 @@ const VideoManagement = () => {
           )}
           
           {isUploading && (
-            <div className="space-y-2">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Upload className="w-4 h-4 animate-spin" />
-                Caricamento in corso... {progress > 0 && `${Math.round(progress)}%`}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Upload className="w-4 h-4 animate-spin" />
+                  Caricamento in corso...
+                </div>
+                <span className="font-medium">{Math.round(progress)}%</span>
               </div>
-              <Progress value={progress} className="w-full" />
-              <div className="text-xs text-muted-foreground">
-                {progress < 50 && "Preparazione upload..."}
-                {progress >= 50 && progress < 85 && "Upload in corso..."}
-                {progress >= 85 && progress < 100 && "Finalizzazione..."}
-                {progress === 100 && "Completato!"}
+              <Progress value={progress} className="w-full h-2" />
+              <div className="flex justify-between text-xs text-muted-foreground">
+                <span>
+                  {progress < 20 && "Preparazione upload..."}
+                  {progress >= 20 && progress < 50 && "Invio dati..."}
+                  {progress >= 50 && progress < 85 && "Upload in corso..."}
+                  {progress >= 85 && progress < 100 && "Finalizzazione..."}
+                  {progress === 100 && "Completato!"}
+                </span>
+                <span>
+                  {progress < 100 && "Tempo stimato: " + Math.max(1, Math.round((100 - progress) / 10)) + "s"}
+                  {progress === 100 && "✓ Fatto"}
+                </span>
               </div>
             </div>
           )}
