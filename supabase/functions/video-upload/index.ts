@@ -4,7 +4,7 @@ const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, tus-resumable, upload-offset, upload-length, upload-metadata',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, DELETE, OPTIONS, HEAD',
-  'Access-Control-Expose-Headers': 'upload-offset, upload-length, tus-resumable, location',
+  'Access-Control-Expose-Headers': 'upload-offset, upload-length, tus-resumable, Location',
 }
 
 Deno.serve(async (req) => {
@@ -48,14 +48,17 @@ Deno.serve(async (req) => {
       }
 
       const uploadId = crypto.randomUUID()
-      const uploadUrl = `${url.origin}${url.pathname}/${uploadId}`
+      // Force HTTPS for the location header to prevent TUS client issues
+      const uploadUrl = `https://jybewogjncaoscrnlqum.functions.supabase.co/video-upload/${uploadId}`
+
+      console.log(`Created upload session: ${uploadId}`)
 
       return new Response(null, {
         status: 201,
         headers: {
           ...corsHeaders,
           'tus-resumable': '1.0.0',
-          'location': uploadUrl,
+          'Location': uploadUrl, // Use uppercase Location header
           'upload-expires': new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24h
         }
       })
@@ -67,14 +70,24 @@ Deno.serve(async (req) => {
       const uploadOffset = parseInt(req.headers.get('upload-offset') || '0')
       const chunk = new Uint8Array(await req.arrayBuffer())
 
+      console.log(`Uploading chunk for ${uploadId}: offset ${uploadOffset}, size ${chunk.length}`)
+
       // Store chunk in temporary storage (using Supabase storage as temp)
       const tempPath = `temp/${uploadId}/${uploadOffset}`
-      await supabase.storage
+      const { error } = await supabase.storage
         .from('videos')
         .upload(tempPath, chunk, {
           cacheControl: '3600',
           upsert: true
         })
+
+      if (error) {
+        console.error(`Error uploading chunk: ${error.message}`)
+        return new Response(JSON.stringify({ error: error.message }), {
+          status: 500,
+          headers: { ...corsHeaders, 'content-type': 'application/json' }
+        })
+      }
 
       const newOffset = uploadOffset + chunk.length
 

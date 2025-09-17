@@ -1,277 +1,436 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
-import { useToast } from "@/hooks/use-toast";
-import { Upload, Video, Trash2, Eye, AlertTriangle, CheckCircle2 } from "lucide-react";
-import { uploadVideo, deleteVideo, getVideoUrl, checkVideoExists } from "@/lib/videoStorage";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Trash2, Upload, Play, Info, Youtube, ExternalLink } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useToast } from '@/hooks/use-toast';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { uploadVideo, deleteVideo, checkVideoExists, getVideoUrl } from '@/lib/videoStorage';
+import { 
+  getSiteVideo, 
+  upsertSiteVideo, 
+  deleteSiteVideo, 
+  extractYouTubeVideoId,
+  getYouTubeEmbedUrl,
+  type SiteVideo 
+} from '@/lib/siteVideos';
 
-const VideoManagement = () => {
-  const [uploadingPreview, setUploadingPreview] = useState(false);
-  const [uploadingFull, setUploadingFull] = useState(false);
-  const [previewExists, setPreviewExists] = useState(false);
-  const [fullExists, setFullExists] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState({ preview: 0, full: 0 });
-  const [uploadError, setUploadError] = useState({ preview: '', full: '' });
-  const { toast } = useToast();
+interface VideoCardProps {
+  title: string;
+  video: SiteVideo | null;
+  isUploading: boolean;
+  progress: number;
+  error?: string;
+  onUpload: (file: File) => void;
+  onYouTubeSubmit: (url: string) => void;
+  onDelete: () => void;
+}
 
-  useEffect(() => {
-    checkVideos();
-  }, []);
+const VideoCard: React.FC<VideoCardProps> = ({
+  title,
+  video,
+  isUploading,
+  progress,
+  error,
+  onUpload,
+  onYouTubeSubmit,
+  onDelete
+}) => {
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [sourceType, setSourceType] = useState<'file' | 'youtube'>('file');
+  const [youtubeUrl, setYoutubeUrl] = useState('');
 
-  const checkVideos = async () => {
-    const previewCheck = await checkVideoExists('video-anteprima.mp4');
-    const fullCheck = await checkVideoExists('video-completo.mp4');
-    setPreviewExists(previewCheck);
-    setFullExists(fullCheck);
-  };
-
-  const handleVideoUpload = async (file: File, isPreview: boolean) => {
-    const fileName = isPreview ? 'video-anteprima.mp4' : 'video-completo.mp4';
-    const setUploading = isPreview ? setUploadingPreview : setUploadingFull;
-    const progressKey = isPreview ? 'preview' : 'full';
-    const errorKey = isPreview ? 'preview' : 'full';
-    
-    // Reset error state
-    setUploadError(prev => ({ ...prev, [errorKey]: '' }));
-    
-    setUploading(true);
-    setUploadProgress(prev => ({ ...prev, [progressKey]: 0 }));
-    
-    // Interval declared outside to ensure cleanup
-    let progressInterval: number | undefined;
-    try {
-      // Enhanced progress simulation with time estimates
-      const startTime = Date.now();
-      const fileSize = file.size;
-      const estimatedUploadTimeMs = Math.max(fileSize / (2 * 1024 * 1024), 3000); // Rough estimate: 2MB/s min 3s
-      
-      progressInterval = window.setInterval(() => {
-        const elapsed = Date.now() - startTime;
-        const progressPercentage = Math.min((elapsed / estimatedUploadTimeMs) * 85, 85);
-        
-        setUploadProgress(prev => ({
-          ...prev,
-          [progressKey]: progressPercentage
-        }));
-      }, 200);
-
-      // Call upload (finalization depends on server)
-      const url = await uploadVideo(file, fileName);
-      
-      setUploadProgress(prev => ({ ...prev, [progressKey]: 100 }));
-      toast({
-        title: "Successo",
-        description: `Video ${isPreview ? 'anteprima' : 'completo'} caricato con successo!`,
-      });
-      checkVideos();
-      
-      // Reset progress after success
-      setTimeout(() => {
-        setUploadProgress(prev => ({ ...prev, [progressKey]: 0 }));
-      }, 2000);
-      
-    } catch (error: any) {
-      setUploadProgress(prev => ({ ...prev, [progressKey]: 0 }));
-      const errorMsg = error?.message || 'Errore sconosciuto durante il caricamento';
-      setUploadError(prev => ({ ...prev, [errorKey]: errorMsg }));
-      toast({
-        title: "Errore caricamento",
-        description: errorMsg,
-        variant: "destructive",
-      });
-    } finally {
-      if (progressInterval) {
-        clearInterval(progressInterval);
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Check file size (400MB = 419,430,400 bytes)
+      if (file.size > 419430400) {
+        alert('Il file è troppo grande. La dimensione massima consentita è 400MB.');
+        return;
       }
-      setUploading(false);
+      
+      // Check file type
+      if (!file.type.includes('video/')) {
+        alert('Seleziona un file video valido.');
+        return;
+      }
+      
+      setSelectedFile(file);
     }
   };
 
-  const handleVideoDelete = async (isPreview: boolean) => {
-    const fileName = isPreview ? 'video-anteprima.mp4' : 'video-completo.mp4';
-    
-    try {
-      const success = await deleteVideo(fileName);
-      if (success) {
-        toast({
-          title: "Successo",
-          description: `Video ${isPreview ? 'anteprima' : 'completo'} eliminato con successo!`,
-        });
-        checkVideos();
-      } else {
-        throw new Error('Eliminazione fallita');
-      }
-    } catch (error) {
-      toast({
-        title: "Errore",
-        description: `Errore durante l'eliminazione del video: ${error}`,
-        variant: "destructive",
-      });
+  const handleUpload = () => {
+    if (selectedFile) {
+      onUpload(selectedFile);
+      setSelectedFile(null);
+      // Reset the input
+      const input = document.querySelector(`input[type="file"]`) as HTMLInputElement;
+      if (input) input.value = '';
     }
   };
 
-  const VideoCard = ({ 
-    title, 
-    fileName, 
-    exists, 
-    isUploading, 
-    progress,
-    error,
-    onUpload, 
-    onDelete 
-  }: {
-    title: string;
-    fileName: string;
-    exists: boolean;
-    isUploading: boolean;
-    progress: number;
-    error: string;
-    onUpload: (file: File) => void;
-    onDelete: () => void;
-  }) => (
+  const handleYouTubeUpload = () => {
+    if (youtubeUrl.trim()) {
+      onYouTubeSubmit(youtubeUrl.trim());
+      setYoutubeUrl('');
+    }
+  };
+
+  const handleView = () => {
+    if (!video) return;
+    
+    if (video.source_type === 'youtube' && video.youtube_video_id) {
+      window.open(`https://www.youtube.com/watch?v=${video.youtube_video_id}`, '_blank');
+    } else if (video.source_type === 'file' && video.file_name) {
+      const videoUrl = getVideoUrl(video.file_name);
+      window.open(videoUrl, '_blank');
+    }
+  };
+
+  return (
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Video className="w-5 h-5" />
+          <Play className="h-5 w-5" />
           {title}
         </CardTitle>
+        <CardDescription>
+          Gestisci il {title.toLowerCase()}
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex items-center gap-2 text-sm">
-          <div className={`w-2 h-2 rounded-full ${exists ? 'bg-green-500' : 'bg-red-500'}`} />
-          {exists ? (
-            <span className="flex items-center gap-1 text-green-600">
-              <CheckCircle2 className="w-3 h-3" />
-              Video presente
-            </span>
-          ) : (
-            'Video mancante'
-          )}
+        {/* Status */}
+        <div className="flex items-center gap-2">
+          <div className={`w-3 h-3 rounded-full ${video ? 'bg-green-500' : 'bg-red-500'}`} />
+          <span className="text-sm">
+            {video ? (
+              <span className="flex items-center gap-2">
+                {video.source_type === 'youtube' ? (
+                  <>
+                    <Youtube className="h-4 w-4" />
+                    Video YouTube presente
+                  </>
+                ) : (
+                  <>Video file presente</>
+                )}
+              </span>
+            ) : (
+              'Nessun video configurato'
+            )}
+          </span>
         </div>
-        
-        {exists && (
+
+        {/* Actions for existing video */}
+        {video && !isUploading && (
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => window.open(getVideoUrl(fileName), '_blank')}
-            >
-              <Eye className="w-4 h-4 mr-2" />
+            <Button onClick={handleView} size="sm" variant="outline">
+              {video.source_type === 'youtube' ? (
+                <ExternalLink className="h-4 w-4 mr-2" />
+              ) : (
+                <Play className="h-4 w-4 mr-2" />
+              )}
               Visualizza
             </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={onDelete}
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
+            <Button onClick={onDelete} size="sm" variant="destructive">
+              <Trash2 className="h-4 w-4 mr-2" />
               Elimina
             </Button>
           </div>
         )}
 
-        <div className="space-y-2">
-          <Label htmlFor={`video-${fileName}`}>
-            {exists ? 'Sostituisci video' : 'Carica video'}
-          </Label>
-          <Input
-            id={`video-${fileName}`}
-            type="file"
-            accept="video/*"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) {
-                onUpload(file);
-                e.target.value = '';
-              }
-            }}
-            disabled={isUploading}
-          />
-          
-          {error && (
-            <div className="flex items-center gap-2 p-2 bg-red-50 border border-red-200 rounded-md text-sm text-red-600">
-              <AlertTriangle className="w-4 h-4" />
-              {error}
-            </div>
-          )}
-          
-          {isUploading && (
-            <div className="space-y-3">
-              <div className="flex items-center justify-between text-sm">
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Upload className="w-4 h-4 animate-spin" />
-                  Caricamento in corso...
-                </div>
-                <span className="font-medium">{Math.round(progress)}%</span>
+        {/* Source type selector */}
+        {!isUploading && (
+          <div className="space-y-2">
+            <Label>Tipo di sorgente</Label>
+            <Select value={sourceType} onValueChange={(value: 'file' | 'youtube') => setSourceType(value)}>
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="file">File (Supabase)</SelectItem>
+                <SelectItem value="youtube">YouTube</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {/* File upload section */}
+        {!isUploading && sourceType === 'file' && (
+          <div className="space-y-2">
+            <Label htmlFor={`video-file-${title}`}>
+              {video?.source_type === 'file' ? 'Sostituisci video' : 'Carica nuovo video'}
+            </Label>
+            <Input
+              id={`video-file-${title}`}
+              type="file"
+              accept="video/*"
+              onChange={handleFileChange}
+              className="cursor-pointer"
+            />
+            {selectedFile && (
+              <div className="flex items-center justify-between p-2 bg-muted rounded">
+                <span className="text-sm truncate">{selectedFile.name}</span>
+                <Button onClick={handleUpload} size="sm">
+                  <Upload className="h-4 w-4 mr-2" />
+                  Carica
+                </Button>
               </div>
-              <Progress value={progress} className="w-full h-2" />
-              <div className="flex justify-between text-xs text-muted-foreground">
-                <span>
-                  {progress < 20 && "Preparazione upload..."}
-                  {progress >= 20 && progress < 50 && "Invio dati..."}
-                  {progress >= 50 && progress < 85 && "Upload in corso..."}
-                  {progress >= 85 && progress < 100 && "Finalizzazione (potrebbe richiedere alcuni minuti)..."}
-                  {progress === 100 && "Completato!"}
-                </span>
-                <span>
-                  {progress < 85 && "Tempo stimato: " + Math.max(1, Math.round((100 - progress) / 8)) + "s"}
-                  {progress >= 85 && progress < 100 && "In attesa del server..."}
-                  {progress === 100 && "✓ Fatto"}
-                </span>
-              </div>
+            )}
+          </div>
+        )}
+
+        {/* YouTube URL section */}
+        {!isUploading && sourceType === 'youtube' && (
+          <div className="space-y-2">
+            <Label htmlFor={`youtube-${title}`}>URL YouTube</Label>
+            <div className="flex gap-2">
+              <Input
+                id={`youtube-${title}`}
+                type="url"
+                placeholder="https://www.youtube.com/watch?v=..."
+                value={youtubeUrl}
+                onChange={(e) => setYoutubeUrl(e.target.value)}
+              />
+              <Button 
+                onClick={handleYouTubeUpload} 
+                size="sm" 
+                disabled={!youtubeUrl.trim()}
+              >
+                <Youtube className="h-4 w-4 mr-2" />
+                Salva
+              </Button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
+
+        {/* Upload progress */}
+        {isUploading && (
+          <div className="space-y-2">
+            <div className="flex items-center gap-2">
+              <Upload className="h-4 w-4 animate-pulse" />
+              <span className="text-sm">Caricamento in corso...</span>
+            </div>
+            <Progress value={progress} className="w-full" />
+            <span className="text-xs text-muted-foreground">{Math.round(progress)}%</span>
+          </div>
+        )}
+
+        {/* Error message */}
+        {error && (
+          <Alert variant="destructive">
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
       </CardContent>
     </Card>
   );
+};
+
+const VideoManagement = () => {
+  const [previewVideo, setPreviewVideo] = useState<SiteVideo | null>(null);
+  const [fullVideo, setFullVideo] = useState<SiteVideo | null>(null);
+  const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
+  const [isUploading, setIsUploading] = useState<{ [key: string]: boolean }>({});
+  const [uploadErrors, setUploadErrors] = useState<{ [key: string]: string }>({});
+  const { toast } = useToast();
+
+  useEffect(() => {
+    loadVideos();
+  }, []);
+
+  const loadVideos = async () => {
+    const preview = await getSiteVideo('preview');
+    const full = await getSiteVideo('full');
+    
+    setPreviewVideo(preview);
+    setFullVideo(full);
+  };
+
+  const handleVideoUpload = async (file: File, isPreview: boolean) => {
+    const videoKey = isPreview ? 'preview' : 'full';
+    const fileName = isPreview ? 'video-anteprima.mp4' : 'video-completo.mp4';
+    
+    // Reset previous errors
+    setUploadErrors(prev => ({ ...prev, [videoKey]: '' }));
+    setIsUploading(prev => ({ ...prev, [videoKey]: true }));
+    setUploadProgress(prev => ({ ...prev, [videoKey]: 0 }));
+
+    try {
+      const url = await uploadVideo(file, fileName, (progress) => {
+        setUploadProgress(prev => ({ ...prev, [videoKey]: progress }));
+      });
+
+      if (url) {
+        // Save to site_videos table
+        await upsertSiteVideo({
+          video_type: isPreview ? 'preview' : 'full',
+          source_type: 'file',
+          file_name: fileName,
+          youtube_url: null,
+          youtube_video_id: null
+        });
+
+        toast({
+          title: "Successo",
+          description: `Video ${isPreview ? 'anteprima' : 'completo'} caricato con successo!`,
+        });
+        
+        // Reload videos
+        await loadVideos();
+      } else {
+        throw new Error('Upload fallito');
+      }
+    } catch (error: any) {
+      console.error('Errore upload:', error);
+      const errorMessage = error.message || 'Errore durante il caricamento';
+      setUploadErrors(prev => ({ ...prev, [videoKey]: errorMessage }));
+      
+      toast({
+        variant: "destructive",
+        title: "Errore",
+        description: `Errore durante il caricamento: ${errorMessage}`,
+      });
+    } finally {
+      setIsUploading(prev => ({ ...prev, [videoKey]: false }));
+      setUploadProgress(prev => ({ ...prev, [videoKey]: 0 }));
+    }
+  };
+
+  const handleYouTubeSubmit = async (url: string, isPreview: boolean) => {
+    const videoId = extractYouTubeVideoId(url);
+    if (!videoId) {
+      toast({
+        variant: "destructive",
+        title: "Errore",
+        description: "URL YouTube non valido. Inserisci un link valido di YouTube.",
+      });
+      return;
+    }
+
+    try {
+      await upsertSiteVideo({
+        video_type: isPreview ? 'preview' : 'full',
+        source_type: 'youtube',
+        file_name: null,
+        youtube_url: url,
+        youtube_video_id: videoId
+      });
+
+      toast({
+        title: "Successo",
+        description: `Video YouTube ${isPreview ? 'anteprima' : 'completo'} salvato con successo!`,
+      });
+
+      await loadVideos();
+    } catch (error: any) {
+      console.error('Errore YouTube:', error);
+      toast({
+        variant: "destructive",
+        title: "Errore",
+        description: "Errore durante il salvataggio del video YouTube",
+      });
+    }
+  };
+
+  const handleVideoDelete = async (isPreview: boolean) => {
+    const videoType = isPreview ? 'anteprima' : 'completo';
+    const currentVideo = isPreview ? previewVideo : fullVideo;
+    
+    try {
+      // Delete from site_videos table
+      const success = await deleteSiteVideo(isPreview ? 'preview' : 'full');
+      
+      // If it was a file, also delete from storage
+      if (success && currentVideo?.source_type === 'file' && currentVideo.file_name) {
+        await deleteVideo(currentVideo.file_name);
+      }
+      
+      if (success) {
+        toast({
+          title: "Successo",
+          description: `Video ${videoType} eliminato con successo!`,
+        });
+        
+        await loadVideos();
+      } else {
+        throw new Error('Eliminazione fallita');
+      }
+    } catch (error: any) {
+      console.error('Errore eliminazione:', error);
+      toast({
+        variant: "destructive",
+        title: "Errore",
+        description: `Errore durante l'eliminazione: ${error.message}`,
+      });
+    }
+  };
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold">Gestione Video</h2>
-        <Button onClick={checkVideos} variant="outline">
-          Aggiorna stato
+        <div>
+          <h2 className="text-2xl font-bold">Gestione Video</h2>
+          <p className="text-muted-foreground">
+            Carica video locali o configura video YouTube per la piattaforma
+          </p>
+        </div>
+        <Button onClick={loadVideos} variant="outline">
+          Aggiorna
         </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <VideoCard
           title="Video Anteprima"
-          fileName="video-anteprima.mp4"
-          exists={previewExists}
-          isUploading={uploadingPreview}
-          progress={uploadProgress.preview}
-          error={uploadError.preview}
+          video={previewVideo}
+          isUploading={isUploading.preview || false}
+          progress={uploadProgress.preview || 0}
+          error={uploadErrors.preview}
           onUpload={(file) => handleVideoUpload(file, true)}
+          onYouTubeSubmit={(url) => handleYouTubeSubmit(url, true)}
           onDelete={() => handleVideoDelete(true)}
         />
-        
+
         <VideoCard
           title="Video Completo"
-          fileName="video-completo.mp4"
-          exists={fullExists}
-          isUploading={uploadingFull}
-          progress={uploadProgress.full}
-          error={uploadError.full}
+          video={fullVideo}
+          isUploading={isUploading.full || false}
+          progress={uploadProgress.full || 0}
+          error={uploadErrors.full}
           onUpload={(file) => handleVideoUpload(file, false)}
+          onYouTubeSubmit={(url) => handleYouTubeSubmit(url, false)}
           onDelete={() => handleVideoDelete(false)}
         />
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Informazioni</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <Info className="h-5 w-5" />
+            Informazioni
+          </CardTitle>
         </CardHeader>
         <CardContent className="text-sm text-muted-foreground space-y-2">
-          <p>• I video vengono serviti tramite Supabase Storage per migliori performance</p>
-          <p>• Formato consigliato: MP4 con codec H.264</p>
-          <p>• Dimensione massima consentita: 400MB per video (upload chunked)</p>
-          <p>• Upload resumable: puoi interrompere e riprendere il caricamento</p>
-          <p>• I video sono pubblicamente accessibili una volta caricati</p>
+          <div className="space-y-1">
+            <h4 className="font-medium text-foreground">Caricamento File:</h4>
+            <p>• Formato consigliato: MP4 con codec H.264 per la migliore compatibilità</p>
+            <p>• Dimensione massima: 400MB per video (upload resumable supportato)</p>
+            <p>• Upload chunked con TUS per migliore affidabilità</p>
+          </div>
+          <div className="space-y-1">
+            <h4 className="font-medium text-foreground">Video YouTube:</h4>
+            <p>• Inserisci l'URL completo del video YouTube</p>
+            <p>• Formati supportati: watch?v=, youtu.be/, embed/</p>
+            <p>• I video YouTube non hanno limiti di dimensione</p>
+          </div>
+          <div className="space-y-1">
+            <h4 className="font-medium text-foreground">Generale:</h4>
+            <p>• I video configurati sono accessibili ai tuoi utenti nella sezione Formazione</p>
+            <p>• È possibile avere un video anteprima e un video completo</p>
+          </div>
         </CardContent>
       </Card>
     </div>

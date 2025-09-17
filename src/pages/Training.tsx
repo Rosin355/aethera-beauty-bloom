@@ -3,26 +3,27 @@ import DashboardLayout from "@/components/Dashboard/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Play, Clock, CheckCircle, Lock } from "lucide-react";
-import { checkVideoExists, getVideoUrl } from "@/lib/videoStorage";
+import { Play, Clock, CheckCircle, Lock, Youtube, PlayCircle } from "lucide-react";
+import { getSiteVideo, type SiteVideo } from '@/lib/siteVideos';
+import { getVideoUrl } from "@/lib/videoStorage";
 import { Helmet } from "react-helmet";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 
 const Training = () => {
-  const [previewVideoExists, setPreviewVideoExists] = useState(false);
-  const [fullVideoExists, setFullVideoExists] = useState(false);
+  const [previewVideo, setPreviewVideo] = useState<SiteVideo | null>(null);
+  const [fullVideo, setFullVideo] = useState<SiteVideo | null>(null);
   const { isAdmin } = useAuth();
 
   useEffect(() => {
-    checkVideos();
+    loadVideos();
   }, []);
 
-  const checkVideos = async () => {
-    const previewExists = await checkVideoExists('video-anteprima.mp4');
-    const fullExists = await checkVideoExists('video-completo.mp4');
-    setPreviewVideoExists(previewExists);
-    setFullVideoExists(fullExists);
+  const loadVideos = async () => {
+    const preview = await getSiteVideo('preview');
+    const full = await getSiteVideo('full');
+    setPreviewVideo(preview);
+    setFullVideo(full);
   };
 
   const courses = [
@@ -32,8 +33,7 @@ const Training = () => {
       description: "Un'introduzione ai principi fondamentali dei 4 elementi nel trattamento della bellezza.",
       duration: "15 min",
       level: "Principiante",
-      videoFile: 'video-anteprima.mp4',
-      exists: previewVideoExists,
+      video: previewVideo,
       isPreview: true,
       completed: false,
     },
@@ -43,16 +43,19 @@ const Training = () => {
       description: "Corso completo sull'applicazione pratica dei 4 elementi: acqua, fuoco, aria e terra nel trattamento estetico.",
       duration: "45 min",
       level: "Intermedio",
-      videoFile: 'video-completo.mp4',
-      exists: fullVideoExists,
+      video: fullVideo,
       isPreview: false,
       completed: false,
     }
   ];
 
-  const handleWatchVideo = (videoFile: string) => {
-    const videoUrl = getVideoUrl(videoFile);
-    window.open(videoUrl, '_blank');
+  const handleWatchVideo = (video: SiteVideo) => {
+    if (video.source_type === 'youtube' && video.youtube_video_id) {
+      window.open(`https://www.youtube.com/watch?v=${video.youtube_video_id}`, '_blank');
+    } else if (video.source_type === 'file' && video.file_name) {
+      const videoUrl = getVideoUrl(video.file_name);
+      window.open(videoUrl, '_blank');
+    }
   };
 
   return (
@@ -112,12 +115,18 @@ const Training = () => {
                 <div className="space-y-4">
                   {/* Video Preview Area */}
                   <div className="aspect-video bg-neutral-900 border border-neutral-800 rounded-lg flex items-center justify-center relative overflow-hidden">
-                    {course.exists ? (
+                    {course.video ? (
                       <div className="flex flex-col items-center gap-3">
                         <div className="w-16 h-16 bg-brand-fire rounded-full flex items-center justify-center">
-                          <Play className="w-8 h-8 text-white ml-1" />
+                          {course.video.source_type === 'youtube' ? (
+                            <Youtube className="w-8 h-8 text-white" />
+                          ) : (
+                            <Play className="w-8 h-8 text-white ml-1" />
+                          )}
                         </div>
-                        <p className="text-white text-sm">Video disponibile</p>
+                        <p className="text-white text-sm">
+                          {course.video.source_type === 'youtube' ? 'Video YouTube disponibile' : 'Video disponibile'}
+                        </p>
                       </div>
                     ) : (
                       <div className="flex flex-col items-center gap-3">
@@ -133,12 +142,16 @@ const Training = () => {
                   <div className="flex gap-2">
                     <Button 
                       className="flex-1"
-                      disabled={!course.exists}
-                      onClick={() => handleWatchVideo(course.videoFile)}
+                      disabled={!course.video}
+                      onClick={() => course.video && handleWatchVideo(course.video)}
                     >
-                      {course.exists ? (
+                      {course.video ? (
                         <>
-                          <Play className="w-4 h-4 mr-2" />
+                          {course.video.source_type === 'youtube' ? (
+                            <Youtube className="w-4 h-4 mr-2" />
+                          ) : (
+                            <PlayCircle className="w-4 h-4 mr-2" />
+                          )}
                           Guarda Video
                         </>
                       ) : (
@@ -152,8 +165,8 @@ const Training = () => {
 
                   {/* Course Status */}
                   <div className="text-xs text-neutral-500">
-                    {course.exists ? (
-                      <p>✓ Video caricato e pronto per la visione</p>
+                    {course.video ? (
+                      <p>✓ Video {course.video.source_type === 'youtube' ? 'YouTube' : 'caricato'} e pronto per la visione</p>
                     ) : (
                       <p>Il video verrà pubblicato a breve</p>
                     )}

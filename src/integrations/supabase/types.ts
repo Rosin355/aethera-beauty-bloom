@@ -361,6 +361,42 @@ export type Database = {
         }
         Relationships: []
       }
+      site_videos: {
+        Row: {
+          created_at: string
+          file_name: string | null
+          id: string
+          is_active: boolean
+          source_type: string
+          updated_at: string
+          video_type: string
+          youtube_url: string | null
+          youtube_video_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_name?: string | null
+          id?: string
+          is_active?: boolean
+          source_type?: string
+          updated_at?: string
+          video_type: string
+          youtube_url?: string | null
+          youtube_video_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_name?: string | null
+          id?: string
+          is_active?: boolean
+          source_type?: string
+          updated_at?: string
+          video_type?: string
+          youtube_url?: string | null
+          youtube_video_id?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
