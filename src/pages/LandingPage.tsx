@@ -214,7 +214,7 @@ const LandingPage = () => {
                 <Check className="w-8 h-8 text-white" />
               </div>
               <div className="flex-1 flex flex-col justify-between">
-                <h3 className="font-playfair text-xl font-bold text-white text-center leading-tight mb-4">CALCOLO DEL COSTO ORARIO</h3>
+                <h3 className="font-playfair text-xl font-bold text-white text-center leading-tight mb-4">CALCOLO DEL<br />COSTO ORARIO</h3>
                 <p className="text-muted-foreground text-center leading-relaxed text-sm">
                   Come organizzare il tuo listino in modo strategico (anche se non sei brava con i numeri o il marketing)
                 </p>
@@ -238,7 +238,7 @@ const LandingPage = () => {
                 <Check className="w-8 h-8 text-white" />
               </div>
               <div className="flex-1 flex flex-col justify-between">
-                <h3 className="font-playfair text-xl font-bold text-white text-center leading-tight mb-4">CALCOLO DEL MARGINE OPERATIVO</h3>
+                <h3 className="font-playfair text-xl font-bold text-white text-center leading-tight mb-4">CALCOLO DEL<br />MARGINE OPERATIVO</h3>
                 <p className="text-muted-foreground text-center leading-relaxed text-sm">
                   La Formula Per Valutare Il Prezzo Giusto
                 </p>
