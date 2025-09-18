@@ -398,6 +398,7 @@ export type Database = {
           id: string
           is_active: boolean
           source_type: string
+          thumbnail_url: string | null
           updated_at: string
           video_type: string
           youtube_url: string | null
@@ -409,6 +410,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           source_type?: string
+          thumbnail_url?: string | null
           updated_at?: string
           video_type: string
           youtube_url?: string | null
@@ -420,6 +422,7 @@ export type Database = {
           id?: string
           is_active?: boolean
           source_type?: string
+          thumbnail_url?: string | null
           updated_at?: string
           video_type?: string
           youtube_url?: string | null

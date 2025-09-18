@@ -7,6 +7,7 @@ export interface SiteVideo {
   file_name?: string;
   youtube_url?: string;
   youtube_video_id?: string;
+  thumbnail_url?: string;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -64,6 +65,7 @@ export async function upsertSiteVideo(video: Partial<SiteVideo>): Promise<SiteVi
         file_name: video.file_name,
         youtube_url: video.youtube_url,
         youtube_video_id: video.youtube_video_id,
+        thumbnail_url: video.thumbnail_url,
         is_active: video.is_active ?? true,
         updated_at: new Date().toISOString()
       })
@@ -80,6 +82,7 @@ export async function upsertSiteVideo(video: Partial<SiteVideo>): Promise<SiteVi
         file_name: video.file_name,
         youtube_url: video.youtube_url,
         youtube_video_id: video.youtube_video_id,
+        thumbnail_url: video.thumbnail_url,
         is_active: video.is_active ?? true
       })
       .select()
@@ -126,7 +129,16 @@ export function extractYouTubeVideoId(url: string): string | null {
 }
 
 export function getYouTubeEmbedUrl(videoId: string): string {
-  return `https://www.youtube.com/embed/${videoId}`;
+  const params = new URLSearchParams({
+    modestbranding: '1',
+    rel: '0', 
+    showinfo: '0',
+    controls: '1',
+    fs: '0',
+    disablekb: '1',
+    enablejsapi: '0'
+  });
+  return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
 }
 
 export function getYouTubeThumbnail(videoId: string): string {

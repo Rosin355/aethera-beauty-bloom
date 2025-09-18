@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { getVideoUrl } from '@/lib/videoStorage';
 import { getSiteVideo, SiteVideo, getYouTubeEmbedUrl } from '@/lib/siteVideos';
+import VideoPlayer from '@/components/ui/VideoPlayer';
 
 const Welcome = () => {
   const [searchParams] = useSearchParams();
@@ -184,30 +185,10 @@ const Welcome = () => {
             <Card className="bg-card/30 backdrop-blur-sm border-white/10 p-4">
               <div className="aspect-video rounded-lg overflow-hidden">
                 {fullVideo ? (
-                  fullVideo.source_type === 'youtube' && fullVideo.youtube_video_id ? (
-                    <iframe
-                      src={getYouTubeEmbedUrl(fullVideo.youtube_video_id)}
-                      className="w-full h-full"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                      title="Video completo"
-                      style={{ backgroundColor: '#000' }}
-                    />
-                  ) : fullVideo.source_type === 'file' && fullVideo.file_name ? (
-                    <video 
-                      controls 
-                      preload="metadata"
-                      className="w-full h-full"
-                      style={{ backgroundColor: '#000' }}
-                    >
-                      <source src={getVideoUrl(fullVideo.file_name)} type="video/mp4" />
-                      Il tuo browser non supporta il tag video.
-                    </video>
-                  ) : (
-                    <div className="w-full h-full bg-gray-900 flex items-center justify-center">
-                      <p className="text-white">Video non disponibile</p>
-                    </div>
-                  )
+                  <VideoPlayer 
+                    video={fullVideo}
+                    className="w-full h-full"
+                  />
                 ) : (
                   <div className="w-full h-full bg-gray-900 flex items-center justify-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>

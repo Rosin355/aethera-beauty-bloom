@@ -25,7 +25,7 @@ interface VideoCardProps {
   progress: number;
   error?: string;
   onUpload: (file: File) => void;
-  onYouTubeSubmit: (url: string) => void;
+  onYouTubeSubmit: (url: string, thumbnail?: File | null) => void;
   onDelete: () => void;
 }
 
@@ -42,6 +42,7 @@ const VideoCard: React.FC<VideoCardProps> = ({
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [sourceType, setSourceType] = useState<'file' | 'youtube'>('file');
   const [youtubeUrl, setYoutubeUrl] = useState('');
+  const [thumbnailFile, setThumbnailFile] = useState<File | null>(null);
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -74,8 +75,9 @@ const VideoCard: React.FC<VideoCardProps> = ({
 
   const handleYouTubeUpload = () => {
     if (youtubeUrl.trim()) {
-      onYouTubeSubmit(youtubeUrl.trim());
+      onYouTubeSubmit(youtubeUrl.trim(), thumbnailFile);
       setYoutubeUrl('');
+      setThumbnailFile(null);
     }
   };
 
@@ -203,6 +205,22 @@ const VideoCard: React.FC<VideoCardProps> = ({
                 Salva
               </Button>
             </div>
+            {/* Thumbnail Upload for YouTube */}
+            <div className="mt-2">
+              <Label htmlFor={`thumbnail-${title}`}>Thumbnail personalizzata (opzionale)</Label>
+              <Input
+                id={`thumbnail-${title}`}
+                type="file"
+                accept="image/*"
+                onChange={(e) => setThumbnailFile(e.target.files?.[0] || null)}
+                className="cursor-pointer"
+              />
+              {thumbnailFile && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  File selezionato: {thumbnailFile.name}
+                </p>
+              )}
+            </div>
           </div>
         )}
 
@@ -299,7 +317,7 @@ const VideoManagement = () => {
     }
   };
 
-  const handleYouTubeSubmit = async (url: string, isPreview: boolean) => {
+  const handleYouTubeSubmit = async (url: string, thumbnailFile: File | null, isPreview: boolean) => {
     const videoId = extractYouTubeVideoId(url);
     if (!videoId) {
       toast({
@@ -310,13 +328,32 @@ const VideoManagement = () => {
       return;
     }
 
+    let thumbnailUrl = null;
+    
+    // Se c'è un file thumbnail, caricalo
+    if (thumbnailFile) {
+      try {
+        const fileName = `thumbnail-${isPreview ? 'preview' : 'full'}-${Date.now()}.${thumbnailFile.name.split('.').pop()}`;
+        const thumbnailUploadUrl = await uploadVideo(thumbnailFile, fileName, () => {});
+        thumbnailUrl = thumbnailUploadUrl;
+      } catch (error) {
+        console.error('Errore upload thumbnail:', error);
+        toast({
+          variant: "destructive",
+          title: "Avviso",
+          description: "Errore durante il caricamento della thumbnail, ma il video è stato salvato.",
+        });
+      }
+    }
+
     try {
       await upsertSiteVideo({
         video_type: isPreview ? 'preview' : 'full',
         source_type: 'youtube',
         file_name: null,
         youtube_url: url,
-        youtube_video_id: videoId
+        youtube_video_id: videoId,
+        thumbnail_url: thumbnailUrl
       });
 
       toast({
@@ -390,7 +427,7 @@ const VideoManagement = () => {
           progress={uploadProgress.preview || 0}
           error={uploadErrors.preview}
           onUpload={(file) => handleVideoUpload(file, true)}
-          onYouTubeSubmit={(url) => handleYouTubeSubmit(url, true)}
+          onYouTubeSubmit={(url, thumbnailFile) => handleYouTubeSubmit(url, thumbnailFile, true)}
           onDelete={() => handleVideoDelete(true)}
         />
 
@@ -401,7 +438,7 @@ const VideoManagement = () => {
           progress={uploadProgress.full || 0}
           error={uploadErrors.full}
           onUpload={(file) => handleVideoUpload(file, false)}
-          onYouTubeSubmit={(url) => handleYouTubeSubmit(url, false)}
+          onYouTubeSubmit={(url, thumbnailFile) => handleYouTubeSubmit(url, thumbnailFile, false)}
           onDelete={() => handleVideoDelete(false)}
         />
       </div>
