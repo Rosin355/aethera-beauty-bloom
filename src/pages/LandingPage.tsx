@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +23,7 @@ const LandingPage = () => {
   });
   const [isSubmittingNewsletter, setIsSubmittingNewsletter] = useState(false);
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [useIframePreview, setUseIframePreview] = useState(true);
   const [previewVideoUrl, setPreviewVideoUrl] = useState<string>('');
 
@@ -735,10 +737,19 @@ const LandingPage = () => {
         <div className="container mx-auto text-center">
           <div className="flex items-center justify-center space-x-3 mb-4">
             <img src="/4-elementi-logo.png" alt="4 Elementi Italia Logo" className="h-10 w-auto" />
-            
           </div>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground mb-2">
             © 2024 4 Elementi Italia. Tutti i diritti riservati.
+          </p>
+          <p className="text-muted-foreground text-sm">
+            Hai perso l'email di accesso?{' '}
+            <Button 
+              variant="link" 
+              onClick={() => navigate('/recupera-accesso')}
+              className="p-0 h-auto text-[#6AA8B3] hover:text-[#6AA8B3]/80 text-sm"
+            >
+              Recupera qui
+            </Button>
           </p>
         </div>
       </footer>

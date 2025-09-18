@@ -213,72 +213,82 @@ const Welcome = () => {
           </div>
 
           {/* Newsletter Section */}
-          <div className="grid lg:grid-cols-2 gap-8">
-            <div>
-              <h2 className="font-playfair text-2xl lg:text-3xl font-bold mb-6">
-                Non perderti i nostri <span className="gradient-text">contenuti esclusivi</span>
-              </h2>
+          <div className="grid lg:grid-cols-2 gap-8 items-center">
+            <div className="space-y-8">
+              <div>
+                <h2 className="font-playfair text-3xl md:text-4xl font-bold text-white mb-6 leading-tight">
+                  Sta per arrivare qualcosa di grande.
+                </h2>
+                <p className="text-muted-foreground text-lg mb-8">
+                  Iscriviti ora per non perderti il lancio ufficiale della piattaforma e accedere in anteprima alla community riservata ai professionisti del settore.
+                </p>
+              </div>
+              
               <div className="space-y-4">
-                <div className="flex items-start space-x-4">
-                  <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center mt-1">
-                    <Check className="w-4 h-4 text-primary-foreground" />
+                {[
+                  "Tips settimanali esclusivi per far crescere il tuo business",
+                  "Strategie pratiche e strumenti pronti all'uso",
+                  "Accesso anticipato a corsi, risorse e novità"
+                ].map((benefit, index) => (
+                  <div key={index} className="flex items-center space-x-3">
+                    <div className="w-6 h-6 bg-[#6AA8B3] rounded-full flex items-center justify-center shrink-0">
+                      <Check className="w-4 h-4 text-white" />
+                    </div>
+                    <p className="text-white text-lg">{benefit}</p>
                   </div>
-                  <p className="text-muted-foreground">Tips settimanali per il tuo business</p>
-                </div>
-                <div className="flex items-start space-x-4">
-                  <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center mt-1">
-                    <Check className="w-4 h-4 text-primary-foreground" />
-                  </div>
-                  <p className="text-muted-foreground">Accesso anticipato ai nuovi corsi</p>
-                </div>
-                <div className="flex items-start space-x-4">
-                  <div className="w-6 h-6 bg-primary rounded-full flex items-center justify-center mt-1">
-                    <Check className="w-4 h-4 text-primary-foreground" />
-                  </div>
-                  <p className="text-muted-foreground">Strategie e strumenti pratici</p>
-                </div>
+                ))}
               </div>
             </div>
 
-            <Card className="bg-card/30 backdrop-blur-sm border-white/10 p-6">
+            <Card className="bg-card/20 backdrop-blur-sm border-white/10 p-8">
               <div className="space-y-6">
                 <div className="text-center">
-                  <Users className="w-12 h-12 text-primary mx-auto mb-4" />
-                  <h3 className="font-playfair text-xl font-bold mb-2">
-                    Iscriviti alla Newsletter
+                  <div className="w-16 h-16 bg-[#6AA8B3]/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Users className="w-8 h-8 text-[#6AA8B3]" />
+                  </div>
+                  <h3 className="font-playfair text-2xl font-bold text-white mb-2">
+                    👉 Iscriviti oggi. Sii tra i primi a entrare.
                   </h3>
-                  <p className="text-muted-foreground text-sm">
-                    Unisciti alla community di estetiste professioniste
-                  </p>
                 </div>
-                
-                <form onSubmit={handleNewsletterSubmit} className="space-y-4">
-                  <Input 
-                    placeholder="Il tuo nome" 
-                    value={newsletterForm.name} 
-                    onChange={(e) => setNewsletterForm({
-                      ...newsletterForm,
-                      name: e.target.value
-                    })} 
-                    className="bg-background/50 border-white/20" 
-                  />
-                  <Input 
-                    type="email" 
-                    placeholder="La tua email" 
-                    value={newsletterForm.email} 
-                    onChange={(e) => setNewsletterForm({
-                      ...newsletterForm,
-                      email: e.target.value
-                    })} 
-                    className="bg-background/50 border-white/20" 
-                  />
+
+                <form onSubmit={handleNewsletterSubmit} className="space-y-6">
+                  <div>
+                    <label className="block text-white text-sm font-medium mb-2">Nome *</label>
+                    <Input 
+                      placeholder="Il tuo nome" 
+                      value={newsletterForm.name} 
+                      onChange={(e) => setNewsletterForm({
+                        ...newsletterForm,
+                        name: e.target.value
+                      })} 
+                      className="bg-card/40 border-white/20 text-white placeholder:text-muted-foreground h-12" 
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-white text-sm font-medium mb-2">Email *</label>
+                    <Input 
+                      type="email" 
+                      placeholder="la.tua.email@esempio.com" 
+                      value={newsletterForm.email} 
+                      onChange={(e) => setNewsletterForm({
+                        ...newsletterForm,
+                        email: e.target.value
+                      })} 
+                      className="bg-card/40 border-white/20 text-white placeholder:text-muted-foreground h-12" 
+                      required
+                    />
+                  </div>
                   <Button 
                     type="submit" 
                     disabled={isSubmittingNewsletter}
-                    className="w-full"
+                    className="w-full h-12 bg-gradient-to-r from-[#6AA8B3] to-[#E46A39] hover:from-[#6AA8B3]/80 hover:to-[#E46A39]/80 text-white font-semibold text-sm transition-all duration-300"
                   >
                     {isSubmittingNewsletter ? "ISCRIZIONE IN CORSO..." : "ISCRIVITI ALLA NEWSLETTER"}
                   </Button>
+                  <p className="text-center text-muted-foreground text-xs">
+                    Rispettiamo la tua privacy. Nessuno spam, solo contenuti di valore.
+                  </p>
                 </form>
               </div>
             </Card>

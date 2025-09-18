@@ -24,6 +24,7 @@ import CollaboratorManagement from "./pages/Admin/CollaboratorManagement";
 import VideoManagementPage from "./pages/Admin/VideoManagement";
 import LandingPage from "./pages/LandingPage";
 import Welcome from "./pages/Welcome";
+import RecuperaAccesso from "./pages/RecuperaAccesso";
 
 const queryClient = new QueryClient();
 
@@ -76,6 +77,7 @@ const App = () => (
           {/* Landing page isolata */}
           <Route path="/landing" element={<LandingPage />} />
           <Route path="/welcome" element={<Welcome />} />
+          <Route path="/recupera-accesso" element={<RecuperaAccesso />} />
           
           {/* Admin routes */}
           <Route path="/admin/dashboard" element={
