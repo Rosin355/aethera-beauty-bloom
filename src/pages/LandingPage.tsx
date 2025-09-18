@@ -638,19 +638,18 @@ const LandingPage = () => {
               <div className="space-y-8">
                 <div>
                   <h2 className="font-playfair text-3xl md:text-4xl font-bold text-white mb-6 leading-tight">
-                    Non perderti i nostri contenuti esclusivi
+                    Sta per arrivare qualcosa di grande.
                   </h2>
                   <p className="text-muted-foreground text-lg mb-8">
-                    Unisciti alla community di estetiste professioniste e ricevi contenuti di valore direttamente nella tua casella email.
+                    Iscriviti ora per non perderti il lancio ufficiale della piattaforma e accedere in anteprima alla community riservata ai professionisti del settore.
                   </p>
                 </div>
                 
                 <div className="space-y-4">
                   {[
-                    "Tips settimanali per il tuo business",
-                    "Accesso anticipato ai nuovi corsi",
-                    "Strategie e strumenti pratici",
-                    "Notifica prioritaria per il lancio della piattaforma"
+                    "Tips settimanali esclusivi per far crescere il tuo business",
+                    "Strategie pratiche e strumenti pronti all'uso",
+                    "Accesso anticipato a corsi, risorse e novità"
                   ].map((benefit, index) => (
                     <div key={index} className="flex items-center space-x-3">
                       <div className="w-6 h-6 bg-[#6AA8B3] rounded-full flex items-center justify-center shrink-0">
@@ -669,11 +668,8 @@ const LandingPage = () => {
                     <User className="w-8 h-8 text-[#6AA8B3]" />
                   </div>
                   <h3 className="font-playfair text-2xl font-bold text-white mb-2">
-                    Iscriviti alla Newsletter
+                    👉 Iscriviti oggi. Sii tra i primi a entrare.
                   </h3>
-                  <p className="text-muted-foreground">
-                    Unisciti alla community di estetiste professioniste
-                  </p>
                 </div>
 
                 <form onSubmit={handleNewsletterSubmit} className="space-y-6">
