@@ -7,7 +7,8 @@ import { Glow } from "@/components/ui/glow";
 import { Check, ArrowLeft, Users } from "lucide-react";
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { getVideoUrl, checkVideoExists } from '@/lib/videoStorage';
+import { getVideoUrl } from '@/lib/videoStorage';
+import { getSiteVideo, SiteVideo, getYouTubeEmbedUrl } from '@/lib/siteVideos';
 
 const Welcome = () => {
   const [searchParams] = useSearchParams();
@@ -21,8 +22,7 @@ const Welcome = () => {
     name: ""
   });
   const [isSubmittingNewsletter, setIsSubmittingNewsletter] = useState(false);
-  const [useIframeFull, setUseIframeFull] = useState(true);
-  const [fullVideoUrl, setFullVideoUrl] = useState<string>('');
+  const [fullVideo, setFullVideo] = useState<SiteVideo | null>(null);
 
   const token = searchParams.get('token');
 
@@ -62,11 +62,10 @@ const Welcome = () => {
           name: data.name 
         });
         
-        // Initialize video URL
-        const exists = await checkVideoExists('video-completo.mp4');
-        if (exists) {
-          setFullVideoUrl(getVideoUrl('video-completo.mp4'));
-          setUseIframeFull(false);
+        // Load video from site_videos database
+        const video = await getSiteVideo('full');
+        if (video) {
+          setFullVideo(video);
         }
       } catch (error) {
         console.error('Errore validazione token:', error);
@@ -184,29 +183,35 @@ const Welcome = () => {
           <div className="mb-12">
             <Card className="bg-card/30 backdrop-blur-sm border-white/10 p-4">
               <div className="aspect-video rounded-lg overflow-hidden">
-                {fullVideoUrl && !useIframeFull ? (
-                  <video 
-                    controls 
-                    preload="metadata"
-                    className="w-full h-full"
-                    style={{ backgroundColor: '#000' }}
-                    onLoadStart={() => console.log('Video Completo: Load started')}
-                    onCanPlay={() => console.log('Video Completo: Can play')}
-                    onError={(e) => { console.error('Video Completo error:', e); setUseIframeFull(true); }}
-                    onLoadedMetadata={() => console.log('Video Completo: Metadata loaded')}
-                  >
-                    <source src={fullVideoUrl} type="video/mp4" />
-                    Il tuo browser non supporta il tag video.
-                  </video>
+                {fullVideo ? (
+                  fullVideo.source_type === 'youtube' && fullVideo.youtube_video_id ? (
+                    <iframe
+                      src={getYouTubeEmbedUrl(fullVideo.youtube_video_id)}
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                      title="Video completo"
+                      style={{ backgroundColor: '#000' }}
+                    />
+                  ) : fullVideo.source_type === 'file' && fullVideo.file_name ? (
+                    <video 
+                      controls 
+                      preload="metadata"
+                      className="w-full h-full"
+                      style={{ backgroundColor: '#000' }}
+                    >
+                      <source src={getVideoUrl(fullVideo.file_name)} type="video/mp4" />
+                      Il tuo browser non supporta il tag video.
+                    </video>
+                  ) : (
+                    <div className="w-full h-full bg-gray-900 flex items-center justify-center">
+                      <p className="text-white">Video non disponibile</p>
+                    </div>
+                  )
                 ) : (
-                  <iframe
-                    src="https://drive.google.com/file/d/1d2LJ8HRZ6sC-Pnp-CUDZJhhXLgr4gtHR/preview"
-                    className="w-full h-full"
-                    allow="autoplay; encrypted-media"
-                    allowFullScreen
-                    title="Video completo"
-                    style={{ backgroundColor: '#000' }}
-                  />
+                  <div className="w-full h-full bg-gray-900 flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                  </div>
                 )}
               </div>
             </Card>
