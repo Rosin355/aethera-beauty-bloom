@@ -70,6 +70,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             preload="metadata"
             className="w-full h-full rounded-lg"
             style={{ backgroundColor: '#000' }}
+            playsInline
+            muted
+            poster={thumbnailUrl || undefined}
             autoPlay
           >
             <source src={src} type="video/mp4" />
