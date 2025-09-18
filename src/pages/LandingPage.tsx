@@ -126,7 +126,11 @@ const LandingPage = () => {
                 </p>
               </div>
 
-              <Button size="lg" className="bg-white hover:bg-gray-200 text-black px-8 py-6 text-lg font-medium">
+              <Button 
+                size="lg" 
+                className="bg-white hover:bg-gray-200 text-black px-8 py-6 text-lg font-medium"
+                onClick={() => document.getElementById('video-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+              >
                 <Play className="w-5 h-5 mr-2" />
                 ACCEDI AL VIDEO GRATUITO
               </Button>
@@ -161,7 +165,7 @@ const LandingPage = () => {
                 )}
               </div>
               
-              <Card className="bg-card/50 backdrop-blur-sm border-white/10 p-8">
+              <Card id="video-form" className="bg-card/50 backdrop-blur-sm border-white/10 p-8">
                 <div className="space-y-6">
                   <div className="text-center">
                     <h3 className="font-playfair text-2xl font-bold mb-4">ACCEDI AL VIDEO GRATUITO</h3>
@@ -229,9 +233,9 @@ const LandingPage = () => {
               <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
                 <Check className="w-8 h-8 text-white" />
               </div>
-              <h3 className="font-playfair text-xl font-bold mb-4 text-white">CREA IL LISTINO PREZZI EFFICACE</h3>
+              <h3 className="font-playfair text-xl font-bold mb-4 text-white">CALCOLO DEL MARGINE OPERATIVO</h3>
               <p className="text-muted-foreground">
-                Come creare un listino grafico accattivante e facile da aggiornare, direttamente con Canva
+                La Formula Per Valutare Il Prezzo Giusto
               </p>
             </GlowCard>
           </div>
@@ -284,7 +288,10 @@ const LandingPage = () => {
                   <p className="text-sm text-muted-foreground">
                     📩 Riceverai immediatamente il link per guardarlo quando vuoi, dove vuoi.
                   </p>
-                  <Button className="bg-white hover:bg-gray-200 text-black px-8 font-medium">
+                  <Button 
+                    className="bg-white hover:bg-gray-200 text-black px-8 font-medium"
+                    onClick={() => document.getElementById('video-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+                  >
                     ACCEDI SUBITO AL VIDEO
                   </Button>
                 </div>
@@ -553,7 +560,11 @@ const LandingPage = () => {
                 <strong className="text-white">Davide</strong> – Fondatore di 4 Elementi Italia
               </p>
             </div>
-            <Button size="lg" className="bg-white hover:bg-gray-200 text-black px-12 py-6 text-lg font-medium">
+            <Button 
+              size="lg" 
+              className="bg-white hover:bg-gray-200 text-black px-12 py-6 text-lg font-medium"
+              onClick={() => document.getElementById('video-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+            >
               <Play className="w-6 h-6 mr-3" />
               ACCEDI AL VIDEO GRATUITO
             </Button>
