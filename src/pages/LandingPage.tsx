@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { GlowCard } from "@/components/ui/spotlight-card";
 import { AuroraBackground } from "@/components/ui/aurora-background";
-import { Check, Play, Users, Award, BookOpen, Headphones } from "lucide-react";
+import { Check, Play, Users, Award, BookOpen, Headphones, User } from "lucide-react";
 import { Glow } from "@/components/ui/glow";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +16,11 @@ const LandingPage = () => {
     email: ""
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newsletterData, setNewsletterData] = useState({
+    name: "",
+    email: ""
+  });
+  const [isSubmittingNewsletter, setIsSubmittingNewsletter] = useState(false);
   const { toast } = useToast();
   const [useIframePreview, setUseIframePreview] = useState(true);
   const [previewVideoUrl, setPreviewVideoUrl] = useState<string>('');
@@ -81,6 +87,55 @@ const LandingPage = () => {
       });
     } finally {
       setIsSubmitting(false);
+    }
+  };
+
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsletterData.name.trim() || !newsletterData.email.trim()) {
+      toast({
+        title: "Campi obbligatori",
+        description: "Inserisci nome e email per iscriverti alla newsletter",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSubmittingNewsletter(true);
+    try {
+      const response = await supabase.functions.invoke('newsletter-subscribe', {
+        body: {
+          email: newsletterData.email.trim(),
+          name: newsletterData.name.trim(),
+          source: 'newsletter_section'
+        }
+      });
+
+      if (response.error) {
+        throw response.error;
+      }
+
+      toast({
+        title: "Iscrizione completata!",
+        description: "Ti sei iscritto con successo alla nostra newsletter. Riceverai presto contenuti esclusivi!",
+      });
+
+      setNewsletterData({ name: "", email: "" });
+
+    } catch (error: any) {
+      console.error('Errore durante l\'iscrizione alla newsletter:', error);
+      
+      const errorMessage = error.message?.includes('Email già iscritta') 
+        ? "Questa email è già iscritta alla newsletter"
+        : "Si è verificato un errore. Riprova tra qualche minuto.";
+        
+      toast({
+        title: "Errore",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmittingNewsletter(false);
     }
   };
   return <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
@@ -568,6 +623,113 @@ const LandingPage = () => {
               <Play className="w-6 h-6 mr-3" />
               ACCEDI AL VIDEO GRATUITO
             </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* Newsletter Section */}
+      <section className="py-20 px-4 relative overflow-hidden bg-gradient-to-br from-gray-900 to-gray-800">
+        <Glow variant="center" />
+        
+        <div className="container mx-auto relative z-10">
+          <div className="max-w-6xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-12 items-center">
+              {/* Left Column - Benefits */}
+              <div className="space-y-8">
+                <div>
+                  <h2 className="font-playfair text-3xl md:text-4xl font-bold text-white mb-6 leading-tight">
+                    Non perderti i nostri contenuti esclusivi
+                  </h2>
+                  <p className="text-muted-foreground text-lg mb-8">
+                    Unisciti alla community di estetiste professioniste e ricevi contenuti di valore direttamente nella tua casella email.
+                  </p>
+                </div>
+                
+                <div className="space-y-4">
+                  {[
+                    "Tips settimanali per il tuo business",
+                    "Accesso anticipato ai nuovi corsi",
+                    "Strategie e strumenti pratici",
+                    "Notifica prioritaria per il lancio della piattaforma"
+                  ].map((benefit, index) => (
+                    <div key={index} className="flex items-center space-x-3">
+                      <div className="w-6 h-6 bg-[#6AA8B3] rounded-full flex items-center justify-center shrink-0">
+                        <Check className="w-4 h-4 text-white" />
+                      </div>
+                      <span className="text-white font-medium">{benefit}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right Column - Newsletter Form */}
+              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8">
+                <div className="text-center mb-8">
+                  <div className="w-16 h-16 bg-[#6AA8B3]/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <User className="w-8 h-8 text-[#6AA8B3]" />
+                  </div>
+                  <h3 className="font-playfair text-2xl font-bold text-white mb-2">
+                    Iscriviti alla Newsletter
+                  </h3>
+                  <p className="text-muted-foreground">
+                    Unisciti alla community di estetiste professioniste
+                  </p>
+                </div>
+
+                <form onSubmit={handleNewsletterSubmit} className="space-y-6">
+                  <div>
+                    <Label htmlFor="newsletter-name" className="text-white mb-2 block">
+                      Nome *
+                    </Label>
+                    <Input
+                      id="newsletter-name"
+                      type="text"
+                      value={newsletterData.name}
+                      onChange={(e) => setNewsletterData(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Il tuo nome"
+                      required
+                      disabled={isSubmittingNewsletter}
+                      className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:bg-white/20 transition-all duration-200"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="newsletter-email" className="text-white mb-2 block">
+                      Email *
+                    </Label>
+                    <Input
+                      id="newsletter-email"
+                      type="email"
+                      value={newsletterData.email}
+                      onChange={(e) => setNewsletterData(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="la.tua.email@esempio.com"
+                      required
+                      disabled={isSubmittingNewsletter}
+                      className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:bg-white/20 transition-all duration-200"
+                    />
+                  </div>
+
+                  <Button 
+                    type="submit" 
+                    disabled={isSubmittingNewsletter}
+                    className="w-full bg-gradient-to-r from-[#6AA8B3] to-[#E46A39] hover:from-[#5a97a2] hover:to-[#d45f32] text-white font-semibold py-3 transition-all duration-300 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSubmittingNewsletter ? (
+                      <div className="flex items-center justify-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        <span>Iscrizione in corso...</span>
+                      </div>
+                    ) : (
+                      'ISCRIVITI ALLA NEWSLETTER'
+                    )}
+                  </Button>
+                </form>
+
+                <p className="text-xs text-gray-400 text-center mt-4">
+                  Rispettiamo la tua privacy. Nessuno spam, solo contenuti di valore.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
