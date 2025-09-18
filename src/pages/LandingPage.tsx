@@ -210,39 +210,33 @@ const LandingPage = () => {
 
           <div className="grid md:grid-cols-3 gap-8 items-stretch">
             <GlowCard glowColor="orange" customSize className="w-full p-8 text-center h-[320px] flex flex-col items-center">
-              <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4 shrink-0">
                 <Check className="w-8 h-8 text-white" />
               </div>
-              <div className="flex-1 flex flex-col justify-center space-y-3">
-                <h3 className="font-playfair text-xl font-bold text-white text-center leading-tight mb-4">CALCOLO DEL<br />COSTO ORARIO</h3>
-                <p className="text-muted-foreground text-center leading-relaxed text-sm max-w-[34ch] mx-auto">
-                  Come organizzare il tuo listino in modo strategico (anche se non sei brava con i numeri o il marketing)
-                </p>
-              </div>
+              <h3 className="font-playfair text-xl font-bold text-white text-center leading-tight mb-2 min-h-[56px] flex items-center justify-center">CALCOLO DEL<br />COSTO ORARIO</h3>
+              <p className="text-muted-foreground text-center leading-relaxed text-sm max-w-[34ch] mx-auto min-h-[72px] flex items-center justify-center">
+                Come organizzare il tuo listino in modo strategico (anche se non sei brava con i numeri o il marketing)
+              </p>
             </GlowCard>
 
             <GlowCard glowColor="blue" customSize className="w-full p-8 text-center h-[320px] flex flex-col items-center">
-              <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4 shrink-0">
                 <Check className="w-8 h-8 text-white" />
               </div>
-              <div className="flex-1 flex flex-col justify-center space-y-3">
-                <h3 className="font-playfair text-xl font-bold text-white text-center leading-tight mb-4">CALCOLO DEL<br />PRODOTTO</h3>
-                <p className="text-muted-foreground text-center leading-relaxed text-sm max-w-[34ch] mx-auto">
-                  Cosa scrivere per trasmettere professionalità e farti scegliere dai tuoi clienti
-                </p>
-              </div>
+              <h3 className="font-playfair text-xl font-bold text-white text-center leading-tight mb-2 min-h-[56px] flex items-center justify-center">CALCOLO DEL<br />PRODOTTO</h3>
+              <p className="text-muted-foreground text-center leading-relaxed text-sm max-w-[34ch] mx-auto min-h-[72px] flex items-center justify-center">
+                Cosa scrivere per trasmettere professionalità e farti scegliere dai tuoi clienti
+              </p>
             </GlowCard>
 
             <GlowCard glowColor="green" customSize className="w-full p-8 text-center h-[320px] flex flex-col items-center">
-              <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4 shrink-0">
                 <Check className="w-8 h-8 text-white" />
               </div>
-              <div className="flex-1 flex flex-col justify-center space-y-3">
-                <h3 className="font-playfair text-xl font-bold text-white text-center leading-tight mb-4">CALCOLO DEL<br />MARGINE OPERATIVO</h3>
-                <p className="text-muted-foreground text-center leading-relaxed text-sm max-w-[34ch] mx-auto">
-                  La Formula Per Valutare Il Prezzo Giusto
-                </p>
-              </div>
+              <h3 className="font-playfair text-xl font-bold text-white text-center leading-tight mb-2 min-h-[56px] flex items-center justify-center">CALCOLO DEL<br />MARGINE OPERATIVO</h3>
+              <p className="text-muted-foreground text-center leading-relaxed text-sm max-w-[34ch] mx-auto min-h-[72px] flex items-center justify-center">
+                La Formula Per Valutare Il Prezzo Giusto
+              </p>
             </GlowCard>
           </div>
         </div>
