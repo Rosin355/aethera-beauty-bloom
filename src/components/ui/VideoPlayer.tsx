@@ -7,12 +7,14 @@ interface VideoPlayerProps {
   video: SiteVideo;
   className?: string;
   autoPlay?: boolean;
+  fallbackLocalPath?: string; // es. "/video-anteprima.mp4"
 }
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ 
   video, 
   className = "", 
-  autoPlay = false 
+  autoPlay = false,
+  fallbackLocalPath
 }) => {
   const [isPlaying, setIsPlaying] = useState(autoPlay);
 
@@ -33,19 +35,52 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   };
 
   const handlePlay = () => {
-    // Per YouTube, apri in una nuova finestra
-    if (video.source_type === 'youtube' && video.youtube_video_id) {
-      window.open(`https://www.youtube.com/watch?v=${video.youtube_video_id}`, '_blank');
-    } 
-    // Per file locali, apri il file direttamente
-    else if (video.source_type === 'file' && video.file_name) {
-      window.open(getVideoUrl(video.file_name), '_blank');
+    if (video.source_type === 'file' && video.file_name) {
+      setIsPlaying(true);
+      return;
+    }
+    if (video.source_type === 'youtube') {
+      if (fallbackLocalPath) {
+        setIsPlaying(true); // userà il fallback locale nel player nativo
+        return;
+      }
+      if (video.youtube_video_id) {
+        window.open(`https://www.youtube.com/watch?v=${video.youtube_video_id}`, '_blank');
+        return;
+      }
     }
   };
 
   const thumbnailUrl = getThumbnailUrl();
 
-  // MOSTRA SEMPRE SOLO LA THUMBNAIL - MAI l'iframe direttamente
+  // Se è in riproduzione e abbiamo una sorgente file (reale o fallback), usa il player nativo HTML5
+  if (isPlaying) {
+    let src: string | null = null;
+    if (video.source_type === 'file' && video.file_name) {
+      src = getVideoUrl(video.file_name);
+    } else if (video.source_type === 'youtube' && fallbackLocalPath) {
+      src = fallbackLocalPath; // usa il file locale come fallback
+    }
+
+    if (src) {
+      return (
+        <div className={`relative ${className}`}>
+          <video
+            controls
+            preload="metadata"
+            className="w-full h-full rounded-lg"
+            style={{ backgroundColor: '#000' }}
+            autoPlay
+          >
+            <source src={src} type="video/mp4" />
+            Il tuo browser non supporta il tag video.
+          </video>
+        </div>
+      );
+    }
+  }
+
+  // Altrimenti, mostra la thumbnail con overlay e bottone play
   return (
     <div className={`relative cursor-pointer group ${className}`}>
       {/* Thumbnail */}
@@ -57,7 +92,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
             onError={(e) => {
               // Fallback se l'immagine non si carica
-              e.currentTarget.style.display = 'none';
+              (e.currentTarget as HTMLImageElement).style.display = 'none';
             }}
           />
         ) : (

@@ -188,6 +188,7 @@ const Welcome = () => {
                   <VideoPlayer 
                     video={fullVideo}
                     className="w-full h-full"
+                    fallbackLocalPath="/video-completo.mp4"
                   />
                 ) : (
                   <div className="w-full h-full bg-gray-900 flex items-center justify-center">
