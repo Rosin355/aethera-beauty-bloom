@@ -35,14 +35,21 @@ const AdminLogin = () => {
         });
       } else if (data.user) {
         // Check if user has admin role
-        const { data: roleData } = await supabase
+        const { data: roleData, error: roleError } = await supabase
           .from('user_roles')
           .select('role')
           .eq('user_id', data.user.id)
           .eq('role', 'admin')
-          .single();
+          .maybeSingle();
 
-        if (roleData) {
+        if (roleError) {
+          toast({
+            title: "Errore",
+            description: "Errore nella verifica dei permessi.",
+            variant: "destructive",
+          });
+          await supabase.auth.signOut();
+        } else if (roleData) {
           toast({
             title: "Accesso effettuato",
             description: "Benvenuto nell'area amministrazione.",
