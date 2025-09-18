@@ -64,15 +64,46 @@ const LandingPage = () => {
 
       if (error) {
         if (error.code === '23505') {
-          toast({
-            title: "Email già registrata",
-            description: "Questa email è già registrata. Controlla la tua casella per il link al video.",
-            variant: "destructive"
-          });
+          // Email già registrata, recupera il token esistente
+          try {
+            const { data: existingData, error: fetchError } = await supabase
+              .from('mailing_list')
+              .select('access_token')
+              .eq('email', formData.email.trim())
+              .single();
+
+            if (fetchError || !existingData?.access_token) {
+              toast({
+                title: "Email già registrata",
+                description: "Questa email è già registrata. Usa 'Recupera accesso' per ottenere il link.",
+                variant: "destructive"
+              });
+              return;
+            }
+
+            // Redirect con il token esistente
+            toast({
+              title: "Accesso trovato!",
+              description: "Ti stiamo reindirizzando alla tua area riservata.",
+            });
+            
+            setTimeout(() => {
+              window.location.href = `/welcome?token=${existingData.access_token}`;
+            }, 1000);
+            return;
+            
+          } catch (fetchError) {
+            console.error('Errore recupero token:', fetchError);
+            toast({
+              title: "Email già registrata",
+              description: "Questa email è già registrata. Usa 'Recupera accesso' per ottenere il link.",
+              variant: "destructive"
+            });
+            return;
+          }
         } else {
           throw error;
         }
-        return;
       }
 
       // Redirect to welcome page with token

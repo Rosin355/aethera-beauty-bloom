@@ -27,28 +27,40 @@ const RecuperaAccesso = () => {
 
     setIsLoading(true);
     try {
-      // Controlla se l'email esiste nella mailing list
-      const { data, error } = await supabase
-        .from('mailing_list')
-        .select('*')
-        .eq('email', email.trim())
-        .single();
+      // Chiama l'edge function per inviare il link di accesso
+      const { data, error } = await supabase.functions.invoke('resend-access-link', {
+        body: { email: email.trim() }
+      });
 
-      if (error || !data) {
-        toast({
-          title: "Email non trovata",
-          description: "L'email inserita non è presente nella nostra lista. Assicurati di aver inserito l'email corretta.",
-          variant: "destructive"
-        });
+      if (error) {
+        if (error.message?.includes('not found') || error.message?.includes('404')) {
+          toast({
+            title: "Email non trovata",
+            description: "L'email inserita non è presente nella nostra lista. Assicurati di aver inserito l'email corretta.",
+            variant: "destructive"
+          });
+        } else {
+          throw error;
+        }
         return;
       }
 
-      // TODO: Qui chiameremo l'edge function per inviare l'email quando sarà configurato Resend
-      // Per ora mostriamo solo un messaggio di successo simulato
       toast({
-        title: "Link inviato! (simulazione)",
+        title: "Link inviato!",
         description: `Il link di accesso è stato inviato a ${email}. Controlla la tua casella email.`,
       });
+
+      // Se c'è un debug URL (per sviluppo), mostralo nella console
+      if (data?.debug_access_url) {
+        console.log('Debug: Access URL =>', data.debug_access_url);
+        
+        // In sviluppo, offri la possibilità di andare direttamente
+        toast({
+          title: "Modalità sviluppo",
+          description: "Controlla la console per il link diretto (RESEND non configurato)",
+          variant: "default"
+        });
+      }
 
       // Reset form
       setEmail('');
