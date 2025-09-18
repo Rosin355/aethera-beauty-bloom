@@ -212,6 +212,84 @@ const Welcome = () => {
             </Card>
           </div>
 
+          {/* PDF Download Section */}
+          <div className="mb-12">
+            <Card className="bg-card/20 backdrop-blur-sm border-white/10 p-8">
+              <div className="grid lg:grid-cols-2 gap-8 items-center">
+                <div className="space-y-6">
+                  <div className="flex items-center space-x-3 mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-r from-[#E46A39] to-[#C2977E] rounded-full flex items-center justify-center">
+                      <Check className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h3 className="font-playfair text-2xl font-bold text-white">
+                        Checklist Prezzo Perfetto
+                      </h3>
+                      <p className="text-[#6AA8B3] font-medium">La tua guida pratica per prezzi strategici</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <p className="text-white text-lg leading-relaxed">
+                      <strong>Ora che hai visto il video, è il momento di agire!</strong> Scarica la nostra checklist esclusiva per verificare punto per punto se i tuoi prezzi ti fanno davvero guadagnare.
+                    </p>
+                    
+                    <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 space-y-3">
+                      <h4 className="text-white font-semibold mb-3">📋 Cosa troverai nella checklist:</h4>
+                      <div className="grid grid-cols-1 gap-2 text-sm">
+                        {[
+                          "✅ Come calcolare il tuo costo orario reale",
+                          "✅ Analisi dei servizi più venduti e redditizi",
+                          "✅ Formula corretta per applicare il margine",
+                          "✅ Struttura del listino perfetto",
+                          "✅ Come comunicare i prezzi con sicurezza"
+                        ].map((item, index) => (
+                          <div key={index} className="flex items-start space-x-2">
+                            <span className="text-[#6AA8B3] mt-0.5">•</span>
+                            <p className="text-white/90">{item}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-2xl p-8 text-center">
+                  <div className="w-20 h-20 bg-gradient-to-r from-[#E46A39] to-[#6AA8B3] rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                    </svg>
+                  </div>
+                  
+                  <h4 className="font-playfair text-xl font-bold text-white mb-3">
+                    Scarica Subito la Checklist
+                  </h4>
+                  <p className="text-white/80 text-sm mb-6">
+                    Un PDF di 7 pagine per trasformare immediatamente la strategia dei tuoi prezzi
+                  </p>
+                  
+                  <Button 
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = '/Checklist_Prezzo_Perfetto_4_Elementi_Italia.pdf';
+                      link.download = 'Checklist_Prezzo_Perfetto_4_Elementi_Italia.pdf';
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}
+                    className="w-full h-12 bg-gradient-to-r from-[#E46A39] to-[#6AA8B3] hover:from-[#E46A39]/80 hover:to-[#6AA8B3]/80 text-white font-semibold text-sm transition-all duration-300 shadow-lg hover:shadow-xl"
+                  >
+                    📥 SCARICA LA CHECKLIST GRATUITA
+                  </Button>
+                  
+                  <p className="text-white/60 text-xs mt-3">
+                    Formato PDF • 7 pagine • Pronta da stampare
+                  </p>
+                </div>
+              </div>
+            </Card>
+          </div>
+
           {/* Newsletter Section */}
           <div className="grid lg:grid-cols-2 gap-8 items-center">
             <div className="space-y-8">
