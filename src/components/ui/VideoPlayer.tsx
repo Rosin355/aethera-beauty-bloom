@@ -135,11 +135,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               },
               onStateChange: (event: any) => {
                 console.log('[VideoPlayer] YouTube onStateChange:', event.data);
-                const isCurrentlyPlaying = event.data === window.YT.PlayerState.PLAYING;
-                if (isCurrentlyPlaying) {
+                if (event.data === window.YT.PlayerState.PLAYING) {
+                  // Video sta riproducendo - nascondi overlay
                   setIsLoading(false);
                   setIsPlaying(true);
+                } else if (event.data === window.YT.PlayerState.BUFFERING) {
+                  // Video sta caricando - mantieni loading
+                  setIsLoading(true);
                 } else if (event.data === window.YT.PlayerState.PAUSED || event.data === window.YT.PlayerState.ENDED) {
+                  // Video in pausa o finito - mostra overlay
                   setIsPlaying(false);
                   setIsLoading(false);
                 }
@@ -215,23 +219,22 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       {video.source_type === 'youtube' && (
         <div
           ref={youtubeContainerRef}
-          className="w-full h-full rounded-lg absolute inset-0 transition-opacity duration-500"
+          className="w-full h-full rounded-lg absolute inset-0"
           style={{ 
             backgroundColor: '#000',
-            zIndex: 10,
-            opacity: isPlaying ? 1 : 0
+            zIndex: 10
           }}
         />
       )}
 
       {/* Overlay e UI di anteprima */}
-      {(!isPlaying || isLoading) && (
+      {!isPlaying && (
         <>
           <div 
             className="absolute inset-0 pointer-events-none transition-opacity duration-500" 
             style={{ 
               zIndex: 20,
-              opacity: isLoading ? 0.8 : 1
+              opacity: isLoading ? 0.5 : 1
             }}
           >
             <div className="w-full h-full bg-gray-900 overflow-hidden rounded-lg">
