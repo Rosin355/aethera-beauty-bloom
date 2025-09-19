@@ -223,7 +223,7 @@ const LandingPage = () => {
                   <VideoPlayer 
                     video={previewVideo}
                     className="w-full h-full"
-                    fallbackLocalPath="/video-anteprima.mp4"
+                    fallbackLocalPath="/video-completo.mp4"
                     openInModal={true}
                   />
                 ) : (
