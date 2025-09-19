@@ -109,7 +109,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             videoId: video.youtube_video_id,
             playerVars: {
               autoplay: 1,
-              controls: 1,
+              controls: 0,
               modestbranding: 1,
               rel: 0,
               showinfo: 0,
