@@ -132,15 +132,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               },
               onError: (event: any) => {
                 console.error('[VideoPlayer] YouTube onError:', event.data);
-                // Fallback: apri in nuova scheda
-                window.open(`https://www.youtube.com/watch?v=${video.youtube_video_id}`, '_blank');
+                setIsPlaying(false);
               }
             }
           });
         } catch (error) {
           console.error('[VideoPlayer] Errore creazione YouTube player:', error);
-          // Fallback: apri in nuova scheda
-          window.open(`https://www.youtube.com/watch?v=${video.youtube_video_id}`, '_blank');
+          setIsPlaying(false);
         }
       } else if (youtubePlayerRef.current) {
         // Player già esistente, riproduci
@@ -148,9 +146,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         youtubePlayerRef.current.playVideo();
         setIsPlaying(true);
       } else {
-        // API non pronta, fallback
-        console.warn('[VideoPlayer] YouTube API non pronta, fallback');
-        window.open(`https://www.youtube.com/watch?v=${video.youtube_video_id}`, '_blank');
+        // API non pronta, aspetta un momento e riprova
+        console.warn('[VideoPlayer] YouTube API non pronta, riprovo...');
+        setTimeout(() => handlePlay(), 500);
       }
       return;
     }
@@ -204,8 +202,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           className="w-full h-full rounded-lg absolute inset-0"
           style={{ 
             backgroundColor: '#000',
-            display: isPlaying ? 'block' : 'none',
-            zIndex: 10
+            zIndex: isPlaying ? 10 : 5
           }}
         />
       )}
@@ -213,7 +210,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       {/* Overlay e UI di anteprima */}
       {!isPlaying && (
         <>
-          <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 20 }}>
             <div className="w-full h-full bg-gray-900 overflow-hidden rounded-lg">
               {thumbnailUrl ? (
                 <img
@@ -236,7 +233,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             <div className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors duration-300 rounded-lg" />
           </div>
 
-          <div className="absolute inset-0 flex items-center justify-center" onClick={handlePlay}>
+          <div className="absolute inset-0 flex items-center justify-center" onClick={handlePlay} style={{ zIndex: 30 }}>
             <div className="bg-white/90 hover:bg-white rounded-full p-6 transition-all duration-300 group-hover:scale-110 shadow-xl border-2 border-white/20">
               <Play className="w-10 h-10 text-primary ml-1" fill="currentColor" />
             </div>
