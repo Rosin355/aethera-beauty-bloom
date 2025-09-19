@@ -52,7 +52,7 @@ const handler = async (req: Request): Promise<Response> => {
       console.error('Database error:', error);
       
       if ((error as any).code === '23505') {
-        // Email già presente: recupero access_token esistente e ritorno 200
+        // Email già presente: recupero access_token esistente e invio email di benvenuto
         const { data: existing, error: fetchErr } = await supabase
           .from('mailing_list')
           .select('access_token')
@@ -70,7 +70,83 @@ const handler = async (req: Request): Promise<Response> => {
           );
         }
 
-        console.log('Email già registrata, token recuperato e restituito');
+        console.log('Email già registrata: token trovato, provo a inviare l’email di benvenuto');
+
+        // Send welcome email with Resend (anche in caso di email già registrata)
+        const resendApiKey = Deno.env.get('RESEND_API_KEY');
+        if (resendApiKey) {
+          try {
+            const accessUrl = `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app') || 'https://4elementiitalia.it'}/welcome?token=${existing.access_token}`;
+            const emailResponse = await fetch('https://api.resend.com/emails', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${resendApiKey}`,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                from: '4 Elementi Italia <benvenuto@4elementiitalia.it>',
+                to: [email],
+                subject: 'Benvenuto/a in 4 Elementi Italia! 🎉',
+                html: `
+                  <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #1B1B1B, #2D2D2D); color: white; border-radius: 12px; overflow: hidden;">
+                    <div style="padding: 40px 30px; text-align: center;">
+                      <h1 style="color: #6AA8B3; font-size: 28px; margin-bottom: 20px; font-family: 'Playfair Display', serif;">
+                        Benvenuto/a ${name}! 🎉
+                      </h1>
+                      <p style="font-size: 18px; margin-bottom: 30px; color: #F6F4ED;">
+                        Grazie per esserti iscritto/a alla nostra community esclusiva!
+                      </p>
+                      <p style="margin-bottom: 30px; color: #CBD8D4;">
+                        Abbiamo preparato per te un contenuto speciale che ti aiuterà a strutturare il tuo listino prezzi in modo strategico.
+                      </p>
+                      <div style="text-align: center; margin: 40px 0;">
+                        <a href="${accessUrl}" 
+                           style="background: linear-gradient(135deg, #6AA8B3, #E46A39); 
+                                  color: white; 
+                                  padding: 18px 40px; 
+                                  text-decoration: none; 
+                                  border-radius: 8px; 
+                                  font-weight: bold;
+                                  font-size: 16px;
+                                  display: inline-block;">
+                          🎬 Accedi al Contenuto Esclusivo
+                        </a>
+                      </div>
+                      <div style="background: rgba(106, 168, 179, 0.1); padding: 20px; border-radius: 8px; margin: 30px 0;">
+                        <h3 style="color: #6AA8B3; margin-bottom: 15px;">Cosa troverai:</h3>
+                        <ul style="text-align: left; color: #CBD8D4; line-height: 1.6;">
+                          <li>✅ Video completo sulla strategia dei prezzi</li>
+                          <li>✅ Tips esclusivi per il tuo business</li>
+                          <li>✅ Accesso alla community riservata</li>
+                        </ul>
+                      </div>
+                      <p style="margin-top: 30px; color: #C2977E; font-style: italic;">
+                        Conserva questa email, contiene il tuo link di accesso personale.
+                      </p>
+                    </div>
+                    <div style="background: #1B1B1B; padding: 20px; text-align: center;">
+                      <p style="color: #888; font-size: 12px; margin: 0;">
+                        © 2024 4 Elementi Italia. Tutti i diritti riservati.
+                      </p>
+                    </div>
+                  </div>
+                `
+              }),
+            });
+
+            if (!emailResponse.ok) {
+              const errorData = await emailResponse.text();
+              console.error('Errore invio welcome email (email già registrata):', errorData);
+            } else {
+              console.log('Welcome email reinviata con successo a:', email);
+            }
+          } catch (error) {
+            console.error('Errore invio welcome email (email già registrata):', error);
+          }
+        } else {
+          console.log('RESEND_API_KEY non configurata, salto invio email (email già registrata)');
+        }
+
         return new Response(
           JSON.stringify({ success: true, access_token: existing.access_token, message: 'Email già registrata' }),
           {
