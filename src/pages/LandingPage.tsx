@@ -167,10 +167,10 @@ const LandingPage = () => {
       <Glow variant="top" className="opacity-30" />
       
       {/* Header */}
-      <header className="relative z-10 px-4 py-6">
+      <header className="relative z-10 px-6 py-4 sm:px-4 sm:py-6">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-3">
-            <img src="/4-elementi-logo.png" alt="4 Elementi Italia Logo" className="h-12 w-auto" />
+            <img src="/4-elementi-logo.png" alt="4 Elementi Italia Logo" className="h-10 sm:h-12 w-auto" />
             
           </div>
           <nav className="hidden md:flex space-x-8">
@@ -183,40 +183,40 @@ const LandingPage = () => {
       </header>
 
       {/* Hero Section with Aurora Background */}
-      <AuroraBackground className="h-auto py-16">
-        <div className="container mx-auto relative z-10">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8">
-              <div className="space-y-4">
-                <h1 className="font-playfair text-4xl lg:text-6xl font-bold leading-tight text-white">
+      <AuroraBackground className="h-auto py-8 sm:py-12 lg:py-16">
+        <div className="container mx-auto relative z-10 px-6 sm:px-4">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+            <div className="space-y-6 sm:space-y-8">
+              <div className="space-y-3 sm:space-y-4">
+                <h1 className="font-playfair text-3xl sm:text-4xl lg:text-6xl font-bold leading-tight text-white">
                   SEI UN'ESTETISTA
                   <span className="gradient-text"> PROFESSIONISTA?</span>
                 </h1>
-                <p className="text-xl text-gray-300 leading-relaxed">
+                <p className="text-lg sm:text-xl text-gray-300 leading-relaxed">
                   Ecco come strutturare il tuo listino in modo strategico (senza stress)
                 </p>
               </div>
               
-              <div className="space-y-6">
-                <p className="text-muted-foreground leading-relaxed">
+              <div className="space-y-4 sm:space-y-6">
+                <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
                   Ciao! Se sei un'estetista professionista e ti stai chiedendo come strutturare un listino prezzi che sia chiaro, professionale e che valorizzi davvero i tuoi servizi... sei nel posto giusto.
                 </p>
-                <p className="text-muted-foreground leading-relaxed">
+                <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
                   Mi chiamo <strong className="text-white">Davide</strong> e con <strong className="text-white">4 Elementi Italia</strong> aiutiamo estetiste e professionisti del benessere a diventare imprenditori consapevoli, strategici e autonomi – senza stress, senza perdere tempo in corsi complicati o contenuti poco chiari.
                 </p>
               </div>
 
               <Button 
                 size="lg" 
-                className="bg-white hover:bg-gray-200 text-black px-8 py-6 text-lg font-medium"
+                className="bg-white hover:bg-gray-200 text-black px-6 sm:px-8 py-4 sm:py-6 text-base sm:text-lg font-medium w-full sm:w-auto"
                 onClick={() => document.getElementById('video-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
               >
-                <Play className="w-5 h-5 mr-2" />
+                <Play className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
                 ACCEDI AL VIDEO GRATUITO
               </Button>
             </div>
 
-            <div className="relative space-y-6">
+            <div className="relative space-y-4 sm:space-y-6 mt-8 lg:mt-0">
               {/* Video Anteprima */}
               <div className="w-full aspect-video bg-card/30 backdrop-blur-sm border-white/10 border rounded-lg overflow-hidden">
                 {previewVideo ? (
@@ -232,11 +232,11 @@ const LandingPage = () => {
                 )}
               </div>
               
-              <Card id="video-form" className="bg-card/50 backdrop-blur-sm border-white/10 p-8">
-                <div className="space-y-6">
+              <Card id="video-form" className="bg-card/50 backdrop-blur-sm border-white/10 p-6 sm:p-8">
+                <div className="space-y-4 sm:space-y-6">
                   <div className="text-center">
-                    <h3 className="font-playfair text-2xl font-bold mb-4">ACCEDI AL VIDEO GRATUITO</h3>
-                    <p className="text-muted-foreground">Compila il form e ricevi subito il link</p>
+                    <h3 className="font-playfair text-xl sm:text-2xl font-bold mb-3 sm:mb-4">ACCEDI AL VIDEO GRATUITO</h3>
+                    <p className="text-muted-foreground text-sm sm:text-base">Compila il form e ricevi subito il link</p>
                   </div>
                   
                   <form onSubmit={handleSubmit} className="space-y-4">
@@ -251,7 +251,7 @@ const LandingPage = () => {
                     <Button 
                       type="submit" 
                       disabled={isSubmitting}
-                      className="w-full bg-white hover:bg-gray-200 text-black font-medium"
+                      className="w-full bg-white hover:bg-gray-200 text-black font-medium text-sm sm:text-base py-3"
                     >
                       {isSubmitting ? "INVIO IN CORSO..." : "RICEVI IL VIDEO GRATUITO"}
                     </Button>
@@ -264,44 +264,44 @@ const LandingPage = () => {
       </AuroraBackground>
 
       {/* What You'll Learn */}
-      <section id="video" className="relative z-10 px-4 py-16">
+      <section id="video" className="relative z-10 px-6 sm:px-4 py-12 sm:py-16">
         <div className="container mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="font-playfair text-3xl lg:text-4xl font-bold mb-4">
+          <div className="text-center mb-8 sm:mb-12">
+            <h2 className="font-playfair text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4">
               COSA IMPARERAI NEL VIDEO
             </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
               Ti mostro, passo dopo passo, tutto quello che serve per creare un listino strategico e professionale
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8 items-stretch">
-            <GlowCard glowColor="orange" customSize className="w-full p-8 text-center h-[320px] flex flex-col items-center">
-              <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4 shrink-0">
-                <Check className="w-8 h-8 text-white" />
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 items-stretch">
+            <GlowCard glowColor="orange" customSize className="w-full p-6 sm:p-8 text-center min-h-[280px] sm:h-[320px] flex flex-col items-center">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 shrink-0">
+                <Check className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
               </div>
-              <h3 className="font-playfair text-xl font-bold text-white text-center leading-tight mb-2 min-h-[56px] flex items-center justify-center">CALCOLO DEL<br />COSTO ORARIO</h3>
-              <p className="text-muted-foreground text-center leading-relaxed text-sm max-w-[34ch] mx-auto min-h-[72px] flex items-center justify-center">
+              <h3 className="font-playfair text-lg sm:text-xl font-bold text-white text-center leading-tight mb-2 min-h-[48px] sm:min-h-[56px] flex items-center justify-center">CALCOLO DEL<br />COSTO ORARIO</h3>
+              <p className="text-muted-foreground text-center leading-relaxed text-xs sm:text-sm max-w-[32ch] sm:max-w-[34ch] mx-auto min-h-[60px] sm:min-h-[72px] flex items-center justify-center">
                 Come organizzare il tuo listino in modo strategico (anche se non sei brava con i numeri o il marketing)
               </p>
             </GlowCard>
 
-            <GlowCard glowColor="blue" customSize className="w-full p-8 text-center h-[320px] flex flex-col items-center">
-              <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4 shrink-0">
-                <Check className="w-8 h-8 text-white" />
+            <GlowCard glowColor="blue" customSize className="w-full p-6 sm:p-8 text-center min-h-[280px] sm:h-[320px] flex flex-col items-center">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 shrink-0">
+                <Check className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
               </div>
-              <h3 className="font-playfair text-xl font-bold text-white text-center leading-tight mb-2 min-h-[56px] flex items-center justify-center">CALCOLO DEL<br />PRODOTTO</h3>
-              <p className="text-muted-foreground text-center leading-relaxed text-sm max-w-[34ch] mx-auto min-h-[72px] flex items-center justify-center">
+              <h3 className="font-playfair text-lg sm:text-xl font-bold text-white text-center leading-tight mb-2 min-h-[48px] sm:min-h-[56px] flex items-center justify-center">CALCOLO DEL<br />PRODOTTO</h3>
+              <p className="text-muted-foreground text-center leading-relaxed text-xs sm:text-sm max-w-[32ch] sm:max-w-[34ch] mx-auto min-h-[60px] sm:min-h-[72px] flex items-center justify-center">
                 Cosa scrivere per trasmettere professionalità e farti scegliere dai tuoi clienti
               </p>
             </GlowCard>
 
-            <GlowCard glowColor="green" customSize className="w-full p-8 text-center h-[320px] flex flex-col items-center">
-              <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4 shrink-0">
-                <Check className="w-8 h-8 text-white" />
+            <GlowCard glowColor="green" customSize className="w-full p-6 sm:p-8 text-center min-h-[280px] sm:h-[320px] flex flex-col items-center sm:col-span-2 lg:col-span-1">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 shrink-0">
+                <Check className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
               </div>
-              <h3 className="font-playfair text-xl font-bold text-white text-center leading-tight mb-2 min-h-[56px] flex items-center justify-center">CALCOLO DEL<br />MARGINE OPERATIVO</h3>
-              <p className="text-muted-foreground text-center leading-relaxed text-sm max-w-[34ch] mx-auto min-h-[72px] flex items-center justify-center">
+              <h3 className="font-playfair text-lg sm:text-xl font-bold text-white text-center leading-tight mb-2 min-h-[48px] sm:min-h-[56px] flex items-center justify-center">CALCOLO DEL<br />MARGINE OPERATIVO</h3>
+              <p className="text-muted-foreground text-center leading-relaxed text-xs sm:text-sm max-w-[32ch] sm:max-w-[34ch] mx-auto min-h-[60px] sm:min-h-[72px] flex items-center justify-center">
                 La Formula Per Valutare Il Prezzo Giusto
               </p>
             </GlowCard>
