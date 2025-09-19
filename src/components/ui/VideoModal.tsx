@@ -22,13 +22,23 @@ const VideoModal: React.FC<VideoModalProps> = ({
   const [isLoading, setIsLoading] = useState(true);
 
   // Determina la sorgente video con fallback
-  const videoSrc = video.source_type === 'file' && video.file_name
+  // Usa direttamente il fallback locale se disponibile per evitare problemi Supabase
+  const videoSrc = fallbackLocalPath || (video.source_type === 'file' && video.file_name
     ? getVideoUrl(video.file_name)
-    : fallbackLocalPath;
+    : null);
 
-  // Se il video Supabase fallisce, usa il fallback locale
+  // Se il video fallisce, usa il fallback locale
   const [hasVideoError, setHasVideoError] = useState(false);
   const finalVideoSrc = hasVideoError && fallbackLocalPath ? fallbackLocalPath : videoSrc;
+
+  console.log('[VideoModal] Debug info:', {
+    sourceType: video.source_type,
+    fileName: video.file_name,
+    videoSrc,
+    fallbackLocalPath,
+    hasVideoError,
+    finalVideoSrc
+  });
 
   // Auto-play quando il modal si apre
   useEffect(() => {
