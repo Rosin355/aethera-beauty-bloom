@@ -776,6 +776,8 @@ const LandingPage = () => {
               href="https://www.iubenda.com/privacy-policy/19385152" 
               className="iubenda-white iubenda-noiframe iubenda-embed hover:underline" 
               title="Privacy Policy"
+              target="_blank"
+              rel="noopener noreferrer"
             >
               Privacy Policy
             </a>
@@ -784,6 +786,8 @@ const LandingPage = () => {
               href="https://www.iubenda.com/privacy-policy/19385152/cookie-policy" 
               className="iubenda-white iubenda-noiframe iubenda-embed hover:underline" 
               title="Cookie Policy"
+              target="_blank"
+              rel="noopener noreferrer"
             >
               Cookie Policy
             </a>
