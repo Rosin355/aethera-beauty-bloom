@@ -34,13 +34,13 @@ export const CookieBanner = () => {
   if (!isVisible) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center p-4 pointer-events-none">
+    <div className="fixed inset-0 z-[9999] flex items-end justify-center p-3 sm:p-4 pointer-events-none">
       <Card 
-        className={`max-w-md w-full bg-white/95 backdrop-blur-sm border-gray-200 shadow-xl pointer-events-auto transform transition-all duration-300 ${
+        className={`max-w-full sm:max-w-md w-full bg-white/98 backdrop-blur-sm border-gray-200 shadow-2xl pointer-events-auto transform transition-all duration-300 ${
           isAnimating ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
         }`}
       >
-        <div className="p-6 space-y-4">
+        <div className="p-4 sm:p-6 space-y-4">
           <div className="flex items-start gap-3">
             <Cookie className="w-6 h-6 text-brand-fire shrink-0 mt-0.5" />
             <div className="flex-1">

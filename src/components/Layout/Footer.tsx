@@ -85,23 +85,23 @@ const Footer = () => {
         
         <Separator className="my-8" />
         
-        <div className="flex flex-col md:flex-row justify-between items-center">
-          <p className="text-gray-500">© {new Date().getFullYear()} 4 elementi Italia. Tutti i diritti riservati.</p>
-            <div className="mt-4 md:mt-0 flex space-x-4">
+        <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-gray-500 text-center md:text-left">© {new Date().getFullYear()} 4 elementi Italia. Tutti i diritti riservati.</p>
+          <div className="flex flex-wrap justify-center md:justify-end gap-x-4 gap-y-2">
             <a 
               href="https://www.iubenda.com/privacy-policy/19385152" 
-              className="text-gray-500 hover:text-brand-fire text-sm iubenda-white iubenda-noiframe iubenda-embed" 
+              className="text-gray-500 hover:text-brand-fire text-sm iubenda-white iubenda-noiframe iubenda-embed font-medium" 
               title="Privacy Policy"
             >
-              Privacy
+              Privacy Policy
             </a>
-            <Link to="/terms" className="text-gray-500 hover:text-brand-fire text-sm">Termini</Link>
+            <Link to="/terms" className="text-gray-500 hover:text-brand-fire text-sm font-medium">Termini</Link>
             <a 
               href="https://www.iubenda.com/privacy-policy/19385152/cookie-policy" 
-              className="text-gray-500 hover:text-brand-fire text-sm iubenda-white iubenda-noiframe iubenda-embed" 
+              className="text-gray-500 hover:text-brand-fire text-sm iubenda-white iubenda-noiframe iubenda-embed font-medium" 
               title="Cookie Policy"
             >
-              Cookies
+              Cookie Policy
             </a>
           </div>
         </div>
