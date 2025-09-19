@@ -75,7 +75,7 @@ const LandingPage = () => {
           if (existingData?.access_token) {
             toast({
               title: "Accesso trovato!",
-              description: "Ti stiamo reindirizzando alla tua area riservata.",
+              description: "Ti stiamo reindirizzando alla tua area riservata. Email di promemoria inviata!",
             });
             
             setTimeout(() => {
@@ -90,7 +90,17 @@ const LandingPage = () => {
       // Redirect to welcome page with token
       const data = response.data;
       if (data?.access_token) {
-        window.location.href = `/welcome?token=${data.access_token}`;
+        // Mostra feedback basato sullo stato dell'email
+        const emailStatus = data.email_sent ? "Email di benvenuto inviata!" : "Registrazione completata (email in sospeso)";
+        
+        toast({
+          title: "Perfetto! 🎉",
+          description: emailStatus + " Ti stiamo reindirizzando...",
+        });
+        
+        setTimeout(() => {
+          window.location.href = `/welcome?token=${data.access_token}`;
+        }, 1500);
       }
 
     } catch (error) {
