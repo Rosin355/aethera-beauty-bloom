@@ -155,37 +155,38 @@ const Welcome = () => {
       <Glow variant="top" className="opacity-30" />
       
       {/* Header */}
-      <header className="relative z-10 px-4 py-6">
+      <header className="relative z-10 px-4 py-4 sm:py-6">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-3">
-            <img src="/4-elementi-logo.png" alt="4 Elementi Italia Logo" className="h-12 w-auto" />
+            <img src="/4-elementi-logo.png" alt="4 Elementi Italia Logo" className="h-10 sm:h-12 w-auto" />
           </div>
           <Button 
             variant="ghost" 
             onClick={() => navigate('/landing')}
-            className="text-muted-foreground hover:text-foreground"
+            className="text-muted-foreground hover:text-foreground text-sm sm:text-base"
           >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Torna alla Landing
+            <ArrowLeft className="w-4 h-4 mr-1 sm:mr-2" />
+            <span className="hidden sm:inline">Torna alla Landing</span>
+            <span className="sm:hidden">Indietro</span>
           </Button>
         </div>
       </header>
 
       {/* Welcome Section */}
-      <section className="relative z-10 px-4 py-8">
+      <section className="relative z-10 px-4 py-4 sm:py-8">
         <div className="container mx-auto max-w-4xl">
-          <div className="text-center mb-8">
-            <h1 className="font-playfair text-3xl lg:text-5xl font-bold mb-4">
+          <div className="text-center mb-6 sm:mb-8">
+            <h1 className="font-playfair text-2xl sm:text-3xl lg:text-5xl font-bold mb-4 leading-tight">
               Benvenuto/a <span className="gradient-text">{mailingListData?.name}</span>!
             </h1>
-            <p className="text-xl text-muted-foreground mb-8">
+            <p className="text-base sm:text-xl text-muted-foreground mb-6 sm:mb-8 px-2">
               Ecco il video completo che ti aiuterà a strutturare il tuo listino prezzi in modo strategico
             </p>
           </div>
 
           {/* Video Completo */}
-          <div className="mb-12">
-            <Card className="bg-card/30 backdrop-blur-sm border-white/10 p-4">
+          <div className="mb-8 sm:mb-12">
+            <Card className="bg-card/30 backdrop-blur-sm border-white/10 p-2 sm:p-4">
               <div className="aspect-video rounded-lg overflow-hidden">
                 {fullVideo ? (
                   <VideoPlayer 
@@ -203,30 +204,30 @@ const Welcome = () => {
           </div>
 
           {/* PDF Download Section */}
-          <div className="mb-12">
-            <Card className="bg-card/20 backdrop-blur-sm border-white/10 p-8">
-              <div className="grid lg:grid-cols-2 gap-8 items-center">
-                <div className="space-y-6">
-                  <div className="flex items-center space-x-3 mb-4">
-                    <div className="w-12 h-12 bg-gradient-to-r from-[#E46A39] to-[#C2977E] rounded-full flex items-center justify-center">
-                      <Check className="w-6 h-6 text-white" />
+          <div className="mb-8 sm:mb-12">
+            <Card className="bg-card/20 backdrop-blur-sm border-white/10 p-4 sm:p-6 lg:p-8">
+              <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-8 lg:items-center">
+                <div className="space-y-4 sm:space-y-6">
+                  <div className="flex items-start sm:items-center space-x-3 mb-4">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-r from-[#E46A39] to-[#C2977E] rounded-full flex items-center justify-center flex-shrink-0 mt-1 sm:mt-0">
+                      <Check className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                     </div>
-                    <div>
-                      <h3 className="font-playfair text-2xl font-bold text-white">
+                    <div className="min-w-0">
+                      <h3 className="font-playfair text-xl sm:text-2xl font-bold text-white leading-tight">
                         Checklist Prezzo Perfetto
                       </h3>
-                      <p className="text-[#6AA8B3] font-medium">La tua guida pratica per prezzi strategici</p>
+                      <p className="text-[#6AA8B3] font-medium text-sm sm:text-base">La tua guida pratica per prezzi strategici</p>
                     </div>
                   </div>
                   
                   <div className="space-y-4">
-                    <p className="text-white text-lg leading-relaxed">
+                    <p className="text-white text-sm sm:text-base lg:text-lg leading-relaxed">
                       <strong>Ora che hai visto il video, è il momento di agire!</strong> Scarica la nostra checklist esclusiva per verificare punto per punto se i tuoi prezzi ti fanno davvero guadagnare.
                     </p>
                     
-                    <div className="bg-white/10 backdrop-blur-sm rounded-lg p-4 space-y-3">
-                      <h4 className="text-white font-semibold mb-3">📋 Cosa troverai nella checklist:</h4>
-                      <div className="grid grid-cols-1 gap-2 text-sm">
+                    <div className="bg-white/10 backdrop-blur-sm rounded-lg p-3 sm:p-4 space-y-3">
+                      <h4 className="text-white font-semibold text-sm sm:text-base mb-3">📋 Cosa troverai nella checklist:</h4>
+                      <div className="space-y-2 text-xs sm:text-sm">
                         {[
                           "✅ Come calcolare il tuo costo orario reale",
                           "✅ Analisi dei servizi più venduti e redditizi",
@@ -235,8 +236,8 @@ const Welcome = () => {
                           "✅ Come comunicare i prezzi con sicurezza"
                         ].map((item, index) => (
                           <div key={index} className="flex items-start space-x-2">
-                            <span className="text-[#6AA8B3] mt-0.5">•</span>
-                            <p className="text-white/90">{item}</p>
+                            <span className="text-[#6AA8B3] mt-0.5 flex-shrink-0">•</span>
+                            <p className="text-white/90 leading-relaxed">{item}</p>
                           </div>
                         ))}
                       </div>
@@ -244,17 +245,17 @@ const Welcome = () => {
                   </div>
                 </div>
 
-                <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-2xl p-8 text-center">
-                  <div className="w-20 h-20 bg-gradient-to-r from-[#E46A39] to-[#6AA8B3] rounded-full flex items-center justify-center mx-auto mb-6">
-                    <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="bg-gradient-to-br from-white/10 to-white/5 backdrop-blur-sm rounded-2xl p-6 sm:p-8 text-center">
+                  <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-r from-[#E46A39] to-[#6AA8B3] rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                    <svg className="w-8 h-8 sm:w-10 sm:h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                     </svg>
                   </div>
                   
-                  <h4 className="font-playfair text-xl font-bold text-white mb-3">
+                  <h4 className="font-playfair text-lg sm:text-xl font-bold text-white mb-3">
                     Scarica Subito la Checklist
                   </h4>
-                  <p className="text-white/80 text-sm mb-6">
+                  <p className="text-white/80 text-xs sm:text-sm mb-4 sm:mb-6 px-2">
                     Un PDF di 7 pagine per trasformare immediatamente la strategia dei tuoi prezzi
                   </p>
                   
@@ -267,7 +268,7 @@ const Welcome = () => {
                       link.click();
                       document.body.removeChild(link);
                     }}
-                    className="w-full h-12 bg-gradient-to-r from-[#E46A39] to-[#6AA8B3] hover:from-[#E46A39]/80 hover:to-[#6AA8B3]/80 text-white font-semibold text-sm transition-all duration-300 shadow-lg hover:shadow-xl"
+                    className="w-full h-10 sm:h-12 bg-gradient-to-r from-[#E46A39] to-[#6AA8B3] hover:from-[#E46A39]/80 hover:to-[#6AA8B3]/80 text-white font-semibold text-xs sm:text-sm transition-all duration-300 shadow-lg hover:shadow-xl"
                   >
                     📥 SCARICA LA CHECKLIST GRATUITA
                   </Button>
@@ -281,45 +282,45 @@ const Welcome = () => {
           </div>
 
           {/* Newsletter Section */}
-          <div className="grid lg:grid-cols-2 gap-8 items-center">
-            <div className="space-y-8">
+          <div className="space-y-6 lg:space-y-0 lg:grid lg:grid-cols-2 lg:gap-8 lg:items-center">
+            <div className="space-y-6 sm:space-y-8">
               <div>
-                <h2 className="font-playfair text-3xl md:text-4xl font-bold text-white mb-6 leading-tight">
+                <h2 className="font-playfair text-2xl sm:text-3xl md:text-4xl font-bold text-white mb-4 sm:mb-6 leading-tight">
                   Sta per arrivare qualcosa di grande.
                 </h2>
-                <p className="text-muted-foreground text-lg mb-8">
+                <p className="text-muted-foreground text-sm sm:text-base lg:text-lg mb-6 sm:mb-8">
                   Iscriviti ora per non perderti il lancio ufficiale della piattaforma e accedere in anteprima alla community riservata ai professionisti del settore.
                 </p>
               </div>
               
-              <div className="space-y-4">
+              <div className="space-y-3 sm:space-y-4">
                 {[
                   "Tips settimanali esclusivi per far crescere il tuo business",
                   "Strategie pratiche e strumenti pronti all'uso",
                   "Accesso anticipato a corsi, risorse e novità"
                 ].map((benefit, index) => (
-                  <div key={index} className="flex items-center space-x-3">
-                    <div className="w-6 h-6 bg-[#6AA8B3] rounded-full flex items-center justify-center shrink-0">
-                      <Check className="w-4 h-4 text-white" />
+                  <div key={index} className="flex items-start space-x-3">
+                    <div className="w-5 h-5 sm:w-6 sm:h-6 bg-[#6AA8B3] rounded-full flex items-center justify-center shrink-0 mt-0.5">
+                      <Check className="w-3 h-3 sm:w-4 sm:h-4 text-white" />
                     </div>
-                    <p className="text-white text-lg">{benefit}</p>
+                    <p className="text-white text-sm sm:text-base lg:text-lg leading-relaxed">{benefit}</p>
                   </div>
                 ))}
               </div>
             </div>
 
-            <Card className="bg-card/20 backdrop-blur-sm border-white/10 p-8">
-              <div className="space-y-6">
+            <Card className="bg-card/20 backdrop-blur-sm border-white/10 p-4 sm:p-6 lg:p-8">
+              <div className="space-y-4 sm:space-y-6">
                 <div className="text-center">
-                  <div className="w-16 h-16 bg-[#6AA8B3]/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Users className="w-8 h-8 text-[#6AA8B3]" />
+                  <div className="w-12 h-12 sm:w-16 sm:h-16 bg-[#6AA8B3]/20 backdrop-blur-sm rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                    <Users className="w-6 h-6 sm:w-8 sm:h-8 text-[#6AA8B3]" />
                   </div>
-                  <h3 className="font-playfair text-2xl font-bold text-white mb-2">
+                  <h3 className="font-playfair text-lg sm:text-xl lg:text-2xl font-bold text-white mb-2 leading-tight">
                     👉 Iscriviti oggi. Sii tra i primi a entrare.
                   </h3>
                 </div>
 
-                <form onSubmit={handleNewsletterSubmit} className="space-y-6">
+                <form onSubmit={handleNewsletterSubmit} className="space-y-4 sm:space-y-6">
                   <div>
                     <label className="block text-white text-sm font-medium mb-2">Nome *</label>
                     <Input 
@@ -329,7 +330,7 @@ const Welcome = () => {
                         ...newsletterForm,
                         name: e.target.value
                       })} 
-                      className="bg-card/40 border-white/20 text-white placeholder:text-muted-foreground h-12" 
+                      className="bg-card/40 border-white/20 text-white placeholder:text-muted-foreground h-10 sm:h-12" 
                       required
                     />
                   </div>
@@ -343,14 +344,14 @@ const Welcome = () => {
                         ...newsletterForm,
                         email: e.target.value
                       })} 
-                      className="bg-card/40 border-white/20 text-white placeholder:text-muted-foreground h-12" 
+                      className="bg-card/40 border-white/20 text-white placeholder:text-muted-foreground h-10 sm:h-12" 
                       required
                     />
                   </div>
                   <Button 
                     type="submit" 
                     disabled={isSubmittingNewsletter}
-                    className="w-full h-12 bg-gradient-to-r from-[#6AA8B3] to-[#E46A39] hover:from-[#6AA8B3]/80 hover:to-[#E46A39]/80 text-white font-semibold text-sm transition-all duration-300"
+                    className="w-full h-10 sm:h-12 bg-gradient-to-r from-[#6AA8B3] to-[#E46A39] hover:from-[#6AA8B3]/80 hover:to-[#E46A39]/80 text-white font-semibold text-xs sm:text-sm transition-all duration-300"
                   >
                     {isSubmittingNewsletter ? "ISCRIZIONE IN CORSO..." : "ISCRIVITI ALLA NEWSLETTER"}
                   </Button>
