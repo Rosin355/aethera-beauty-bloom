@@ -25,18 +25,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const { isReady: isYouTubeReady, hasTimeout: youTubeHasTimeout, isSafariMobile } = useYouTubeAPI();
   const [loadingTimeout, setLoadingTimeout] = useState(false);
 
-  // Avvia la riproduzione in modo affidabile dopo il click
-  useEffect(() => {
-    if (isPlaying && videoRef.current && video.source_type === 'file') {
-      const playPromise = videoRef.current.play();
-      if (playPromise && typeof playPromise.then === 'function') {
-        playPromise.catch(() => {
-          // In alcuni browser è necessario un secondo tentativo
-          setTimeout(() => videoRef.current?.play().catch(() => {}), 0);
-        });
-      }
-    }
-  }, [isPlaying, video.source_type]);
 
   // Cleanup YouTube player on unmount
   useEffect(() => {
@@ -71,37 +59,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const handlePlay = async () => {
     // Per video file, usa il player nativo
     if (video.source_type === 'file' && video.file_name) {
-      const el = videoRef.current;
-      if (el) {
-        try {
-          el.muted = false;
-          setIsLoading(true);
-          setIsPlaying(true);
-          await el.play();
-          setIsLoading(false);
-          return;
-        } catch (err1) {
-          console.warn('[VideoPlayer] play() fallita, ritento in muto', err1);
-          try {
-            el.muted = true;
-            setIsPlaying(true);
-            await el.play();
-            setTimeout(() => {
-              try { el.muted = false; } catch {}
-            }, 150);
-            setIsLoading(false);
-            return;
-          } catch (err2) {
-            console.error('[VideoPlayer] secondo tentativo fallito', err2);
-            setIsLoading(false);
-            setIsPlaying(false);
-            if (nativeSrc) {
-              window.open(nativeSrc, '_blank');
-              return;
-            }
-          }
-        }
-      }
+      setIsPlaying(true);
       return;
     }
 
@@ -225,17 +183,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           className="w-full h-full rounded-lg"
           style={{ backgroundColor: '#000' }}
           playsInline
-          muted={!isPlaying}
           poster={thumbnailUrl || undefined}
-          onLoadedMetadata={() => {
-            if (autoPlay || isPlaying) {
-              const el = videoRef.current;
-              el?.play().catch(() => {});
-            }
-          }}
-          onCanPlay={() => console.log('[VideoPlayer] onCanPlay')}
-          onPlay={() => console.log('[VideoPlayer] onPlay')}
-          onPause={() => console.log('[VideoPlayer] onPause')}
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          onEnded={() => setIsPlaying(false)}
           onError={(e) => {
             console.error('[VideoPlayer] onError', e);
           }}
