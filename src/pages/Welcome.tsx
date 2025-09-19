@@ -64,7 +64,7 @@ const Welcome = () => {
         });
         
         // Load video from site_videos database
-        const video = await getSiteVideo('full');
+        const video = await getSiteVideo('preview'); // Cambiato da 'full' a 'preview'
         if (video) {
           setFullVideo(video);
         }
