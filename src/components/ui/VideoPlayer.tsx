@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Play } from 'lucide-react';
 import { SiteVideo, getYouTubeThumbnail } from '@/lib/siteVideos';
 import { getVideoUrl } from '@/lib/videoStorage';
+import { useYouTubeAPI } from '@/hooks/useYouTubeAPI';
 
 interface VideoPlayerProps {
   video: SiteVideo;
@@ -18,10 +19,13 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 }) => {
   const [isPlaying, setIsPlaying] = useState(autoPlay);
   const videoRef = useRef<HTMLVideoElement>(null);
+  const youtubeContainerRef = useRef<HTMLDivElement>(null);
+  const youtubePlayerRef = useRef<any>(null);
+  const isYouTubeReady = useYouTubeAPI();
 
   // Avvia la riproduzione in modo affidabile dopo il click
   useEffect(() => {
-    if (isPlaying && videoRef.current) {
+    if (isPlaying && videoRef.current && video.source_type === 'file') {
       const playPromise = videoRef.current.play();
       if (playPromise && typeof playPromise.then === 'function') {
         playPromise.catch(() => {
@@ -30,7 +34,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         });
       }
     }
-  }, [isPlaying]);
+  }, [isPlaying, video.source_type]);
+
+  // Cleanup YouTube player on unmount
+  useEffect(() => {
+    return () => {
+      if (youtubePlayerRef.current) {
+        try {
+          youtubePlayerRef.current.destroy();
+          console.log('[VideoPlayer] YouTube player destroyed');
+        } catch (e) {
+          console.error('[VideoPlayer] Error destroying YouTube player:', e);
+        }
+      }
+    };
+  }, []);
 
   // Determina la thumbnail da usare
   const getThumbnailUrl = () => {
@@ -49,44 +67,91 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   };
 
   const handlePlay = async () => {
-    const canUseNative =
-      (video.source_type === 'file' && !!video.file_name) ||
-      (video.source_type === 'youtube' && !!fallbackLocalPath);
-
-    const el = videoRef.current;
-
-    if (canUseNative && el) {
-      try {
-        // Primo tentativo: avvia con audio attivo
-        el.muted = false;
-        setIsPlaying(true);
-        await el.play();
-        return;
-      } catch (err1) {
-        console.warn('[VideoPlayer] play() fallita, ritento in muto', err1);
+    // Per video file, usa il player nativo
+    if (video.source_type === 'file' && video.file_name) {
+      const el = videoRef.current;
+      if (el) {
         try {
-          // Secondo tentativo: avvia in muto e poi smuta
-          el.muted = true;
+          el.muted = false;
           setIsPlaying(true);
           await el.play();
-          setTimeout(() => {
-            try { el.muted = false; } catch {}
-          }, 150);
           return;
-        } catch (err2) {
-          console.error('[VideoPlayer] secondo tentativo fallito', err2);
-          // Fallback finale: apri la sorgente in una nuova scheda
-          if (nativeSrc) {
-            window.open(nativeSrc, '_blank');
+        } catch (err1) {
+          console.warn('[VideoPlayer] play() fallita, ritento in muto', err1);
+          try {
+            el.muted = true;
+            setIsPlaying(true);
+            await el.play();
+            setTimeout(() => {
+              try { el.muted = false; } catch {}
+            }, 150);
             return;
+          } catch (err2) {
+            console.error('[VideoPlayer] secondo tentativo fallito', err2);
+            if (nativeSrc) {
+              window.open(nativeSrc, '_blank');
+              return;
+            }
           }
         }
       }
       return;
     }
 
+    // Per video YouTube, usa il player inline se l'API è pronta
     if (video.source_type === 'youtube' && video.youtube_video_id) {
-      window.open(`https://www.youtube.com/watch?v=${video.youtube_video_id}`, '_blank');
+      if (isYouTubeReady && youtubeContainerRef.current && !youtubePlayerRef.current) {
+        console.log('[VideoPlayer] Creazione YouTube player inline');
+        try {
+          youtubePlayerRef.current = new window.YT.Player(youtubeContainerRef.current, {
+            height: '100%',
+            width: '100%',
+            videoId: video.youtube_video_id,
+            playerVars: {
+              autoplay: 1,
+              controls: 1,
+              modestbranding: 1,
+              rel: 0,
+              showinfo: 0,
+              fs: 0,
+              playsinline: 1,
+              enablejsapi: 1,
+              hl: 'it',
+              origin: window.location.origin
+            },
+            events: {
+              onReady: (event: any) => {
+                console.log('[VideoPlayer] YouTube onReady');
+                setIsPlaying(true);
+                event.target.playVideo();
+              },
+              onStateChange: (event: any) => {
+                console.log('[VideoPlayer] YouTube onStateChange:', event.data);
+                const isCurrentlyPlaying = event.data === window.YT.PlayerState.PLAYING;
+                setIsPlaying(isCurrentlyPlaying);
+              },
+              onError: (event: any) => {
+                console.error('[VideoPlayer] YouTube onError:', event.data);
+                // Fallback: apri in nuova scheda
+                window.open(`https://www.youtube.com/watch?v=${video.youtube_video_id}`, '_blank');
+              }
+            }
+          });
+        } catch (error) {
+          console.error('[VideoPlayer] Errore creazione YouTube player:', error);
+          // Fallback: apri in nuova scheda
+          window.open(`https://www.youtube.com/watch?v=${video.youtube_video_id}`, '_blank');
+        }
+      } else if (youtubePlayerRef.current) {
+        // Player già esistente, riproduci
+        console.log('[VideoPlayer] Riproduci video YouTube esistente');
+        youtubePlayerRef.current.playVideo();
+        setIsPlaying(true);
+      } else {
+        // API non pronta, fallback
+        console.warn('[VideoPlayer] YouTube API non pronta, fallback');
+        window.open(`https://www.youtube.com/watch?v=${video.youtube_video_id}`, '_blank');
+      }
       return;
     }
   };
@@ -103,8 +168,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   return (
     <div className={`relative group ${className}`}>
-      {/* Video sempre presente nel DOM per compat iOS */}
-      {nativeSrc && (
+      {/* Video nativo per file locali */}
+      {nativeSrc && video.source_type === 'file' && (
         <video
           ref={videoRef}
           controls={isPlaying}
@@ -130,6 +195,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         >
           Il tuo browser non supporta il tag video.
         </video>
+      )}
+
+      {/* Container per YouTube player */}
+      {video.source_type === 'youtube' && (
+        <div
+          ref={youtubeContainerRef}
+          className={`w-full h-full rounded-lg ${isPlaying ? 'block' : 'hidden'}`}
+          style={{ backgroundColor: '#000' }}
+        />
       )}
 
       {/* Overlay e UI di anteprima */}

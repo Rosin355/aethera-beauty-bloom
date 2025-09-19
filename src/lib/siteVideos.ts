@@ -136,7 +136,7 @@ export function getYouTubeEmbedUrl(videoId: string): string {
     controls: '1',
     fs: '0',
     disablekb: '1',
-    enablejsapi: '0'
+    enablejsapi: '1'
   });
   return `https://www.youtube.com/embed/${videoId}?${params.toString()}`;
 }
