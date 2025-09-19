@@ -91,6 +91,7 @@ const Welcome = () => {
     }
 
     setIsSubmittingNewsletter(true);
+    console.log('📧 Iscrizione newsletter per:', newsletterForm.email);
     try {
       const response = await supabase.functions.invoke('newsletter-subscribe', {
         body: {
@@ -99,6 +100,8 @@ const Welcome = () => {
           mailing_list_id: mailingListData?.id
         }
       });
+
+      console.log('📧 Risposta newsletter function:', response);
 
       if (response.error) {
         if (response.error.message?.includes('già iscritta')) {

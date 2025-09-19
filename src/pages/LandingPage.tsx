@@ -51,6 +51,7 @@ const LandingPage = () => {
     }
 
     setIsSubmitting(true);
+    console.log('🔍 Inizio registrazione per:', formData.email);
     try {
       const response = await supabase.functions.invoke('mailing-list-signup', {
         body: {
@@ -59,6 +60,8 @@ const LandingPage = () => {
           source: 'hero_section'
         }
       });
+
+      console.log('📧 Risposta edge function:', response);
 
       if (response.error) {
         if (response.error.message?.includes('già registrata')) {
