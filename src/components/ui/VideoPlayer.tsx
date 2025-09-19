@@ -1,8 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Play } from 'lucide-react';
-import { SiteVideo, getYouTubeThumbnail } from '@/lib/siteVideos';
+import React from 'react';
+import ReactPlayer from 'react-player';
+import { SiteVideo, getYouTubeThumbnail, extractYouTubeVideoId } from '@/lib/siteVideos';
 import { getVideoUrl } from '@/lib/videoStorage';
-import { useYouTubeAPI } from '@/hooks/useYouTubeAPI';
 
 interface VideoPlayerProps {
   video: SiteVideo;
@@ -11,301 +10,63 @@ interface VideoPlayerProps {
   fallbackLocalPath?: string; // es. "/video-completo.mp4"
 }
 
-const VideoPlayer: React.FC<VideoPlayerProps> = ({ 
-  video, 
-  className = "", 
+// Player unificato basato su ReactPlayer: supporta sia YouTube che MP4 con click-to-play stabile
+const VideoPlayer: React.FC<VideoPlayerProps> = ({
+  video,
+  className = '',
   autoPlay = false,
-  fallbackLocalPath
+  fallbackLocalPath,
 }) => {
-  const [isPlaying, setIsPlaying] = useState(autoPlay);
-  const [isLoading, setIsLoading] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const youtubeContainerRef = useRef<HTMLDivElement>(null);
-  const youtubePlayerRef = useRef<any>(null);
-  const { isReady: isYouTubeReady, hasTimeout: youTubeHasTimeout, isSafariMobile } = useYouTubeAPI();
-  const [loadingTimeout, setLoadingTimeout] = useState(false);
+  // Costruzione URL sorgente con priorità al file locale (o fallback) per massima affidabilità
+  const fileSrc = video.source_type === 'file' && video.file_name ? getVideoUrl(video.file_name) : null;
+  const ytId = (video as any).youtube_video_id || (video as any).youtube_url ? extractYouTubeVideoId((video as any).youtube_url as string) : null;
+  const youtubeSrc = ytId ? `https://www.youtube.com/watch?v=${ytId}` : (video as any).youtube_url || null;
 
+  // Se c'è un fallback locale per una sorgente YouTube, usiamolo come priorità
+  const resolvedUrl = fileSrc || (video.source_type === 'youtube' && fallbackLocalPath ? fallbackLocalPath : youtubeSrc);
 
-  // Cleanup YouTube player on unmount
-  useEffect(() => {
-    return () => {
-      if (youtubePlayerRef.current) {
-        try {
-          youtubePlayerRef.current.destroy();
-          console.log('[VideoPlayer] YouTube player destroyed');
-        } catch (e) {
-          console.error('[VideoPlayer] Error destroying YouTube player:', e);
-        }
-      }
-    };
-  }, []);
+  // Thumbnail/cover per "light" (click to load)
+  const thumbnailUrl = (() => {
+    if (video.thumbnail_url) return video.thumbnail_url;
+    if (ytId) return getYouTubeThumbnail(ytId);
+    return undefined;
+  })();
 
-  // Determina la thumbnail da usare
-  const getThumbnailUrl = () => {
-    // 1. Thumbnail personalizzata se disponibile
-    if (video.thumbnail_url) {
-      return video.thumbnail_url;
-    }
-    
-    // 2. Thumbnail YouTube automatica
-    if (video.source_type === 'youtube' && video.youtube_video_id) {
-      return getYouTubeThumbnail(video.youtube_video_id);
-    }
-    
-    // 3. Fallback generico
-    return null;
-  };
-
-  const handlePlay = async () => {
-    // Priorità alla sorgente nativa (file locale o fallback)
-    if (nativeSrc && videoRef.current) {
-      const el = videoRef.current;
-      try {
-        setIsPlaying(true); // mostra i controlli subito
-        setIsLoading(true);
-        el.muted = false;
-        await el.play();
-        setIsLoading(false);
-        return;
-      } catch (err1) {
-        console.warn('[VideoPlayer] play() fallita, ritento in muto', err1);
-        try {
-          el.muted = true;
-          await el.play();
-          // prova a riattivare l'audio dopo l'avvio
-          setTimeout(() => {
-            try { el.muted = false; } catch {}
-          }, 200);
-          setIsLoading(false);
-          return;
-        } catch (err2) {
-          console.error('[VideoPlayer] secondo tentativo fallito', err2);
-          setIsLoading(false);
-          // Manteniamo i controlli visibili per il play manuale
-          setIsPlaying(true);
-          try { window.open(nativeSrc, '_blank'); } catch {}
-          return;
-        }
-      }
-    }
-
-    // Per video YouTube
-    if (video.source_type === 'youtube' && video.youtube_video_id) {
-      console.log('[VideoPlayer] Tentativo play YouTube - Safari Mobile:', isSafariMobile, 'API Ready:', isYouTubeReady, 'Timeout:', youTubeHasTimeout);
-      
-      // Su Safari Mobile o se l'API ha problemi, apri direttamente YouTube
-      if (isSafariMobile || youTubeHasTimeout || !isYouTubeReady) {
-        console.log('[VideoPlayer] Apertura diretta YouTube per Safari Mobile o fallback');
-        const youtubeUrl = `https://www.youtube.com/watch?v=${video.youtube_video_id}`;
-        window.open(youtubeUrl, '_blank');
-        return;
-      }
-
-      setIsLoading(true);
-      
-      // Timeout per il loading
-      const loadingTimeoutId = setTimeout(() => {
-        console.warn('[VideoPlayer] Timeout loading YouTube, fallback a apertura diretta');
-        setIsLoading(false);
-        setLoadingTimeout(true);
-        const youtubeUrl = `https://www.youtube.com/watch?v=${video.youtube_video_id}`;
-        window.open(youtubeUrl, '_blank');
-      }, 8000);
-
-      if (isYouTubeReady && youtubeContainerRef.current && !youtubePlayerRef.current) {
-        console.log('[VideoPlayer] Creazione YouTube player inline');
-        try {
-          youtubePlayerRef.current = new window.YT.Player(youtubeContainerRef.current, {
-            height: '100%',
-            width: '100%',
-            videoId: video.youtube_video_id,
-            playerVars: {
-              autoplay: 0,
-              controls: 0,
-              modestbranding: 1,
-              rel: 0,
-              showinfo: 0,
-              fs: 0,
-              playsinline: 1,
-              enablejsapi: 1,
-              hl: 'it',
-              origin: window.location.origin,
-              iv_load_policy: 3,
-              disablekb: 1
-            },
-            events: {
-              onReady: (event: any) => {
-                console.log('[VideoPlayer] YouTube onReady');
-                clearTimeout(loadingTimeoutId);
-                event.target.playVideo();
-              },
-              onStateChange: (event: any) => {
-                console.log('[VideoPlayer] YouTube onStateChange:', event.data);
-                if (event.data === window.YT.PlayerState.PLAYING) {
-                  clearTimeout(loadingTimeoutId);
-                  setIsLoading(false);
-                  setIsPlaying(true);
-                } else if (event.data === window.YT.PlayerState.BUFFERING) {
-                  setIsLoading(true);
-                } else if (event.data === window.YT.PlayerState.PAUSED || event.data === window.YT.PlayerState.ENDED) {
-                  setIsPlaying(false);
-                  setIsLoading(false);
-                }
-              },
-              onError: (event: any) => {
-                console.error('[VideoPlayer] YouTube onError:', event.data);
-                clearTimeout(loadingTimeoutId);
-                setIsPlaying(false);
-                setIsLoading(false);
-                // Fallback a apertura diretta in caso di errore
-                const youtubeUrl = `https://www.youtube.com/watch?v=${video.youtube_video_id}`;
-                window.open(youtubeUrl, '_blank');
-              }
-            }
-          });
-        } catch (error) {
-          console.error('[VideoPlayer] Errore creazione YouTube player:', error);
-          clearTimeout(loadingTimeoutId);
-          setIsPlaying(false);
-          setIsLoading(false);
-          // Fallback a apertura diretta
-          const youtubeUrl = `https://www.youtube.com/watch?v=${video.youtube_video_id}`;
-          window.open(youtubeUrl, '_blank');
-        }
-      } else if (youtubePlayerRef.current) {
-        console.log('[VideoPlayer] Riproduci video YouTube esistente');
-        clearTimeout(loadingTimeoutId);
-        youtubePlayerRef.current.playVideo();
-      } else {
-        console.warn('[VideoPlayer] YouTube API non pronta, fallback a apertura diretta');
-        clearTimeout(loadingTimeoutId);
-        setIsLoading(false);
-        const youtubeUrl = `https://www.youtube.com/watch?v=${video.youtube_video_id}`;
-        window.open(youtubeUrl, '_blank');
-      }
-      return;
-    }
-  };
-
-  const thumbnailUrl = getThumbnailUrl();
-
-  // Sorgente nativa disponibile (file o fallback locale)
-  const nativeSrc: string | null =
-    video.source_type === 'file' && video.file_name
-      ? getVideoUrl(video.file_name)
-      : video.source_type === 'youtube' && fallbackLocalPath
-      ? fallbackLocalPath
-      : null;
+  if (!resolvedUrl) {
+    return (
+      <div className={`relative rounded-lg overflow-hidden ${className}`}>
+        <div className="w-full aspect-video flex items-center justify-center bg-muted/30">
+          <span className="text-sm">Nessuna sorgente video disponibile</span>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <>
-      <div className={`relative group ${className}`}>
-      {/* Video nativo per file locali o fallback */}
-      {nativeSrc && (
-        <video
-          ref={videoRef}
-          controls={isPlaying}
-          preload="metadata"
-          className="w-full h-full rounded-lg"
-          style={{ backgroundColor: '#000' }}
-          playsInline
-          poster={thumbnailUrl || undefined}
-          onPlay={() => setIsPlaying(true)}
-          onPause={() => setIsPlaying(false)}
-          onEnded={() => setIsPlaying(false)}
-          onError={(e) => {
-            console.error('[VideoPlayer] onError', e);
-            try { if (nativeSrc) window.open(nativeSrc, '_blank'); } catch {}
-          }}
-          src={nativeSrc}
-        >
-          Il tuo browser non supporta il tag video.
-        </video>
-      )}
-
-      {/* Container per YouTube player (solo se non esiste una sorgente nativa) */}
-      {video.source_type === 'youtube' && !nativeSrc && (
-        <div
-          ref={youtubeContainerRef}
-          className="w-full h-full rounded-lg absolute inset-0"
-          style={{ 
-            backgroundColor: '#000',
-            zIndex: 10
-          }}
-        />
-      )}
-
-      {/* Overlay e UI di anteprima */}
-      {!isPlaying && (
-        <>
-          <div 
-            className="absolute inset-0 pointer-events-none transition-opacity duration-500" 
-            style={{ 
-              zIndex: 20,
-              opacity: isLoading ? 0.5 : 1
-            }}
-          >
-            <div className="w-full h-full bg-gray-900 overflow-hidden rounded-lg">
-              {thumbnailUrl ? (
-                <img
-                  src={thumbnailUrl}
-                  alt="Anteprima video"
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                  onError={(e) => {
-                    (e.currentTarget as HTMLImageElement).style.display = 'none';
-                  }}
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-primary/20 to-primary/5 flex items-center justify-center">
-                  <div className="text-center text-white/80">
-                    <Play className="w-16 h-16 mx-auto mb-2 opacity-50" />
-                    <p className="text-sm">Video disponibile</p>
-                  </div>
-                </div>
-              )}
-            </div>
-            <div className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors duration-300 rounded-lg" />
+    <div className={`relative rounded-lg overflow-hidden ${className}`}>
+      <ReactPlayer
+        src={resolvedUrl}
+        controls
+        width="100%"
+        height="auto"
+        style={{ aspectRatio: '16/9' }}
+        light={thumbnailUrl || (video.source_type === 'youtube' ? true : false)}
+        playIcon={
+          <div className="bg-background/90 hover:bg-background rounded-full p-4 shadow-sm border border-border transition-transform">
+            <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor" className="text-primary">
+              <path d="M8 5v14l11-7z" />
+            </svg>
           </div>
-
-          <div 
-            className="absolute inset-0 flex items-center justify-center transition-opacity duration-300" 
-            onClick={!isLoading ? handlePlay : undefined} 
-            style={{ 
-              zIndex: 30,
-              cursor: isLoading ? 'wait' : 'pointer'
-            }}
-          >
-            <div className={`bg-white/90 hover:bg-white rounded-full p-6 transition-all duration-300 group-hover:scale-110 shadow-xl border-2 border-white/20 ${isLoading ? 'animate-pulse' : ''}`}>
-              <Play className="w-10 h-10 text-primary ml-1" fill="currentColor" />
-            </div>
-            
-            {/* Messaggio per Safari Mobile */}
-            {isSafariMobile && video.source_type === 'youtube' && (
-              <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 bg-black/80 text-white text-xs px-3 py-1 rounded whitespace-nowrap">
-                Tocca per aprire su YouTube
-              </div>
-            )}
-            
-            {/* Fallback message per timeout */}
-            {(loadingTimeout || youTubeHasTimeout) && video.source_type === 'youtube' && (
-              <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 bg-black/80 text-white text-xs px-3 py-1 rounded whitespace-nowrap">
-                Tocca per aprire su YouTube
-              </div>
-            )}
-          </div>
-
-          <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black/60 to-transparent rounded-b-lg" />
-
-          <div className="absolute bottom-4 left-4">
-            <div className="bg-black/50 backdrop-blur-sm rounded-lg px-3 py-1">
-              <span className="text-white text-sm font-medium">4 Elementi Italia</span>
-            </div>
-          </div>
-        </>
-      )}
-      </div>
-
-    </>
+        }
+        onError={(e) => {
+          try {
+            window.open(resolvedUrl as string, '_blank');
+          } catch {}
+          // eslint-disable-next-line no-console
+          console.error('[VideoPlayer] ReactPlayer onError', e);
+        }}
+      />
+    </div>
   );
 };
 
