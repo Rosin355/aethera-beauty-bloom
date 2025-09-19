@@ -108,7 +108,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             width: '100%',
             videoId: video.youtube_video_id,
             playerVars: {
-              autoplay: 1,
+              autoplay: 0,
               controls: 0,
               modestbranding: 1,
               rel: 0,
@@ -117,7 +117,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               playsinline: 1,
               enablejsapi: 1,
               hl: 'it',
-              origin: window.location.origin
+              origin: window.location.origin,
+              iv_load_policy: 3,
+              disablekb: 1
             },
             events: {
               onReady: (event: any) => {
