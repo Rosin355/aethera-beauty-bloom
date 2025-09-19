@@ -256,6 +256,16 @@ const LandingPage = () => {
                       {isSubmitting ? "INVIO IN CORSO..." : "RICEVI IL VIDEO GRATUITO"}
                     </Button>
                   </form>
+                  
+                  {/* Warning message */}
+                  <div className="mt-4 p-3 bg-white/10 border border-white/20 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <div className="text-white/80 mt-0.5">💡</div>
+                      <p className="text-white/90 text-xs sm:text-sm">
+                        <strong>Nota importante:</strong> Con le stesse credenziali inserite qui sopra potrai accedere al video utilizzando questo form.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               </Card>
             </div>
