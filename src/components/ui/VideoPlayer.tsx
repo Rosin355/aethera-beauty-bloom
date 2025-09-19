@@ -19,29 +19,48 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   fallbackLocalPath,
 }) => {
   const [hasError, setHasError] = useState(false);
+  const [currentSource, setCurrentSource] = useState(0); // Indice sorgente corrente
   const [key, setKey] = useState(0); // Per forzare il reload del player
   
-  // Costruzione URL sorgente con priorità al file locale (o fallback) per massima affidabilità
+  // Costruzione catena di fallback: Supabase MP4 -> YouTube -> Local MP4
   const fileSrc = video.source_type === 'file' && video.file_name ? getVideoUrl(video.file_name) : null;
-  // Estrazione robusta ID YouTube (evita passaggi null a extract)
   const rawYtId = (video as any).youtube_video_id as string | undefined;
   const ytUrl = (video as any).youtube_url as string | undefined;
   const ytId = rawYtId ?? (ytUrl ? extractYouTubeVideoId(ytUrl) : null);
   const youtubeSrc = ytId ? `https://www.youtube.com/watch?v=${ytId}` : (ytUrl || null);
+  
+  // Array di sorgenti in ordine di priorità
+  const sources = [
+    fileSrc, // Supabase MP4
+    youtubeSrc, // YouTube
+    fallbackLocalPath // Local MP4 fallback
+  ].filter(Boolean);
 
-  // Se c'è un fallback locale per una sorgente YouTube, usiamolo come priorità
-  const resolvedUrl = fileSrc || (video.source_type === 'youtube' && fallbackLocalPath ? fallbackLocalPath : youtubeSrc);
+  const resolvedUrl = sources[currentSource];
 
-  // Thumbnail/cover per "light" (click to load)
+  // Thumbnail/cover per "light" (solo YouTube)
   const thumbnailUrl = (() => {
     if (video.thumbnail_url) return video.thumbnail_url;
-    if (ytId) return getYouTubeThumbnail(ytId);
+    if (ytId && resolvedUrl?.includes('youtube')) return getYouTubeThumbnail(ytId);
     return undefined;
   })();
 
+  const handleError = (e: any) => {
+    console.error('[VideoPlayer] Errore riproduzione:', e, 'Source:', resolvedUrl);
+    
+    // Prova la prossima sorgente nella catena
+    if (currentSource < sources.length - 1) {
+      setCurrentSource(prev => prev + 1);
+      setKey(prev => prev + 1);
+    } else {
+      setHasError(true);
+    }
+  };
+
   const handleRetry = () => {
     setHasError(false);
-    setKey(prev => prev + 1); // Forza il remount del ReactPlayer
+    setCurrentSource(0); // Ricomincia dalla prima sorgente
+    setKey(prev => prev + 1);
   };
 
   if (!resolvedUrl) {
@@ -70,16 +89,19 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     );
   }
 
+  // Cast ReactPlayer per risolvere problemi di tipo con url prop
+  const Player = ReactPlayer as any;
+
   return (
     <div className={`relative rounded-lg overflow-hidden ${className}`}>
-      <ReactPlayer
+      <Player
         key={key}
-        src={resolvedUrl}
+        url={resolvedUrl as string}
         controls
         width="100%"
         height="auto"
         style={{ aspectRatio: '16/9' }}
-        light={thumbnailUrl || (video.source_type === 'youtube' ? true : false)}
+        light={thumbnailUrl && resolvedUrl?.includes('youtube')} // Light solo per YouTube
         playIcon={
           <div className="bg-background/90 hover:bg-background rounded-full p-4 shadow-sm border border-border transition-transform">
             <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor" className="text-primary">
@@ -87,13 +109,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             </svg>
           </div>
         }
-        // Ottimizzazioni per Safari Mobile e compatibilità inline
         playsInline={true}
         pip={false}
-        onError={(e) => {
-          console.error('[VideoPlayer] Errore riproduzione:', e);
-          setHasError(true);
-        }}
+        onError={handleError}
         fallback={
           <div className="w-full aspect-video flex items-center justify-center bg-muted/30">
             <span className="text-sm">Caricamento video...</span>
