@@ -18,6 +18,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   fallbackLocalPath
 }) => {
   const [isPlaying, setIsPlaying] = useState(autoPlay);
+  const [isLoading, setIsLoading] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const youtubeContainerRef = useRef<HTMLDivElement>(null);
   const youtubePlayerRef = useRef<any>(null);
@@ -73,8 +74,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       if (el) {
         try {
           el.muted = false;
+          setIsLoading(true);
           setIsPlaying(true);
           await el.play();
+          setIsLoading(false);
           return;
         } catch (err1) {
           console.warn('[VideoPlayer] play() fallita, ritento in muto', err1);
@@ -85,9 +88,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             setTimeout(() => {
               try { el.muted = false; } catch {}
             }, 150);
+            setIsLoading(false);
             return;
           } catch (err2) {
             console.error('[VideoPlayer] secondo tentativo fallito', err2);
+            setIsLoading(false);
+            setIsPlaying(false);
             if (nativeSrc) {
               window.open(nativeSrc, '_blank');
               return;
@@ -100,6 +106,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
     // Per video YouTube, usa il player inline se l'API è pronta
     if (video.source_type === 'youtube' && video.youtube_video_id) {
+      setIsLoading(true);
       if (isYouTubeReady && youtubeContainerRef.current && !youtubePlayerRef.current) {
         console.log('[VideoPlayer] Creazione YouTube player inline');
         try {
@@ -124,32 +131,39 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             events: {
               onReady: (event: any) => {
                 console.log('[VideoPlayer] YouTube onReady');
-                setIsPlaying(true);
                 event.target.playVideo();
               },
               onStateChange: (event: any) => {
                 console.log('[VideoPlayer] YouTube onStateChange:', event.data);
                 const isCurrentlyPlaying = event.data === window.YT.PlayerState.PLAYING;
-                setIsPlaying(isCurrentlyPlaying);
+                if (isCurrentlyPlaying) {
+                  setIsLoading(false);
+                  setIsPlaying(true);
+                } else if (event.data === window.YT.PlayerState.PAUSED || event.data === window.YT.PlayerState.ENDED) {
+                  setIsPlaying(false);
+                  setIsLoading(false);
+                }
               },
               onError: (event: any) => {
                 console.error('[VideoPlayer] YouTube onError:', event.data);
                 setIsPlaying(false);
+                setIsLoading(false);
               }
             }
           });
         } catch (error) {
           console.error('[VideoPlayer] Errore creazione YouTube player:', error);
           setIsPlaying(false);
+          setIsLoading(false);
         }
       } else if (youtubePlayerRef.current) {
         // Player già esistente, riproduci
         console.log('[VideoPlayer] Riproduci video YouTube esistente');
         youtubePlayerRef.current.playVideo();
-        setIsPlaying(true);
       } else {
         // API non pronta, aspetta un momento e riprova
         console.warn('[VideoPlayer] YouTube API non pronta, riprovo...');
+        setIsLoading(false);
         setTimeout(() => handlePlay(), 500);
       }
       return;
@@ -201,18 +215,25 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       {video.source_type === 'youtube' && (
         <div
           ref={youtubeContainerRef}
-          className="w-full h-full rounded-lg absolute inset-0"
+          className="w-full h-full rounded-lg absolute inset-0 transition-opacity duration-500"
           style={{ 
             backgroundColor: '#000',
-            zIndex: isPlaying ? 10 : 5
+            zIndex: 10,
+            opacity: isPlaying ? 1 : 0
           }}
         />
       )}
 
       {/* Overlay e UI di anteprima */}
-      {!isPlaying && (
+      {(!isPlaying || isLoading) && (
         <>
-          <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 20 }}>
+          <div 
+            className="absolute inset-0 pointer-events-none transition-opacity duration-500" 
+            style={{ 
+              zIndex: 20,
+              opacity: isLoading ? 0.8 : 1
+            }}
+          >
             <div className="w-full h-full bg-gray-900 overflow-hidden rounded-lg">
               {thumbnailUrl ? (
                 <img
@@ -235,8 +256,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             <div className="absolute inset-0 bg-black/30 group-hover:bg-black/20 transition-colors duration-300 rounded-lg" />
           </div>
 
-          <div className="absolute inset-0 flex items-center justify-center" onClick={handlePlay} style={{ zIndex: 30 }}>
-            <div className="bg-white/90 hover:bg-white rounded-full p-6 transition-all duration-300 group-hover:scale-110 shadow-xl border-2 border-white/20">
+          <div 
+            className="absolute inset-0 flex items-center justify-center transition-opacity duration-300" 
+            onClick={!isLoading ? handlePlay : undefined} 
+            style={{ 
+              zIndex: 30,
+              cursor: isLoading ? 'wait' : 'pointer'
+            }}
+          >
+            <div className={`bg-white/90 hover:bg-white rounded-full p-6 transition-all duration-300 group-hover:scale-110 shadow-xl border-2 border-white/20 ${isLoading ? 'animate-pulse' : ''}`}>
               <Play className="w-10 h-10 text-primary ml-1" fill="currentColor" />
             </div>
           </div>
