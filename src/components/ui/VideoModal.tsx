@@ -21,14 +21,18 @@ const VideoModal: React.FC<VideoModalProps> = ({
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Determina la sorgente video
+  // Determina la sorgente video con fallback
   const videoSrc = video.source_type === 'file' && video.file_name
     ? getVideoUrl(video.file_name)
     : fallbackLocalPath;
 
+  // Se il video Supabase fallisce, usa il fallback locale
+  const [hasVideoError, setHasVideoError] = useState(false);
+  const finalVideoSrc = hasVideoError && fallbackLocalPath ? fallbackLocalPath : videoSrc;
+
   // Auto-play quando il modal si apre
   useEffect(() => {
-    if (isOpen && videoRef.current && videoSrc) {
+    if (isOpen && videoRef.current && finalVideoSrc) {
       const playVideo = async () => {
         try {
           setIsLoading(true);
@@ -46,7 +50,7 @@ const VideoModal: React.FC<VideoModalProps> = ({
       const timer = setTimeout(playVideo, 300);
       return () => clearTimeout(timer);
     }
-  }, [isOpen, videoSrc]);
+  }, [isOpen, finalVideoSrc]);
 
   // Pausa il video quando il modal si chiude
   useEffect(() => {
@@ -64,7 +68,7 @@ const VideoModal: React.FC<VideoModalProps> = ({
     onClose();
   };
 
-  if (!videoSrc) {
+  if (!finalVideoSrc) {
     return null;
   }
 
@@ -112,8 +116,13 @@ const VideoModal: React.FC<VideoModalProps> = ({
             onError={(e) => {
               console.error('[VideoModal] Errore video:', e);
               setIsLoading(false);
+              // Se c'è un fallback locale e il video Supabase fallisce, prova il fallback
+              if (!hasVideoError && fallbackLocalPath && videoSrc !== fallbackLocalPath) {
+                console.log('[VideoModal] Tentativo fallback al video locale');
+                setHasVideoError(true);
+              }
             }}
-            src={videoSrc}
+            src={finalVideoSrc}
           >
             Il tuo browser non supporta la riproduzione video.
           </video>
