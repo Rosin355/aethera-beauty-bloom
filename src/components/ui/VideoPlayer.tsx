@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { SiteVideo } from '@/lib/siteVideos';
 import { getVideoUrl } from '@/lib/videoStorage';
 import { Button } from '@/components/ui/button';
@@ -21,11 +21,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   video,
   className = '',
   autoPlay = false,
+  fallbackLocalPath,
 }) => {
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [fileCheck, setFileCheck] = useState<FileCheckResult | null>(null);
   const [errorDetails, setErrorDetails] = useState<string>('');
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [useFallback, setUseFallback] = useState(false);
 
   // Solo video MP4 da Supabase
   const videoUrl = video.source_type === 'file' && video.file_name 
@@ -67,6 +70,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   }, [videoUrl]);
 
+  // Reset fallback when source changes
+  useEffect(() => {
+    setUseFallback(false);
+  }, [videoUrl]);
   const handleLoadStart = () => {
     console.log('[VideoPlayer] Caricamento iniziato per:', videoUrl);
     setIsLoading(true);
@@ -87,7 +94,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const handleError = (e: React.SyntheticEvent<HTMLVideoElement>) => {
     const target = e.target as HTMLVideoElement;
     const error = target.error;
-    
+
     let errorMessage = 'Errore sconosciuto';
     if (error) {
       switch (error.code) {
@@ -105,7 +112,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           break;
       }
     }
-    
+
+    // Tentativo automatico di fallback locale se disponibile
+    if ((error?.code === MediaError.MEDIA_ERR_DECODE || error?.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) && !useFallback && fallbackLocalPath) {
+      console.warn('[VideoPlayer] Problema di codec/sorgente. Attivo fallback locale:', fallbackLocalPath);
+      setUseFallback(true);
+      setHasError(false);
+      setIsLoading(true);
+      setErrorDetails('Tentativo con sorgente locale...');
+      // Ricarica il player con la nuova sorgente
+      setTimeout(() => {
+        videoRef.current?.load();
+      }, 0);
+      return;
+    }
+
     console.error('[VideoPlayer] Errore riproduzione:', errorMessage, error);
     setErrorDetails(errorMessage);
     setHasError(true);
@@ -117,11 +138,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     setHasError(false);
     setIsLoading(true);
     setErrorDetails('');
-    
-    const videoElement = document.querySelector('video');
-    if (videoElement) {
-      videoElement.load();
-    }
+    setUseFallback(false);
+    videoRef.current?.load();
   };
 
   const openDirectUrl = () => {
@@ -214,6 +232,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         )}
         
         <video
+          ref={videoRef}
           controls
           playsInline
           preload="metadata"
@@ -225,7 +244,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           onCanPlay={handleCanPlay}
           onError={handleError}
         >
-          <source src={videoUrl} type="video/mp4" />
+          <source src={useFallback && fallbackLocalPath ? fallbackLocalPath : videoUrl} type="video/mp4" />
           Il tuo browser non supporta il tag video.
         </video>
       </div>
