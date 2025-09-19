@@ -57,10 +57,36 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   };
 
   const handlePlay = async () => {
-    // Per video file, usa il player nativo
-    if (video.source_type === 'file' && video.file_name) {
-      setIsPlaying(true);
-      return;
+    // Priorità alla sorgente nativa (file locale o fallback)
+    if (nativeSrc && videoRef.current) {
+      const el = videoRef.current;
+      try {
+        setIsPlaying(true); // mostra i controlli subito
+        setIsLoading(true);
+        el.muted = false;
+        await el.play();
+        setIsLoading(false);
+        return;
+      } catch (err1) {
+        console.warn('[VideoPlayer] play() fallita, ritento in muto', err1);
+        try {
+          el.muted = true;
+          await el.play();
+          // prova a riattivare l'audio dopo l'avvio
+          setTimeout(() => {
+            try { el.muted = false; } catch {}
+          }, 200);
+          setIsLoading(false);
+          return;
+        } catch (err2) {
+          console.error('[VideoPlayer] secondo tentativo fallito', err2);
+          setIsLoading(false);
+          // Manteniamo i controlli visibili per il play manuale
+          setIsPlaying(true);
+          try { window.open(nativeSrc, '_blank'); } catch {}
+          return;
+        }
+      }
     }
 
     // Per video YouTube
@@ -174,8 +200,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   return (
     <>
       <div className={`relative group ${className}`}>
-      {/* Video nativo per file locali */}
-      {nativeSrc && video.source_type === 'file' && (
+      {/* Video nativo per file locali o fallback */}
+      {nativeSrc && (
         <video
           ref={videoRef}
           controls={isPlaying}
@@ -189,6 +215,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           onEnded={() => setIsPlaying(false)}
           onError={(e) => {
             console.error('[VideoPlayer] onError', e);
+            try { if (nativeSrc) window.open(nativeSrc, '_blank'); } catch {}
           }}
           src={nativeSrc}
         >
@@ -196,8 +223,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         </video>
       )}
 
-      {/* Container per YouTube player */}
-      {video.source_type === 'youtube' && (
+      {/* Container per YouTube player (solo se non esiste una sorgente nativa) */}
+      {video.source_type === 'youtube' && !nativeSrc && (
         <div
           ref={youtubeContainerRef}
           className="w-full h-full rounded-lg absolute inset-0"
