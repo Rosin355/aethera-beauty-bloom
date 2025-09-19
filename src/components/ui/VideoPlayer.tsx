@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Play } from 'lucide-react';
 import { SiteVideo, getYouTubeThumbnail } from '@/lib/siteVideos';
 import { getVideoUrl } from '@/lib/videoStorage';
@@ -17,6 +17,20 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   fallbackLocalPath
 }) => {
   const [isPlaying, setIsPlaying] = useState(autoPlay);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Avvia la riproduzione in modo affidabile dopo il click
+  useEffect(() => {
+    if (isPlaying && videoRef.current) {
+      const playPromise = videoRef.current.play();
+      if (playPromise && typeof playPromise.then === 'function') {
+        playPromise.catch(() => {
+          // In alcuni browser è necessario un secondo tentativo
+          setTimeout(() => videoRef.current?.play().catch(() => {}), 0);
+        });
+      }
+    }
+  }, [isPlaying]);
 
   // Determina la thumbnail da usare
   const getThumbnailUrl = () => {
@@ -66,6 +80,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       return (
         <div className={`relative ${className}`}>
           <video
+            ref={videoRef}
             controls
             preload="metadata"
             className="w-full h-full rounded-lg"
@@ -74,6 +89,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             muted
             poster={thumbnailUrl || undefined}
             autoPlay
+            onLoadedMetadata={() => {
+              videoRef.current?.play().catch(() => {});
+            }}
           >
             <source src={src} type="video/mp4" />
             Il tuo browser non supporta il tag video.
