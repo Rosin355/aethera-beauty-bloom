@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState } from 'react';
 import ReactPlayer from 'react-player';
 import { SiteVideo, getYouTubeThumbnail, extractYouTubeVideoId } from '@/lib/siteVideos';
 import { getVideoUrl } from '@/lib/videoStorage';
+import { Button } from '@/components/ui/button';
 
 interface VideoPlayerProps {
   video: SiteVideo;
@@ -17,6 +18,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   autoPlay = false,
   fallbackLocalPath,
 }) => {
+  const [hasError, setHasError] = useState(false);
+  const [key, setKey] = useState(0); // Per forzare il reload del player
+  
   // Costruzione URL sorgente con priorità al file locale (o fallback) per massima affidabilità
   const fileSrc = video.source_type === 'file' && video.file_name ? getVideoUrl(video.file_name) : null;
   // Estrazione robusta ID YouTube (evita passaggi null a extract)
@@ -35,6 +39,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     return undefined;
   })();
 
+  const handleRetry = () => {
+    setHasError(false);
+    setKey(prev => prev + 1); // Forza il remount del ReactPlayer
+  };
+
   if (!resolvedUrl) {
     return (
       <div className={`relative rounded-lg overflow-hidden ${className}`}>
@@ -45,9 +54,26 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     );
   }
 
+  if (hasError) {
+    return (
+      <div className={`relative rounded-lg overflow-hidden ${className}`}>
+        <div className="w-full aspect-video flex flex-col items-center justify-center bg-muted/30 gap-4 p-6">
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground mb-2">Errore durante il caricamento del video</p>
+            <p className="text-xs text-muted-foreground">Il video potrebbe non essere disponibile al momento</p>
+          </div>
+          <Button onClick={handleRetry} variant="outline" size="sm">
+            Riprova
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={`relative rounded-lg overflow-hidden ${className}`}>
       <ReactPlayer
+        key={key}
         src={resolvedUrl}
         controls
         width="100%"
@@ -61,13 +87,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             </svg>
           </div>
         }
+        // Ottimizzazioni per Safari Mobile e compatibilità inline
+        playsInline={true}
+        pip={false}
         onError={(e) => {
-          try {
-            window.open(resolvedUrl as string, '_blank');
-          } catch {}
-          // eslint-disable-next-line no-console
-          console.error('[VideoPlayer] ReactPlayer onError', e);
+          console.error('[VideoPlayer] Errore riproduzione:', e);
+          setHasError(true);
         }}
+        fallback={
+          <div className="w-full aspect-video flex items-center justify-center bg-muted/30">
+            <span className="text-sm">Caricamento video...</span>
+          </div>
+        }
       />
     </div>
   );
