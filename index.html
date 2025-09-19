@@ -23,5 +23,23 @@
     <!-- IMPORTANT: DO NOT REMOVE THIS SCRIPT TAG OR THIS VERY COMMENT! -->
     <script src="https://cdn.gpteng.co/gptengineer.js" type="module"></script>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Iubenda Cookie and Privacy Policy Script -->
+    <script type="text/javascript">
+      (function (w,d) {
+        var loader = function () {
+          var s = d.createElement("script"), tag = d.getElementsByTagName("script")[0]; 
+          s.src="https://cdn.iubenda.com/iubenda.js"; 
+          tag.parentNode.insertBefore(s,tag);
+        }; 
+        if(w.addEventListener){
+          w.addEventListener("load", loader, false);
+        }else if(w.attachEvent){
+          w.attachEvent("onload", loader);
+        }else{
+          w.onload = loader;
+        }
+      })(window, document);
+    </script>
   </body>
 </html>

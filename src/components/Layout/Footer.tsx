@@ -87,10 +87,22 @@ const Footer = () => {
         
         <div className="flex flex-col md:flex-row justify-between items-center">
           <p className="text-gray-500">© {new Date().getFullYear()} 4 elementi Italia. Tutti i diritti riservati.</p>
-          <div className="mt-4 md:mt-0 flex space-x-4">
-            <Link to="/privacy" className="text-gray-500 hover:text-brand-fire text-sm">Privacy</Link>
+            <div className="mt-4 md:mt-0 flex space-x-4">
+            <a 
+              href="https://www.iubenda.com/privacy-policy/19385152" 
+              className="text-gray-500 hover:text-brand-fire text-sm iubenda-white iubenda-noiframe iubenda-embed" 
+              title="Privacy Policy"
+            >
+              Privacy
+            </a>
             <Link to="/terms" className="text-gray-500 hover:text-brand-fire text-sm">Termini</Link>
-            <Link to="/cookies" className="text-gray-500 hover:text-brand-fire text-sm">Cookies</Link>
+            <a 
+              href="https://www.iubenda.com/privacy-policy/19385152/cookie-policy" 
+              className="text-gray-500 hover:text-brand-fire text-sm iubenda-white iubenda-noiframe iubenda-embed" 
+              title="Cookie Policy"
+            >
+              Cookies
+            </a>
           </div>
         </div>
       </div>

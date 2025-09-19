@@ -186,13 +186,13 @@ const LandingPage = () => {
       <AuroraBackground className="h-auto py-8 sm:py-12 lg:py-16">
         <div className="container mx-auto relative z-10 px-6 sm:px-4">
           <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-            <div className="space-y-6 sm:space-y-8">
-              <div className="space-y-3 sm:space-y-4">
-                <h1 className="font-playfair text-3xl sm:text-4xl lg:text-6xl font-bold leading-tight text-white">
+            <div className="space-y-4 sm:space-y-6 lg:space-y-8">
+              <div className="space-y-2 sm:space-y-3 lg:space-y-4">
+                <h1 className="font-playfair text-2xl sm:text-3xl lg:text-5xl xl:text-6xl font-bold leading-tight text-white">
                   SEI UN'ESTETISTA
                   <span className="gradient-text"> PROFESSIONISTA?</span>
                 </h1>
-                <p className="text-lg sm:text-xl text-gray-300 leading-relaxed">
+                <p className="text-base sm:text-lg lg:text-xl text-gray-300 leading-relaxed">
                   Ecco come strutturare il tuo listino in modo strategico (senza stress)
                 </p>
               </div>
@@ -208,11 +208,11 @@ const LandingPage = () => {
 
               <Button 
                 size="lg" 
-                className="bg-white hover:bg-gray-200 text-black px-6 sm:px-8 py-4 sm:py-6 text-base sm:text-lg font-medium w-full sm:w-auto"
+                className="bg-white hover:bg-gray-200 text-black px-4 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-6 text-sm sm:text-base lg:text-lg font-medium w-full sm:w-auto min-h-[48px] sm:min-h-[56px]"
                 onClick={() => document.getElementById('video-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
               >
                 <Play className="w-4 h-4 sm:w-5 sm:h-5 mr-2" />
-                ACCEDI AL VIDEO GRATUITO
+                <span className="leading-none">ACCEDI AL VIDEO GRATUITO</span>
               </Button>
             </div>
 
