@@ -48,25 +48,40 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     return null;
   };
 
-  const handlePlay = () => {
+  const handlePlay = async () => {
     const canUseNative =
       (video.source_type === 'file' && !!video.file_name) ||
       (video.source_type === 'youtube' && !!fallbackLocalPath);
 
-    if (canUseNative) {
+    const el = videoRef.current;
+
+    if (canUseNative && el) {
       try {
-        // Tentativo immediato, dentro il gesto utente
-        videoRef.current?.play();
-      } catch {}
-      setIsPlaying(true);
-      // Retry in caso di blocco da parte del browser
-      setTimeout(() => {
-        videoRef.current?.play()?.catch(() => {
-          requestAnimationFrame(() => {
-            videoRef.current?.play()?.catch(() => {});
-          });
-        });
-      }, 0);
+        // Primo tentativo: avvia con audio attivo
+        el.muted = false;
+        setIsPlaying(true);
+        await el.play();
+        return;
+      } catch (err1) {
+        console.warn('[VideoPlayer] play() fallita, ritento in muto', err1);
+        try {
+          // Secondo tentativo: avvia in muto e poi smuta
+          el.muted = true;
+          setIsPlaying(true);
+          await el.play();
+          setTimeout(() => {
+            try { el.muted = false; } catch {}
+          }, 150);
+          return;
+        } catch (err2) {
+          console.error('[VideoPlayer] secondo tentativo fallito', err2);
+          // Fallback finale: apri la sorgente in una nuova scheda
+          if (nativeSrc) {
+            window.open(nativeSrc, '_blank');
+            return;
+          }
+        }
+      }
       return;
     }
 
@@ -97,12 +112,19 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           className="w-full h-full rounded-lg"
           style={{ backgroundColor: '#000' }}
           playsInline
-          muted
+          muted={!isPlaying}
           poster={thumbnailUrl || undefined}
           onLoadedMetadata={() => {
             if (autoPlay || isPlaying) {
-              videoRef.current?.play().catch(() => {});
+              const el = videoRef.current;
+              el?.play().catch(() => {});
             }
+          }}
+          onCanPlay={() => console.log('[VideoPlayer] onCanPlay')}
+          onPlay={() => console.log('[VideoPlayer] onPlay')}
+          onPause={() => console.log('[VideoPlayer] onPause')}
+          onError={(e) => {
+            console.error('[VideoPlayer] onError', e);
           }}
           src={nativeSrc}
         >
