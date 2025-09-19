@@ -771,6 +771,23 @@ const LandingPage = () => {
               Recupera qui
             </Button>
           </p>
+          <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm">
+            <a 
+              href="https://www.iubenda.com/privacy-policy/19385152" 
+              className="iubenda-white iubenda-noiframe iubenda-embed hover:underline" 
+              title="Privacy Policy"
+            >
+              Privacy Policy
+            </a>
+            <span className="text-muted-foreground">•</span>
+            <a 
+              href="https://www.iubenda.com/privacy-policy/19385152/cookie-policy" 
+              className="iubenda-white iubenda-noiframe iubenda-embed hover:underline" 
+              title="Cookie Policy"
+            >
+              Cookie Policy
+            </a>
+          </div>
         </div>
       </footer>
     </div>;
