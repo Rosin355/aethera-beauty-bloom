@@ -201,8 +201,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       {video.source_type === 'youtube' && (
         <div
           ref={youtubeContainerRef}
-          className={`w-full h-full rounded-lg ${isPlaying ? 'block' : 'hidden'}`}
-          style={{ backgroundColor: '#000' }}
+          className="w-full h-full rounded-lg absolute inset-0"
+          style={{ 
+            backgroundColor: '#000',
+            display: isPlaying ? 'block' : 'none',
+            zIndex: 10
+          }}
         />
       )}
 
