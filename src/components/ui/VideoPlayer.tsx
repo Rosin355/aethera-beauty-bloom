@@ -94,30 +94,44 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 
   return (
     <div className={`relative rounded-lg overflow-hidden ${className}`}>
-      <Player
-        key={key}
-        url={resolvedUrl as string}
-        controls
-        width="100%"
-        height="auto"
-        style={{ aspectRatio: '16/9' }}
-        light={thumbnailUrl && resolvedUrl?.includes('youtube')} // Light solo per YouTube
-        playIcon={
-          <div className="bg-background/90 hover:bg-background rounded-full p-4 shadow-sm border border-border transition-transform">
-            <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor" className="text-primary">
-              <path d="M8 5v14l11-7z" />
-            </svg>
-          </div>
-        }
-        playsInline={true}
-        pip={false}
-        onError={handleError}
-        fallback={
-          <div className="w-full aspect-video flex items-center justify-center bg-muted/30">
-            <span className="text-sm">Caricamento video...</span>
-          </div>
-        }
-      />
+      <div className="w-full aspect-video">
+        <Player
+          key={key}
+          url={resolvedUrl as string}
+          controls
+          width="100%"
+          height="100%"
+          light={thumbnailUrl && resolvedUrl?.includes('youtube')} // Light solo per YouTube
+          playIcon={
+            <div className="bg-background/90 hover:bg-background rounded-full p-4 shadow-sm border border-border transition-transform">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="currentColor" className="text-primary">
+                <path d="M8 5v14l11-7z" />
+              </svg>
+            </div>
+          }
+          playsInline={true}
+          pip={false}
+          crossOrigin="anonymous"
+          config={{
+            youtube: {
+              playerVars: {
+                playsinline: 1,
+                modestbranding: 1,
+                rel: 0,
+                showinfo: 0
+              }
+            }
+          }}
+          onReady={() => console.log('[VideoPlayer] Video pronto per la riproduzione')}
+          onPlay={() => console.log('[VideoPlayer] Riproduzione iniziata')}
+          onError={handleError}
+          fallback={
+            <div className="w-full aspect-video flex items-center justify-center bg-muted/30">
+              <span className="text-sm">Caricamento video...</span>
+            </div>
+          }
+        />
+      </div>
     </div>
   );
 };
