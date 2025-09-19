@@ -51,11 +51,30 @@ const handler = async (req: Request): Promise<Response> => {
     if (error) {
       console.error('Database error:', error);
       
-      if (error.code === '23505') {
+      if ((error as any).code === '23505') {
+        // Email già presente: recupero access_token esistente e ritorno 200
+        const { data: existing, error: fetchErr } = await supabase
+          .from('mailing_list')
+          .select('access_token')
+          .eq('email', email.trim())
+          .single();
+
+        if (fetchErr || !existing?.access_token) {
+          console.error('Errore recupero access_token esistente:', fetchErr);
+          return new Response(
+            JSON.stringify({ error: "Email già registrata ma token non trovato" }),
+            {
+              status: 409,
+              headers: { "Content-Type": "application/json", ...corsHeaders },
+            }
+          );
+        }
+
+        console.log('Email già registrata, token recuperato e restituito');
         return new Response(
-          JSON.stringify({ error: "Email già registrata" }),
+          JSON.stringify({ success: true, access_token: existing.access_token, message: 'Email già registrata' }),
           {
-            status: 409,
+            status: 200,
             headers: { "Content-Type": "application/json", ...corsHeaders },
           }
         );
