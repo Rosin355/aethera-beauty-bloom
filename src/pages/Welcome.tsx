@@ -92,30 +92,30 @@ const Welcome = () => {
 
     setIsSubmittingNewsletter(true);
     try {
-      const { error } = await supabase
-        .from('newsletter_subscriptions')
-        .insert([{
+      const response = await supabase.functions.invoke('newsletter-subscribe', {
+        body: {
           email: newsletterForm.email.trim(),
           name: newsletterForm.name.trim() || null,
           mailing_list_id: mailingListData?.id
-        }]);
+        }
+      });
 
-      if (error) {
-        if (error.code === '23505') {
+      if (response.error) {
+        if (response.error.message?.includes('già iscritta')) {
           toast({
             title: "Già iscritto",
             description: "Sei già iscritto alla nostra newsletter!",
             variant: "default"
           });
         } else {
-          throw error;
+          throw new Error(response.error.message || 'Errore durante l\'iscrizione');
         }
         return;
       }
 
       toast({
         title: "Iscrizione completata!",
-        description: "Ti terremo aggiornato sui nostri nuovi contenuti e servizi.",
+        description: "Ti terremo aggiornato sui nostri nuovi contenuti e servizi. Controlla la tua email!",
       });
 
       setNewsletterForm({ email: "", name: "" });

@@ -52,36 +52,24 @@ const LandingPage = () => {
 
     setIsSubmitting(true);
     try {
-      const { data, error } = await supabase
-        .from('mailing_list')
-        .insert([{
+      const response = await supabase.functions.invoke('mailing-list-signup', {
+        body: {
           name: formData.name.trim(),
           email: formData.email.trim(),
-          source: 'landing_page'
-        }])
-        .select()
-        .single();
+          source: 'hero_section'
+        }
+      });
 
-      if (error) {
-        if (error.code === '23505') {
-          // Email già registrata, recupera il token esistente
-          try {
-            const { data: existingData, error: fetchError } = await supabase
-              .from('mailing_list')
-              .select('access_token')
-              .eq('email', formData.email.trim())
-              .single();
-
-            if (fetchError || !existingData?.access_token) {
-              toast({
-                title: "Email già registrata",
-                description: "Questa email è già registrata. Usa 'Recupera accesso' per ottenere il link.",
-                variant: "destructive"
-              });
-              return;
-            }
-
-            // Redirect con il token esistente
+      if (response.error) {
+        if (response.error.message?.includes('già registrata')) {
+          // Email già registrata, recupero l'access token
+          const { data: existingData } = await supabase
+            .from('mailing_list')
+            .select('access_token')
+            .eq('email', formData.email.trim())
+            .single();
+          
+          if (existingData?.access_token) {
             toast({
               title: "Accesso trovato!",
               description: "Ti stiamo reindirizzando alla tua area riservata.",
@@ -91,22 +79,13 @@ const LandingPage = () => {
               window.location.href = `/welcome?token=${existingData.access_token}`;
             }, 1000);
             return;
-            
-          } catch (fetchError) {
-            console.error('Errore recupero token:', fetchError);
-            toast({
-              title: "Email già registrata",
-              description: "Questa email è già registrata. Usa 'Recupera accesso' per ottenere il link.",
-              variant: "destructive"
-            });
-            return;
           }
-        } else {
-          throw error;
         }
+        throw new Error(response.error.message || 'Errore durante la registrazione');
       }
 
       // Redirect to welcome page with token
+      const data = response.data;
       if (data?.access_token) {
         window.location.href = `/welcome?token=${data.access_token}`;
       }
