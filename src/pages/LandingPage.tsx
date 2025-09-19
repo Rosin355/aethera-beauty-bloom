@@ -30,7 +30,7 @@ const LandingPage = () => {
 
   useEffect(() => {
     const loadVideo = async () => {
-      const video = await getSiteVideo('full'); // Cambiato da 'preview' a 'full'
+      const video = await getSiteVideo('preview'); // Usando 'preview' per il modal
       if (video) {
         setPreviewVideo(video);
       }
@@ -224,6 +224,7 @@ const LandingPage = () => {
                     video={previewVideo}
                     className="w-full h-full"
                     fallbackLocalPath="/video-anteprima.mp4"
+                    openInModal={true}
                   />
                 ) : (
                   <div className="w-full h-full bg-gray-900 flex items-center justify-center">
