@@ -22,7 +22,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const videoRef = useRef<HTMLVideoElement>(null);
   const youtubeContainerRef = useRef<HTMLDivElement>(null);
   const youtubePlayerRef = useRef<any>(null);
-  const isYouTubeReady = useYouTubeAPI();
+  const { isReady: isYouTubeReady, hasTimeout: youTubeHasTimeout, isSafariMobile } = useYouTubeAPI();
+  const [loadingTimeout, setLoadingTimeout] = useState(false);
 
   // Avvia la riproduzione in modo affidabile dopo il click
   useEffect(() => {
@@ -104,9 +105,29 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       return;
     }
 
-    // Per video YouTube, usa il player inline se l'API è pronta
+    // Per video YouTube
     if (video.source_type === 'youtube' && video.youtube_video_id) {
+      console.log('[VideoPlayer] Tentativo play YouTube - Safari Mobile:', isSafariMobile, 'API Ready:', isYouTubeReady, 'Timeout:', youTubeHasTimeout);
+      
+      // Su Safari Mobile o se l'API ha problemi, apri direttamente YouTube
+      if (isSafariMobile || youTubeHasTimeout || !isYouTubeReady) {
+        console.log('[VideoPlayer] Apertura diretta YouTube per Safari Mobile o fallback');
+        const youtubeUrl = `https://www.youtube.com/watch?v=${video.youtube_video_id}`;
+        window.open(youtubeUrl, '_blank');
+        return;
+      }
+
       setIsLoading(true);
+      
+      // Timeout per il loading
+      const loadingTimeoutId = setTimeout(() => {
+        console.warn('[VideoPlayer] Timeout loading YouTube, fallback a apertura diretta');
+        setIsLoading(false);
+        setLoadingTimeout(true);
+        const youtubeUrl = `https://www.youtube.com/watch?v=${video.youtube_video_id}`;
+        window.open(youtubeUrl, '_blank');
+      }, 8000);
+
       if (isYouTubeReady && youtubeContainerRef.current && !youtubePlayerRef.current) {
         console.log('[VideoPlayer] Creazione YouTube player inline');
         try {
@@ -131,44 +152,52 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             events: {
               onReady: (event: any) => {
                 console.log('[VideoPlayer] YouTube onReady');
+                clearTimeout(loadingTimeoutId);
                 event.target.playVideo();
               },
               onStateChange: (event: any) => {
                 console.log('[VideoPlayer] YouTube onStateChange:', event.data);
                 if (event.data === window.YT.PlayerState.PLAYING) {
-                  // Video sta riproducendo - nascondi overlay
+                  clearTimeout(loadingTimeoutId);
                   setIsLoading(false);
                   setIsPlaying(true);
                 } else if (event.data === window.YT.PlayerState.BUFFERING) {
-                  // Video sta caricando - mantieni loading
                   setIsLoading(true);
                 } else if (event.data === window.YT.PlayerState.PAUSED || event.data === window.YT.PlayerState.ENDED) {
-                  // Video in pausa o finito - mostra overlay
                   setIsPlaying(false);
                   setIsLoading(false);
                 }
               },
               onError: (event: any) => {
                 console.error('[VideoPlayer] YouTube onError:', event.data);
+                clearTimeout(loadingTimeoutId);
                 setIsPlaying(false);
                 setIsLoading(false);
+                // Fallback a apertura diretta in caso di errore
+                const youtubeUrl = `https://www.youtube.com/watch?v=${video.youtube_video_id}`;
+                window.open(youtubeUrl, '_blank');
               }
             }
           });
         } catch (error) {
           console.error('[VideoPlayer] Errore creazione YouTube player:', error);
+          clearTimeout(loadingTimeoutId);
           setIsPlaying(false);
           setIsLoading(false);
+          // Fallback a apertura diretta
+          const youtubeUrl = `https://www.youtube.com/watch?v=${video.youtube_video_id}`;
+          window.open(youtubeUrl, '_blank');
         }
       } else if (youtubePlayerRef.current) {
-        // Player già esistente, riproduci
         console.log('[VideoPlayer] Riproduci video YouTube esistente');
+        clearTimeout(loadingTimeoutId);
         youtubePlayerRef.current.playVideo();
       } else {
-        // API non pronta, aspetta un momento e riprova
-        console.warn('[VideoPlayer] YouTube API non pronta, riprovo...');
+        console.warn('[VideoPlayer] YouTube API non pronta, fallback a apertura diretta');
+        clearTimeout(loadingTimeoutId);
         setIsLoading(false);
-        setTimeout(() => handlePlay(), 500);
+        const youtubeUrl = `https://www.youtube.com/watch?v=${video.youtube_video_id}`;
+        window.open(youtubeUrl, '_blank');
       }
       return;
     }
@@ -270,6 +299,20 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             <div className={`bg-white/90 hover:bg-white rounded-full p-6 transition-all duration-300 group-hover:scale-110 shadow-xl border-2 border-white/20 ${isLoading ? 'animate-pulse' : ''}`}>
               <Play className="w-10 h-10 text-primary ml-1" fill="currentColor" />
             </div>
+            
+            {/* Messaggio per Safari Mobile */}
+            {isSafariMobile && video.source_type === 'youtube' && (
+              <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 bg-black/80 text-white text-xs px-3 py-1 rounded whitespace-nowrap">
+                Tocca per aprire su YouTube
+              </div>
+            )}
+            
+            {/* Fallback message per timeout */}
+            {(loadingTimeout || youTubeHasTimeout) && video.source_type === 'youtube' && (
+              <div className="absolute -bottom-16 left-1/2 transform -translate-x-1/2 bg-black/80 text-white text-xs px-3 py-1 rounded whitespace-nowrap">
+                Tocca per aprire su YouTube
+              </div>
+            )}
           </div>
 
           <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-black/60 to-transparent rounded-b-lg" />
