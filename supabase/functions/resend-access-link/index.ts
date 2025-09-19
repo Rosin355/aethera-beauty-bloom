@@ -56,84 +56,102 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log('Found mailing list entry:', mailingData);
 
-    // TODO: Send email with Resend when API key is configured
-    // For now, we'll just return success
-    const accessUrl = `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app') || 'http://localhost:5173'}/welcome?token=${mailingData.access_token}`;
-    
-    console.log('Access URL would be:', accessUrl);
+    const accessUrl = `${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app') || 'https://4elementiitalia.it'}/welcome?token=${mailingData.access_token}`;
 
-    // TODO: Uncomment and configure when RESEND_API_KEY is available
-    /*
+    // Send email with Resend
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
     if (!resendApiKey) {
       console.log('RESEND_API_KEY not configured, skipping email send');
       return new Response(JSON.stringify({ 
         success: true, 
-        message: 'Email send skipped - API key not configured',
-        access_url: accessUrl 
+        message: 'Access link resend skipped - API key not configured',
+        debug_access_url: accessUrl 
       }), {
         status: 200,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const emailResponse = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${resendApiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from: '4 Elementi Italia <noreply@4elementi.it>',
-        to: [email],
-        subject: 'Il tuo link di accesso - 4 Elementi Italia',
-        html: `
-          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-            <h1 style="color: #1B1B1B;">Accedi alla tua area riservata</h1>
-            <p>Ciao ${mailingData.name || 'bellezza'},</p>
-            <p>Hai richiesto di recuperare l'accesso alla tua area riservata. Clicca il pulsante qui sotto per accedere:</p>
-            <div style="text-align: center; margin: 30px 0;">
-              <a href="${accessUrl}" 
-                 style="background: linear-gradient(135deg, #6AA8B3, #E46A39); 
-                        color: white; 
-                        padding: 15px 30px; 
-                        text-decoration: none; 
-                        border-radius: 8px; 
-                        font-weight: bold;">
-                Accedi Ora
-              </a>
+    try {
+      const emailResponse = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${resendApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          from: '4 Elementi Italia <accesso@4elementiitalia.it>',
+          to: [email],
+          subject: 'Il tuo link di accesso a 4 Elementi Italia 🔑',
+          html: `
+            <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #1B1B1B, #2D2D2D); color: white; border-radius: 12px; overflow: hidden;">
+              <div style="padding: 40px 30px; text-align: center;">
+                <h1 style="color: #6AA8B3; font-size: 28px; margin-bottom: 20px; font-family: 'Playfair Display', serif;">
+                  Ecco il tuo link di accesso! 🔑
+                </h1>
+                <p style="font-size: 18px; margin-bottom: 30px; color: #F6F4ED;">
+                  Ciao ${mailingData.name || 'bellezza'}! Hai richiesto il link per accedere ai contenuti esclusivi.
+                </p>
+                <div style="text-align: center; margin: 40px 0;">
+                  <a href="${accessUrl}" 
+                     style="background: linear-gradient(135deg, #6AA8B3, #E46A39); 
+                            color: white; 
+                            padding: 18px 40px; 
+                            text-decoration: none; 
+                            border-radius: 8px; 
+                            font-weight: bold;
+                            font-size: 16px;
+                            display: inline-block;">
+                    🎬 Accedi Ora al Contenuto
+                  </a>
+                </div>
+                <p style="margin-top: 30px; color: #CBD8D4;">
+                  Questo link ti darà accesso al video esclusivo sulla strategia dei prezzi e alla community riservata.
+                </p>
+                <p style="margin-top: 20px; color: #C2977E; font-style: italic; font-size: 14px;">
+                  Conserva questa email per accedere quando vuoi.
+                </p>
+              </div>
+              <div style="background: #1B1B1B; padding: 20px; text-align: center;">
+                <p style="color: #888; font-size: 12px; margin: 0;">
+                  © 2024 4 Elementi Italia. Tutti i diritti riservati.
+                </p>
+              </div>
             </div>
-            <p>Se il pulsante non funziona, copia e incolla questo link nel tuo browser:</p>
-            <p style="background: #f5f5f5; padding: 10px; border-radius: 4px; word-break: break-all;">
-              ${accessUrl}
-            </p>
-            <p>Se non hai richiesto questo accesso, puoi ignorare questa email.</p>
-            <hr style="margin: 30px 0; border: none; border-top: 1px solid #eee;">
-            <p style="color: #666; font-size: 12px;">
-              © 2024 4 Elementi Italia. Tutti i diritti riservati.
-            </p>
-          </div>
-        `
-      }),
-    });
+          `
+        }),
+      });
 
-    if (!emailResponse.ok) {
-      const errorData = await emailResponse.text();
-      console.error('Error sending email:', errorData);
-      throw new Error('Failed to send email');
+      if (!emailResponse.ok) {
+        const errorData = await emailResponse.text();
+        console.error('Error sending access link email:', errorData);
+        throw new Error(`Failed to send access link email: ${errorData}`);
+      }
+
+      const responseData = await emailResponse.json();
+      console.log('Access link email sent successfully:', responseData);
+
+      return new Response(JSON.stringify({ 
+        success: true, 
+        message: 'Access link sent successfully',
+        email_id: responseData.id,
+        access_url: accessUrl 
+      }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+
+    } catch (emailError: any) {
+      console.error('Error sending access link email:', emailError);
+      return new Response(JSON.stringify({ 
+        success: false, 
+        error: `Failed to send access link email: ${emailError.message}`,
+        debug_access_url: accessUrl 
+      }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
-
-    console.log('Email sent successfully');
-    */
-
-    return new Response(JSON.stringify({ 
-      success: true, 
-      message: 'Access link sent successfully (simulated - configure RESEND_API_KEY to send real emails)',
-      debug_access_url: accessUrl 
-    }), {
-      status: 200,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
 
   } catch (error: any) {
     console.error('Error in resend-access-link function:', error);

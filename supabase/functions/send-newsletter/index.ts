@@ -66,8 +66,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Sending newsletter to ${emailList.length} recipients`);
 
-    // TODO: Send newsletter with Resend when API key is configured
-    /*
+    // Send newsletter with Resend
     const resendApiKey = Deno.env.get('RESEND_API_KEY');
     if (!resendApiKey) {
       console.log('RESEND_API_KEY not configured, skipping newsletter send');
@@ -90,6 +89,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     let successCount = 0;
     let errorCount = 0;
+    const failedEmails: string[] = [];
+    const emailIds: string[] = [];
 
     for (const batch of batches) {
       try {
@@ -100,17 +101,17 @@ const handler = async (req: Request): Promise<Response> => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            from: '4 Elementi Italia <newsletter@4elementi.it>',
+            from: '4 Elementi Italia <newsletter@4elementiitalia.it>',
             to: batch,
             subject: subject,
             html: `
-              <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+              <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto;">
                 <div style="background: linear-gradient(135deg, #1B1B1B, #2D2D2D); color: white; padding: 40px 30px; border-radius: 12px 12px 0 0;">
-                  <h1 style="color: #6AA8B3; text-align: center; margin-bottom: 20px;">
+                  <h1 style="color: #6AA8B3; text-align: center; margin-bottom: 20px; font-family: 'Playfair Display', serif;">
                     4 Elementi Italia Newsletter
                   </h1>
                 </div>
-                <div style="background: white; padding: 30px; color: #333;">
+                <div style="background: white; padding: 30px; color: #333; line-height: 1.6;">
                   ${content}
                 </div>
                 <div style="background: #F6F4ED; padding: 20px; text-align: center; border-radius: 0 0 12px 12px;">
@@ -118,7 +119,7 @@ const handler = async (req: Request): Promise<Response> => {
                     © 2024 4 Elementi Italia. Tutti i diritti riservati.
                   </p>
                   <p style="margin: 10px 0 0 0; color: #666; font-size: 12px;">
-                    <a href="#" style="color: #6AA8B3;">Annulla iscrizione</a>
+                    <a href="${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app') || 'https://4elementiitalia.it'}/unsubscribe?email={{email}}" style="color: #6AA8B3;">Annulla iscrizione</a>
                   </p>
                 </div>
               </div>
@@ -127,13 +128,18 @@ const handler = async (req: Request): Promise<Response> => {
         });
 
         if (emailResponse.ok) {
+          const responseData = await emailResponse.json();
           successCount += batch.length;
+          if (responseData.id) emailIds.push(responseData.id);
+          console.log(`Newsletter batch sent successfully to ${batch.length} recipients`);
         } else {
+          const errorData = await emailResponse.text();
           errorCount += batch.length;
-          console.error('Error sending batch:', await emailResponse.text());
+          failedEmails.push(...batch);
+          console.error('Error sending newsletter batch:', errorData);
         }
 
-        // Add delay between batches to respect rate limits
+        // Add delay between batches to respect rate limits (100 emails/second limit)
         if (batches.indexOf(batch) < batches.length - 1) {
           await new Promise(resolve => setTimeout(resolve, 1000));
         }
@@ -141,16 +147,20 @@ const handler = async (req: Request): Promise<Response> => {
       } catch (error) {
         console.error('Error sending newsletter batch:', error);
         errorCount += batch.length;
+        failedEmails.push(...batch);
       }
     }
 
     console.log(`Newsletter sent: ${successCount} success, ${errorCount} errors`);
-    */
 
     return new Response(JSON.stringify({ 
       success: true, 
-      message: 'Newsletter sent successfully (simulated - configure RESEND_API_KEY to send real emails)',
+      message: `Newsletter sent to ${successCount} recipients${errorCount > 0 ? ` (${errorCount} failed)` : ''}`,
       recipients_count: emailList.length,
+      success_count: successCount,
+      error_count: errorCount,
+      failed_emails: failedEmails,
+      email_ids: emailIds,
       subject: subject
     }), {
       status: 200,

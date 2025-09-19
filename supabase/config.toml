@@ -1,1 +1,16 @@
 project_id = "jybewogjncaoscrnlqum"
+
+[functions.mailing-list-signup]
+verify_jwt = false
+
+[functions.newsletter-subscribe]
+verify_jwt = false
+
+[functions.resend-access-link]
+verify_jwt = false
+
+[functions.send-welcome-email]
+verify_jwt = false
+
+[functions.send-newsletter]
+verify_jwt = true
