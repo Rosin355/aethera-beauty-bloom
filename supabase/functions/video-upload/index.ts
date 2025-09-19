@@ -78,7 +78,8 @@ Deno.serve(async (req) => {
         .from('videos')
         .upload(tempPath, chunk, {
           cacheControl: '3600',
-          upsert: true
+          upsert: true,
+          contentType: 'application/octet-stream' // Set correct MIME type for chunks
         })
 
       if (error) {
@@ -105,17 +106,45 @@ Deno.serve(async (req) => {
       // Get upload progress
       const uploadId = url.pathname.split('/').pop()
       
+      if (!uploadId) {
+        return new Response('Missing upload ID', { 
+          status: 400, 
+          headers: corsHeaders 
+        })
+      }
+      
       // List all chunks to calculate offset
-      const { data: files } = await supabase.storage
+      const { data: files, error: listError } = await supabase.storage
         .from('videos')
         .list(`temp/${uploadId}`, { sortBy: { column: 'name', order: 'asc' } })
 
+      if (listError) {
+        console.error(`Error listing chunks: ${listError.message}`)
+        return new Response(null, {
+          status: 200,
+          headers: {
+            ...corsHeaders,
+            'tus-resumable': '1.0.0',
+            'upload-offset': '0',
+          }
+        })
+      }
+
       let totalOffset = 0
-      if (files) {
+      if (files && files.length > 0) {
+        // Calculate the total size of all uploaded chunks
         for (const file of files) {
-          const offset = parseInt(file.name)
-          if (!isNaN(offset)) {
-            totalOffset = Math.max(totalOffset, offset + (file.metadata?.size || 0))
+          const chunkOffset = parseInt(file.name)
+          if (!isNaN(chunkOffset)) {
+            // Get the actual file size from storage
+            const { data: fileData } = await supabase.storage
+              .from('videos')
+              .download(`temp/${uploadId}/${file.name}`)
+            
+            if (fileData) {
+              const chunkSize = fileData.size
+              totalOffset = Math.max(totalOffset, chunkOffset + chunkSize)
+            }
           }
         }
       }
