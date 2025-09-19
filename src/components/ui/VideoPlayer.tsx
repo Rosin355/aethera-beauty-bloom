@@ -204,6 +204,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     updateDebugInfo();
     
     let errorMessage = 'Errore sconosciuto';
+    let detailedError = '';
+    
     if (error) {
       switch (error.code) {
         case MediaError.MEDIA_ERR_ABORTED:
@@ -211,30 +213,31 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           break;
         case MediaError.MEDIA_ERR_NETWORK:
           errorMessage = 'Errore di rete durante il download';
+          detailedError = 'Impossibile scaricare il video dal server';
           break;
         case MediaError.MEDIA_ERR_DECODE:
-          errorMessage = 'Errore decodifica video - Possibile problema codec';
+          errorMessage = 'Errore decodifica video';
+          detailedError = 'Il browser non riesce a decodificare il file video';
           break;  
         case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
           errorMessage = 'Formato video non supportato dal browser';
+          detailedError = 'Il formato del file non è supportato';
           break;
       }
-    }
-
-    // Tentativo automatico di fallback se codec non supportato
-    if ((error?.code === MediaError.MEDIA_ERR_DECODE || error?.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED) 
-        && !useFallback && fallbackLocalPath) {
-      console.warn('[VideoPlayer] Tentativo fallback:', fallbackLocalPath);
-      setUseFallback(true);
-      setHasError(false);
-      setIsLoading(true);
-      setErrorDetails('Tentativo con video locale...');
-      setTimeout(() => videoRef.current?.load(), 100);
-      return;
+      
+      // Log dettagliato per debugging
+      console.error('[VideoPlayer] Errore caricamento URL:', videoUrl);
+      console.error('[VideoPlayer] Dettagli errore:', {
+        code: error.code,
+        message: error.message,
+        currentSrc: target.currentSrc,
+        readyState: target.readyState,
+        networkState: target.networkState
+      });
     }
 
     console.error('[VideoPlayer] Errore finale:', errorMessage, error);
-    setErrorDetails(errorMessage);
+    setErrorDetails(`${errorMessage}${detailedError ? ' - ' + detailedError : ''}`);
     setHasError(true);
     setIsLoading(false);
   };
@@ -326,11 +329,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
               <details className="text-xs text-left bg-muted/30 rounded p-2">
                 <summary className="cursor-pointer font-medium mb-1">Debug Info</summary>
                 <div className="space-y-1 text-muted-foreground">
+                  <div>URL: <span className="break-all">{videoUrl}</span></div>
                   <div>ReadyState: {debugInfo.readyState}/4</div>
                   <div>NetworkState: {debugInfo.networkState}/3</div>
                   <div>Dimensioni: {debugInfo.videoWidth}x{debugInfo.videoHeight}</div>
                   <div>Durata: {debugInfo.duration.toFixed(1)}s</div>
-                  <div>Sorgente: {useFallback ? 'Fallback locale' : 'Supabase'}</div>
+                  <div>CurrentSrc: {debugInfo.currentSrc || 'Nessuna'}</div>
                 </div>
               </details>
             )}
@@ -385,7 +389,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
           onCanPlay={handleCanPlay}
           onError={handleError}
         >
-          <source src={useFallback && fallbackLocalPath ? fallbackLocalPath : videoUrl} type="video/mp4" />
+          <source src={videoUrl} type="video/mp4" />
           Il tuo browser non supporta il tag video.
         </video>
       </div>
