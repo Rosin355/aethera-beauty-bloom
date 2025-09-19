@@ -19,8 +19,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
 }) => {
   // Costruzione URL sorgente con priorità al file locale (o fallback) per massima affidabilità
   const fileSrc = video.source_type === 'file' && video.file_name ? getVideoUrl(video.file_name) : null;
-  const ytId = (video as any).youtube_video_id || (video as any).youtube_url ? extractYouTubeVideoId((video as any).youtube_url as string) : null;
-  const youtubeSrc = ytId ? `https://www.youtube.com/watch?v=${ytId}` : (video as any).youtube_url || null;
+  // Estrazione robusta ID YouTube (evita passaggi null a extract)
+  const rawYtId = (video as any).youtube_video_id as string | undefined;
+  const ytUrl = (video as any).youtube_url as string | undefined;
+  const ytId = rawYtId ?? (ytUrl ? extractYouTubeVideoId(ytUrl) : null);
+  const youtubeSrc = ytId ? `https://www.youtube.com/watch?v=${ytId}` : (ytUrl || null);
 
   // Se c'è un fallback locale per una sorgente YouTube, usiamolo come priorità
   const resolvedUrl = fileSrc || (video.source_type === 'youtube' && fallbackLocalPath ? fallbackLocalPath : youtubeSrc);
