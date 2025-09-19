@@ -224,7 +224,6 @@ const LandingPage = () => {
                     video={previewVideo}
                     className="w-full h-full"
                     fallbackLocalPath="/video-completo.mp4"
-                    openInModal={true}
                   />
                 ) : (
                   <div className="w-full h-full bg-gray-900 flex items-center justify-center">

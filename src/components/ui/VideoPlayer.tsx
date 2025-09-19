@@ -3,26 +3,22 @@ import { Play } from 'lucide-react';
 import { SiteVideo, getYouTubeThumbnail } from '@/lib/siteVideos';
 import { getVideoUrl } from '@/lib/videoStorage';
 import { useYouTubeAPI } from '@/hooks/useYouTubeAPI';
-import VideoModal from '@/components/ui/VideoModal';
 
 interface VideoPlayerProps {
   video: SiteVideo;
   className?: string;
   autoPlay?: boolean;
-  fallbackLocalPath?: string; // es. "/video-anteprima.mp4"
-  openInModal?: boolean; // Se true, apre il video in un modal invece di gestire la riproduzione inline
+  fallbackLocalPath?: string; // es. "/video-completo.mp4"
 }
 
 const VideoPlayer: React.FC<VideoPlayerProps> = ({ 
   video, 
   className = "", 
   autoPlay = false,
-  fallbackLocalPath,
-  openInModal = false
+  fallbackLocalPath
 }) => {
   const [isPlaying, setIsPlaying] = useState(autoPlay);
   const [isLoading, setIsLoading] = useState(false);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const youtubeContainerRef = useRef<HTMLDivElement>(null);
   const youtubePlayerRef = useRef<any>(null);
@@ -73,12 +69,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   };
 
   const handlePlay = async () => {
-    // Se openInModal è true, apri il modal invece di gestire la riproduzione inline
-    if (openInModal && (video.source_type === 'file' || fallbackLocalPath)) {
-      setIsModalOpen(true);
-      return;
-    }
-
     // Per video file, usa il player nativo
     if (video.source_type === 'file' && video.file_name) {
       const el = videoRef.current;
@@ -337,15 +327,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
       )}
       </div>
 
-      {/* Video Modal */}
-      {openInModal && (
-        <VideoModal
-          video={video}
-          isOpen={isModalOpen}
-          onClose={() => setIsModalOpen(false)}
-          fallbackLocalPath={fallbackLocalPath}
-        />
-      )}
     </>
   );
 };
