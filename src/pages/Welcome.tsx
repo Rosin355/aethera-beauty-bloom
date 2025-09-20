@@ -40,13 +40,13 @@ const Welcome = () => {
       }
 
       try {
-        const { data, error } = await supabase
-          .from('mailing_list')
-          .select('*')
-          .eq('access_token', token)
-          .single();
+        // Validate access token using secure function
+        const { data: validationResult, error } = await supabase
+          .rpc('validate_access_token', { token_to_validate: token });
 
-        if (error || !data) {
+        const result = validationResult as { valid: boolean; data: { name: string; email: string } | null };
+
+        if (error || !result || !result.valid) {
           toast({
             title: "Token non valido",
             description: "Il link di accesso non è valido o è scaduto",
@@ -57,10 +57,10 @@ const Welcome = () => {
         }
 
         setIsValidToken(true);
-        setMailingListData(data);
+        setMailingListData(result.data);
         setNewsletterForm({ 
-          email: data.email, 
-          name: data.name 
+          email: result.data?.email || '', 
+          name: result.data?.name || ''
         });
         
         // Load video from site_videos database

@@ -463,6 +463,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      validate_access_token: {
+        Args: { token_to_validate: string }
+        Returns: Json
+      }
     }
     Enums: {
       app_role: "admin" | "collaborator" | "user"
