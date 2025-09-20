@@ -45,7 +45,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [errorDetails, setErrorDetails] = useState<string>('');
-  const [useYouTube, setUseYouTube] = useState(false);
+  const [useYouTube, setUseYouTube] = useState(
+    video.source_type === 'youtube' && !!video.youtube_video_id
+  );
   const videoRef = useRef<HTMLVideoElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -169,7 +171,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     if (videoUrl) window.open(videoUrl, '_blank');
   };
 
-  if (!videoUrl) {
+  // Check if we have any video available (file or YouTube)
+  const hasVideoAvailable = videoUrl || (video.youtube_video_id && youtubeEmbedUrl);
+  
+  if (!hasVideoAvailable) {
     return (
       <div className={`relative rounded-lg overflow-hidden ${className}`}>
         <div className="w-full aspect-video flex items-center justify-center bg-muted/30">
