@@ -110,12 +110,6 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   };
 
-  const handleYouTubeError = () => {
-    console.error('[VideoPlayer] Errore riproduzione YouTube');
-    setErrorDetails('Errore riproduzione alternativa (YouTube)');
-    setHasError(true);
-    setIsLoading(false);
-  };
   const handleError = (e: React.SyntheticEvent<HTMLVideoElement>) => {
     const target = e.target as HTMLVideoElement;
     const error = target.error;
