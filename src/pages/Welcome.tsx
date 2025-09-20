@@ -64,7 +64,7 @@ const Welcome = () => {
         });
         
         // Load video from site_videos database
-        const video = await getSiteVideo('preview'); // Cambiato da 'full' a 'preview'
+        const video = await getSiteVideo('full'); // Usa il video YouTube completo
         if (video) {
           setFullVideo(video);
         }
@@ -200,6 +200,27 @@ const Welcome = () => {
                 )}
               </div>
             </Card>
+          </div>
+
+          {/* PDF Warning Alert */}
+          <div className="mb-4 sm:mb-6">
+            <div className="bg-gradient-to-r from-[#E46A39]/20 to-[#6AA8B3]/20 border border-[#E46A39]/30 rounded-xl p-4 sm:p-6 backdrop-blur-sm">
+              <div className="flex items-start space-x-3 sm:space-x-4">
+                <div className="w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-r from-[#E46A39] to-[#6AA8B3] rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                  <svg className="w-3 h-3 sm:w-4 sm:h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-white font-semibold text-sm sm:text-base mb-1">
+                    💡 Non dimenticare il tuo regalo!
+                  </h4>
+                  <p className="text-white/90 text-xs sm:text-sm leading-relaxed">
+                    Dopo aver guardato il video, <strong>scarica anche la checklist gratuita</strong> qui sotto per mettere subito in pratica quello che hai imparato.
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* PDF Download Section */}
