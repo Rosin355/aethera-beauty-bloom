@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
+
 import { SiteVideo } from '@/lib/siteVideos';
 import { getVideoUrl } from '@/lib/videoStorage';
 import { Button } from '@/components/ui/button';
-import { Play, RefreshCw, ExternalLink, AlertCircle, Info } from 'lucide-react';
+import { RefreshCw, ExternalLink, AlertCircle } from 'lucide-react';
 
 interface VideoPlayerProps {
   video: SiteVideo;
@@ -44,11 +45,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [errorDetails, setErrorDetails] = useState<string>('');
+  const [useYouTube, setUseYouTube] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const videoUrl = video.source_type === 'file' && video.file_name 
     ? getVideoUrl(video.file_name) 
+    : null;
+  const youtubeUrl = video.youtube_video_id
+    ? `https://www.youtube.com/watch?v=${video.youtube_video_id}`
+    : (video.youtube_url ?? null);
+  const youtubeEmbedUrl = video.youtube_video_id
+    ? `https://www.youtube.com/embed/${video.youtube_video_id}?rel=0&modestbranding=1&controls=1`
     : null;
 
   // Timeout di sicurezza per nascondere il loading
@@ -93,6 +101,21 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
     }
   };
 
+  const handleYouTubeReady = () => {
+    console.log('[VideoPlayer] YouTube pronto per riproduzione');
+    setIsLoading(false);
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  };
+
+  const handleYouTubeError = () => {
+    console.error('[VideoPlayer] Errore riproduzione YouTube');
+    setErrorDetails('Errore riproduzione alternativa (YouTube)');
+    setHasError(true);
+    setIsLoading(false);
+  };
   const handleError = (e: React.SyntheticEvent<HTMLVideoElement>) => {
     const target = e.target as HTMLVideoElement;
     const error = target.error;
@@ -120,6 +143,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
         message: error.message,
         url: videoUrl
       });
+
+      // Fallback automatico a YouTube se disponibile per errori di decodifica/formato
+      if (
+        (error.code === MediaError.MEDIA_ERR_DECODE || error.code === MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED)
+        && youtubeUrl
+      ) {
+        console.info('[VideoPlayer] Attivo fallback YouTube:', youtubeUrl);
+        setUseYouTube(true);
+        setHasError(false);
+        setIsLoading(true);
+        return;
+      }
     }
 
     console.error('[VideoPlayer] Errore finale:', errorMessage);
@@ -187,22 +222,32 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({
             </div>
           </div>
         )}
-        
-        <video
-          ref={videoRef}
-          controls
-          playsInline
-          preload="metadata"
-          autoPlay={autoPlay}
-          className="w-full h-full"
-          onLoadStart={handleLoadStart}
-          onLoadedData={handleLoadedData}
-          onCanPlay={handleCanPlay}
-          onError={handleError}
-        >
-          <source src={videoUrl} type="video/mp4" />
-          Il tuo browser non supporta il tag video.
-        </video>
+        {useYouTube && youtubeEmbedUrl ? (
+          <iframe
+            src={youtubeEmbedUrl}
+            title="YouTube video"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+            allowFullScreen
+            className="w-full h-full"
+            onLoad={handleYouTubeReady}
+          />
+        ) : (
+          <video
+            ref={videoRef}
+            controls
+            playsInline
+            preload="metadata"
+            autoPlay={autoPlay}
+            className="w-full h-full"
+            onLoadStart={handleLoadStart}
+            onLoadedData={handleLoadedData}
+            onCanPlay={handleCanPlay}
+            onError={handleError}
+          >
+            <source src={videoUrl} type="video/mp4" />
+            Il tuo browser non supporta il tag video.
+          </video>
+        )}
       </div>
     </div>
   );
