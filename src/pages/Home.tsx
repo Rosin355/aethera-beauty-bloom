@@ -10,7 +10,7 @@ import FeaturesWithHoverEffects from "@/components/Home/FeaturesWithHoverEffects
 import Testimonials from "@/components/Home/Testimonials";
 import CallToAction from "@/components/Home/CallToAction";
 
-const Index = () => {
+const Home = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
 
@@ -49,4 +49,4 @@ const Index = () => {
   );
 };
 
-export default Index;
+export default Home;
