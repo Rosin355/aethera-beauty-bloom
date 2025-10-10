@@ -266,7 +266,8 @@ const LandingPage = () => {
                         type="submit"
                         IconLeft={Download}
                         IconRight={ChevronDown}
-                        className="w-full text-sm sm:text-base py-3"
+                        className="text-sm sm:text-base py-3"
+                        fullWidth
                       >
                         SCARICA IL VIDEO GRATUITO
                       </AnimatedButton>

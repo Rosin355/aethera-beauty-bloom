@@ -9,6 +9,7 @@ interface AnimatedButtonProps extends React.ButtonHTMLAttributes<HTMLButtonEleme
   iconLeftClassName?: string;
   iconRightClassName?: string;
   variant?: "primary" | "secondary";
+  fullWidth?: boolean;
 }
 
 export const AnimatedButton = React.forwardRef<HTMLButtonElement, AnimatedButtonProps>(
@@ -20,6 +21,7 @@ export const AnimatedButton = React.forwardRef<HTMLButtonElement, AnimatedButton
     iconRightClassName,
     className,
     variant = "primary",
+    fullWidth = false,
     ...props 
   }, ref) => {
     const gradientClass = variant === "primary" 
@@ -27,7 +29,7 @@ export const AnimatedButton = React.forwardRef<HTMLButtonElement, AnimatedButton
       : "bg-gradient-to-r from-[#6AA8B3] via-[#CBD8D4] to-[#E46A39]";
 
     return (
-      <div className="relative inline-flex items-center justify-center group">
+      <div className={cn("relative inline-flex items-center justify-center group", fullWidth && "w-full")}>
         <div
           className={cn(
             "absolute inset-0 duration-1000 opacity-60 transition-all rounded-md blur-lg filter group-hover:opacity-100 group-hover:duration-200",
