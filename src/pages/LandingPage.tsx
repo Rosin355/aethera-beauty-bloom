@@ -7,6 +7,7 @@ import { Card } from "@/components/ui/card";
 import { GlowCard } from "@/components/ui/spotlight-card";
 import { AuroraBackground } from "@/components/ui/aurora-background";
 import { Check, Play, Users, Award, BookOpen, Headphones, User, Download, ChevronDown, ArrowRight } from "lucide-react";
+import { AnimatedButton } from "@/components/ui/animated-button";
 import { Glow } from "@/components/ui/glow";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -206,18 +207,19 @@ const LandingPage = () => {
                 </p>
               </div>
 
-              <Button 
-                size="lg" 
-                className="bg-white hover:bg-gray-200 text-black px-4 sm:px-6 lg:px-8 py-3 sm:py-4 lg:py-6 text-sm sm:text-base lg:text-lg font-medium w-full sm:w-auto min-h-[48px] sm:min-h-[56px] group relative overflow-hidden"
-                onClick={() => document.getElementById('video-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
-              >
-                <Download className="w-4 h-4 sm:w-5 sm:h-5 mr-2 group-hover:animate-bounce" />
-                <span className="leading-none">SCARICA IL VIDEO GRATUITO</span>
-                <ChevronDown className="w-4 h-4 sm:w-5 sm:h-5 ml-2 animate-bounce" />
-              </Button>
-              <p className="text-xs sm:text-sm text-white/70 text-center sm:text-left mt-2">
-                ✓ Nessun pagamento richiesto • Download immediato • Guarda quando vuoi
-              </p>
+              <div className="w-full sm:w-auto">
+                <AnimatedButton
+                  IconLeft={Download}
+                  IconRight={ChevronDown}
+                  className="w-full sm:w-auto text-sm sm:text-base lg:text-lg px-4 sm:px-6 lg:px-8"
+                  onClick={() => document.getElementById('video-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+                >
+                  SCARICA IL VIDEO GRATUITO
+                </AnimatedButton>
+                <p className="text-xs sm:text-sm text-white/70 text-center sm:text-left mt-3">
+                  ✓ Nessun pagamento richiesto • Download immediato • Guarda quando vuoi
+                </p>
+              </div>
             </div>
 
             <div className="relative space-y-4 sm:space-y-6 mt-8 lg:mt-0">
@@ -251,21 +253,24 @@ const LandingPage = () => {
                     ...formData,
                     email: e.target.value
                   })} className="bg-background/50 border-white/20" />
-                    <Button 
-                      type="submit" 
-                      disabled={isSubmitting}
-                      className="w-full bg-white hover:bg-gray-200 text-black font-medium text-sm sm:text-base py-3 group relative overflow-hidden"
-                    >
-                      {isSubmitting ? (
-                        "INVIO IN CORSO..."
-                      ) : (
-                        <>
-                          <Download className="w-4 h-4 mr-2 inline group-hover:animate-bounce" />
-                          SCARICA IL VIDEO GRATUITO
-                          <ChevronDown className="w-4 h-4 ml-2 inline animate-bounce" />
-                        </>
-                      )}
-                    </Button>
+                    {isSubmitting ? (
+                      <Button 
+                        type="submit" 
+                        disabled
+                        className="w-full bg-white hover:bg-gray-200 text-black font-medium text-sm sm:text-base py-3"
+                      >
+                        INVIO IN CORSO...
+                      </Button>
+                    ) : (
+                      <AnimatedButton
+                        type="submit"
+                        IconLeft={Download}
+                        IconRight={ChevronDown}
+                        className="w-full text-sm sm:text-base py-3"
+                      >
+                        SCARICA IL VIDEO GRATUITO
+                      </AnimatedButton>
+                    )}
                   </form>
                   
                   {/* Success message */}
@@ -379,14 +384,13 @@ const LandingPage = () => {
                   <p className="text-sm text-muted-foreground">
                     📩 Riceverai immediatamente il link per guardarlo quando vuoi, dove vuoi.
                   </p>
-                  <Button 
-                    className="bg-white hover:bg-gray-200 text-black px-8 font-medium group"
+                  <AnimatedButton
+                    IconLeft={Download}
+                    IconRight={ChevronDown}
                     onClick={() => document.getElementById('video-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
                   >
-                    <Download className="w-4 h-4 mr-2 inline group-hover:animate-bounce" />
                     SCARICA SUBITO IL VIDEO
-                    <ChevronDown className="w-4 h-4 ml-2 inline animate-bounce" />
-                  </Button>
+                  </AnimatedButton>
                 </div>
               </Card>
             </div>
@@ -653,18 +657,19 @@ const LandingPage = () => {
                 <strong className="text-white">Davide</strong> – Fondatore di 4 Elementi Italia
               </p>
             </div>
-            <Button 
-              size="lg" 
-              className="bg-white hover:bg-gray-200 text-black px-12 py-6 text-lg font-medium group"
-              onClick={() => document.getElementById('video-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
-            >
-              <Download className="w-6 h-6 mr-3 group-hover:animate-bounce" />
-              SCARICA IL VIDEO GRATUITO
-              <ChevronDown className="w-6 h-6 ml-3 animate-bounce" />
-            </Button>
-            <p className="text-sm text-white/70 mt-4">
-              ✓ Nessun pagamento richiesto • Download immediato • Guarda quando vuoi
-            </p>
+            <div>
+              <AnimatedButton
+                IconLeft={Download}
+                IconRight={ChevronDown}
+                className="px-12 py-6 text-lg"
+                onClick={() => document.getElementById('video-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+              >
+                SCARICA IL VIDEO GRATUITO
+              </AnimatedButton>
+              <p className="text-sm text-white/70 mt-4 text-center">
+                ✓ Nessun pagamento richiesto • Download immediato • Guarda quando vuoi
+              </p>
+            </div>
           </div>
         </div>
       </section>
