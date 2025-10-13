@@ -214,7 +214,7 @@ const LandingPage = () => {
                   className="w-full sm:w-auto text-sm sm:text-base lg:text-lg px-4 sm:px-6 lg:px-8"
                   onClick={() => document.getElementById('video-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
                 >
-                  SCARICA IL VIDEO GRATUITO
+                  SCARICA IL MINI CORSO GRATUITO
                 </AnimatedButton>
                 <p className="text-xs sm:text-sm text-white/70 text-center sm:text-left mt-3">
                   ✓ Nessun pagamento richiesto • Download immediato • Guarda quando vuoi
@@ -269,7 +269,7 @@ const LandingPage = () => {
                         className="text-sm sm:text-base py-3"
                         fullWidth
                       >
-                        SCARICA IL VIDEO GRATUITO
+                        SCARICA IL MINI CORSO GRATUITO
                       </AnimatedButton>
                     )}
                   </form>
