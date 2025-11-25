@@ -1,6 +1,6 @@
 
 import { useState, useEffect } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, LogOut, Settings, User } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
@@ -12,6 +12,7 @@ const Navbar = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const { user, signOut, isAdmin } = useAuth();
 
   const isActive = (path: string) => {
@@ -34,6 +35,7 @@ const Navbar = () => {
   const handleLogout = async () => {
     await signOut();
     setIsMenuOpen(false);
+    navigate('/home');
   };
   
   const toggleMenu = () => {
