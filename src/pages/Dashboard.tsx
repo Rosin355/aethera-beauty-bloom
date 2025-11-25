@@ -4,6 +4,7 @@ import WelcomeCard from "@/components/Dashboard/WelcomeCard";
 import StatCard from "@/components/Dashboard/StatCard";
 import FeaturePreview from "@/components/Dashboard/FeaturePreview";
 import BecomeAdminButton from "@/components/Auth/BecomeAdminButton";
+import { ChatAssistant } from "@/components/AI/ChatAssistant";
 import { BookOpen, Calendar, Users, MessageSquare, ChartPie, Layout } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
@@ -90,6 +91,8 @@ const Dashboard = () => {
           linkPath="/dashboard/analytics" 
         />
       </div>
+      
+      <ChatAssistant />
     </DashboardLayout>
   );
 };
