@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
   BookOpen, 
   Calendar, 
@@ -17,7 +17,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Logo from "../Layout/Logo";
-
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 
 interface DashboardLayoutProps {
@@ -26,7 +27,33 @@ interface DashboardLayoutProps {
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [displayName, setDisplayName] = useState<string>("");
+  const [initials, setInitials] = useState<string>("U");
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut } = useAuth();
+
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profile?.display_name) {
+        setDisplayName(profile.display_name);
+        // Generate initials from display name
+        const names = profile.display_name.split(' ');
+        const userInitials = names.map(n => n.charAt(0).toUpperCase()).join('').slice(0, 2);
+        setInitials(userInitials);
+      }
+    };
+
+    loadUserProfile();
+  }, [user]);
 
   const sidebarItems = [
     { name: "Dashboard", path: "/dashboard", icon: ChartPie },
@@ -43,6 +70,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/home');
   };
 
   return (
@@ -97,26 +129,28 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             {isSidebarOpen ? (
               <div className="flex items-center">
                 <div className="w-10 h-10 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center">
-                  <span className="text-white font-bold">JS</span>
+                  <span className="text-white font-bold">{initials}</span>
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm font-medium text-white">Jane Smith</p>
+                  <p className="text-sm font-medium text-white">{displayName || "Utente"}</p>
                   <p className="text-xs text-gray-400">Piano Premium</p>
                 </div>
               </div>
             ) : (
               <div className="flex justify-center">
                 <div className="w-10 h-10 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center">
-                  <span className="text-white font-bold">JS</span>
+                  <span className="text-white font-bold">{initials}</span>
                 </div>
               </div>
             )}
-            <Link to="/logout">
-              <Button variant="ghost" className="mt-4 text-gray-300 hover:text-white hover:bg-neutral-900 w-full justify-start">
-                <LogOut size={18} />
-                {isSidebarOpen && <span className="ml-2">Logout</span>}
-              </Button>
-            </Link>
+            <Button 
+              variant="ghost" 
+              className="mt-4 text-gray-300 hover:text-white hover:bg-neutral-900 w-full justify-start"
+              onClick={handleLogout}
+            >
+              <LogOut size={18} />
+              {isSidebarOpen && <span className="ml-2">Logout</span>}
+            </Button>
           </div>
         </div>
       </aside>
@@ -163,9 +197,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             <div className="hidden md:block h-8 w-px bg-neutral-700"></div>
             <div className="hidden md:flex items-center space-x-2">
               <div className="w-8 h-8 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">JS</span>
+                <span className="text-white font-bold text-sm">{initials}</span>
               </div>
-              <span className="text-sm font-medium text-neutral-200">Jane Smith</span>
+              <span className="text-sm font-medium text-neutral-200">{displayName || "Utente"}</span>
             </div>
           </div>
         </header>

@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Menu, X, LogOut, Settings, User } from "lucide-react";
@@ -19,18 +19,43 @@ const Navbar = () => {
     return location.pathname === path;
   };
 
-  const navLinks = user ? [
-    { name: "Dashboard", path: "/dashboard" },
-    { name: "Gestione", path: "/dashboard/management" },
-    { name: "Community", path: "/dashboard/community" },
-    ...(isAdmin ? [{ name: "Admin", path: "/admin/dashboard" }] : []),
-  ] : [
-    { name: "Home", path: "/" },
-    { name: "Formazione", path: "/training" },
-    { name: "Gestione", path: "/management" },
-    { name: "Community", path: "/community" },
-    { name: "Supporto", path: "/support" },
-  ];
+  const isLandingPage = location.pathname === '/' || location.pathname === '/landing';
+  const isHomePage = location.pathname === '/home';
+
+  const navLinks = useMemo(() => {
+    // Minimal menu for landing page
+    if (isLandingPage) {
+      return [];
+    }
+
+    // Dashboard links for authenticated users
+    if (user) {
+      return [
+        { name: "Dashboard", path: "/dashboard" },
+        { name: "Formazione", path: "/dashboard/training" },
+        { name: "Gestione", path: "/dashboard/management" },
+        { name: "Community", path: "/dashboard/community" },
+        ...(isAdmin ? [{ name: "Admin", path: "/admin/dashboard" }] : []),
+      ];
+    }
+
+    // Institutional links for home page (non-authenticated)
+    if (isHomePage) {
+      return [
+        { name: "Home", path: "/home" },
+        { name: "Chi Siamo", path: "/home#chi-siamo" },
+        { name: "Servizi", path: "/home#servizi" },
+        { name: "Contatti", path: "/home#contatti" },
+      ];
+    }
+
+    // Default links
+    return [
+      { name: "Home", path: "/home" },
+      { name: "Caratteristiche", path: "#features" },
+      { name: "Contatti", path: "#contact" },
+    ];
+  }, [user, isAdmin, isLandingPage, isHomePage]);
 
   const handleLogout = async () => {
     await signOut();

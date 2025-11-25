@@ -4,25 +4,45 @@ import DashboardLayout from "@/components/Dashboard/DashboardLayout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { ChartPie, Users, BookOpen, Calendar } from "lucide-react";
 
 const PersonalizedDashboard = () => {
-  const {
-    toast
-  } = useToast();
+  const { toast } = useToast();
+  const { user } = useAuth();
   const [userData, setUserData] = useState({
-    name: "Jane Smith",
-    businessType: "Proprietaria di Salone",
-    focusAreas: ["Acquisizione Clienti", "Sviluppo Competenze"],
-    experience: "3-5 anni"
+    name: "Utente",
+    businessType: "Centro Benessere",
+    focusAreas: ["Trattamenti Viso", "Massaggi"],
+    experience: "5-10 anni"
   });
+
   useEffect(() => {
-    // In un'app reale, questo recupererebbe i dati del profilo dell'utente
+    const loadUserProfile = async () => {
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('user_id', user.id)
+        .single();
+
+      if (profile?.display_name) {
+        setUserData(prev => ({
+          ...prev,
+          name: profile.display_name,
+        }));
+      }
+    };
+
+    loadUserProfile();
+
     toast({
       title: "Dashboard personalizzata",
       description: "La tua dashboard è stata personalizzata in base al tuo profilo."
     });
-  }, [toast]);
+  }, [user, toast]);
   return <DashboardLayout>
       <div className="space-y-6">
         <Card className="glass border border-neutral-800 text-white">
