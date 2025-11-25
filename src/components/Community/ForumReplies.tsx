@@ -49,14 +49,14 @@ export function ForumReplies({ postId, repliesCount, onReplyAdded }: ForumReplie
         .from("forum_replies")
         .select(`
           *,
-          profiles(display_name, avatar_url)
+          profiles!forum_replies_author_fk(display_name, avatar_url)
         `)
         .eq("post_id", postId)
         .eq("is_approved", true)
         .order("created_at", { ascending: true });
 
       if (error) throw error;
-      setReplies(data || []);
+      setReplies((data || []) as any);
     } catch (error: any) {
       toast.error("Errore nel caricamento delle risposte", {
         description: error.message,

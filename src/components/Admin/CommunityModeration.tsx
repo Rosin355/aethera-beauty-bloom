@@ -22,11 +22,11 @@ interface ForumPost {
   created_at: string;
   profiles?: {
     display_name: string;
-  };
+  } | null;
   forum_categories?: {
     name: string;
     color: string;
-  };
+  } | null;
 }
 
 interface JobPosting {
@@ -43,7 +43,7 @@ interface JobPosting {
   created_at: string;
   profiles?: {
     display_name: string;
-  };
+  } | null;
 }
 
 export function CommunityModeration() {
@@ -63,25 +63,25 @@ export function CommunityModeration() {
         .from("forum_posts")
         .select(`
           *,
-          profiles!author_id(display_name),
-          forum_categories!category_id(name, color)
+          profiles!forum_posts_author_fk(display_name),
+          forum_categories(name, color)
         `)
         .order("created_at", { ascending: false });
 
       if (postsError) throw postsError;
-      setPosts(postsData || []);
+      setPosts((postsData || []) as any);
 
       // Fetch pending job postings
       const { data: jobsData, error: jobsError } = await supabase
         .from("job_postings")
         .select(`
           *,
-          profiles(display_name)
+          profiles!job_postings_posted_by_fk(display_name)
         `)
         .order("created_at", { ascending: false });
 
       if (jobsError) throw jobsError;
-      setJobs(jobsData || []);
+      setJobs((jobsData || []) as any);
     } catch (error: any) {
       toast.error("Errore nel caricamento dei contenuti", {
         description: error.message,

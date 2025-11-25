@@ -119,6 +119,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "forum_posts_author_fk"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "forum_posts_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
@@ -156,6 +163,13 @@ export type Database = {
           post_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "forum_replies_author_fk"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
           {
             foreignKeyName: "forum_replies_post_id_fkey"
             columns: ["post_id"]
@@ -249,7 +263,15 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "job_postings_posted_by_fk"
+            columns: ["posted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       mailing_list: {
         Row: {
