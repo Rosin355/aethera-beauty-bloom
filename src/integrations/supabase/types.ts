@@ -320,6 +320,7 @@ export type Database = {
           experience_years: number | null
           id: string
           instagram_url: string | null
+          is_public: boolean | null
           linkedin_url: string | null
           location: string | null
           skills: string[] | null
@@ -336,6 +337,7 @@ export type Database = {
           experience_years?: number | null
           id?: string
           instagram_url?: string | null
+          is_public?: boolean | null
           linkedin_url?: string | null
           location?: string | null
           skills?: string[] | null
@@ -352,6 +354,7 @@ export type Database = {
           experience_years?: number | null
           id?: string
           instagram_url?: string | null
+          is_public?: boolean | null
           linkedin_url?: string | null
           location?: string | null
           skills?: string[] | null
