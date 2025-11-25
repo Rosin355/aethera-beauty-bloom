@@ -365,7 +365,7 @@ export type Database = {
         Row: {
           action: string
           id: string
-          ip_address: unknown | null
+          ip_address: unknown
           resource: string
           timestamp: string | null
           user_agent: string | null
@@ -374,7 +374,7 @@ export type Database = {
         Insert: {
           action: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           resource: string
           timestamp?: string | null
           user_agent?: string | null
@@ -383,7 +383,7 @@ export type Database = {
         Update: {
           action?: string
           id?: string
-          ip_address?: unknown | null
+          ip_address?: unknown
           resource?: string
           timestamp?: string | null
           user_agent?: string | null
