@@ -201,6 +201,16 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </div>
 
           <div className="flex items-center space-x-4">
+            {(isAdmin || isCollaborator) && (
+              <div className={cn(
+                "px-3 py-1 rounded-full text-xs font-medium border",
+                isAdmin 
+                  ? "bg-brand-fire/10 text-brand-fire border-brand-fire/30" 
+                  : "bg-brand-water/10 text-brand-water border-brand-water/30"
+              )}>
+                {isAdmin ? "Admin" : "Collaboratore"}
+              </div>
+            )}
             <NotificationCenter />
             <div className="hidden md:block h-8 w-px bg-neutral-700"></div>
             <div className="hidden md:flex items-center space-x-2">

@@ -5,11 +5,14 @@ import StatCard from "@/components/Dashboard/StatCard";
 import FeaturePreview from "@/components/Dashboard/FeaturePreview";
 import BecomeAdminButton from "@/components/Auth/BecomeAdminButton";
 import { ChatAssistant } from "@/components/AI/ChatAssistant";
-import { BookOpen, Calendar, Users, MessageSquare, ChartPie, Layout } from "lucide-react";
+import { BookOpen, Calendar, Users, MessageSquare, ChartPie, Layout, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 const Dashboard = () => {
+  const { isAdmin } = useAuth();
+  
   return (
     <DashboardLayout>
       <WelcomeCard />
@@ -55,6 +58,15 @@ const Dashboard = () => {
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {isAdmin && (
+          <FeaturePreview 
+            title="Pannello Amministrazione" 
+            description="Gestisci clienti, contenuti, moderazione community e visualizza statistiche complete." 
+            icon={<Shield size={24} className="text-white" />}
+            linkText="Vai all'Admin" 
+            linkPath="/admin/dashboard" 
+          />
+        )}
         <FeaturePreview 
           title="Formazione Online" 
           description="Accedi a corsi professionali, tutorial e ottieni certificati per migliorare le tue competenze." 
