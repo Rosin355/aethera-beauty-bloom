@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -13,6 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, MessageSquare, Heart, Pin, Calendar, User } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { it } from "date-fns/locale";
+import { ForumReplies } from "./ForumReplies";
+import { useEffect } from "react";
 
 interface ForumPost {
   id: string;
@@ -302,12 +304,14 @@ export function CommunityForum() {
                       <Heart className="h-4 w-4" />
                       <span>{post.likes_count}</span>
                     </Button>
-                    <Button variant="ghost" size="sm" className="flex items-center space-x-1">
-                      <MessageSquare className="h-4 w-4" />
-                      <span>{post.replies_count}</span>
-                    </Button>
                   </div>
                 </div>
+                
+                <ForumReplies 
+                  postId={post.id} 
+                  repliesCount={post.replies_count}
+                  onReplyAdded={fetchPosts}
+                />
               </CardContent>
             </Card>
           ))
