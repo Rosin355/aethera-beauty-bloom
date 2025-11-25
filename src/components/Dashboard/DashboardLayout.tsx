@@ -20,6 +20,7 @@ import Logo from "../Layout/Logo";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { NotificationCenter } from "@/components/Layout/NotificationCenter";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -200,10 +201,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </div>
 
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon" className="relative text-neutral-300 hover:text-white hover:bg-neutral-900">
-              <Bell size={20} />
-              <span className="absolute top-0 right-0 w-2 h-2 bg-neutral-400 rounded-full"></span>
-            </Button>
+            <NotificationCenter />
             <div className="hidden md:block h-8 w-px bg-neutral-700"></div>
             <div className="hidden md:flex items-center space-x-2">
               <div className="w-8 h-8 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center">

@@ -17,3 +17,6 @@ verify_jwt = true
 
 [functions.resend-test-email]
 verify_jwt = false
+
+[functions.ai-assistant]
+verify_jwt = true

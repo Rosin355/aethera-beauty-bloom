@@ -9,6 +9,7 @@ import ContentManagement from "@/components/Admin/ContentManagement";
 import AIDataTools from "@/components/Admin/AIDataTools";
 import ClientMonitoring from "@/components/Admin/ClientMonitoring";
 import { CommunityModeration } from "@/components/Admin/CommunityModeration";
+import { CommunityStats } from "@/components/Admin/CommunityStats";
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState("clients");
@@ -33,10 +34,11 @@ const AdminDashboard = () => {
         </Card>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-5 mb-8">
+          <TabsList className="grid grid-cols-6 mb-8">
             <TabsTrigger value="clients">Clienti</TabsTrigger>
             <TabsTrigger value="content">Contenuti</TabsTrigger>
             <TabsTrigger value="community">Community</TabsTrigger>
+            <TabsTrigger value="stats">Statistiche</TabsTrigger>
             <TabsTrigger value="aidata">Dati AI</TabsTrigger>
             <TabsTrigger value="monitoring">Monitoraggio</TabsTrigger>
           </TabsList>
@@ -51,6 +53,10 @@ const AdminDashboard = () => {
           
           <TabsContent value="community" className="space-y-4">
             <CommunityModeration />
+          </TabsContent>
+          
+          <TabsContent value="stats" className="space-y-4">
+            <CommunityStats />
           </TabsContent>
           
           <TabsContent value="aidata" className="space-y-4">
