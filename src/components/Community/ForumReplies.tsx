@@ -108,26 +108,12 @@ export function ForumReplies({ postId, repliesCount, onReplyAdded }: ForumReplie
         content: newReply,
         author_id: user.id,
         post_id: postId,
-        is_approved: false, // Richiede approvazione admin
+        is_approved: true, // Auto-approvato per pubblicazione immediata
       });
 
       if (error) throw error;
 
-      // Update replies count on the post
-      const { data: post } = await supabase
-        .from("forum_posts")
-        .select("replies_count")
-        .eq("id", postId)
-        .single();
-
-      if (post) {
-        await supabase
-          .from("forum_posts")
-          .update({ replies_count: (post.replies_count || 0) + 1 })
-          .eq("id", postId);
-      }
-
-      toast.success("Risposta inviata! Sarà visibile dopo l'approvazione.");
+      toast.success("Risposta pubblicata con successo!");
       setNewReply("");
       fetchReplies();
       onReplyAdded?.();
