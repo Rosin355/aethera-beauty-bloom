@@ -26,7 +26,7 @@ const PersonalizedDashboard = () => {
         .from('profiles')
         .select('display_name')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (profile?.display_name) {
         setUserData(prev => ({

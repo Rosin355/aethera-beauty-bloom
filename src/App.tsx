@@ -17,6 +17,7 @@ import Dashboard from "./pages/Dashboard";
 import PersonalizedDashboard from "./pages/PersonalizedDashboard";
 import ManagementTools from "./pages/ManagementTools";
 import Community from "./pages/Community";
+import PostDetail from "./pages/PostDetail";
 import Training from "./pages/Training";
 import Onboarding from "./pages/Onboarding";
 import AdminDashboard from "./pages/Admin/Dashboard";
@@ -64,6 +65,11 @@ const App = () => (
           <Route path="/dashboard/community" element={
             <ProtectedRoute>
               <Community />
+            </ProtectedRoute>
+          } />
+          <Route path="/dashboard/community/post/:postId" element={
+            <ProtectedRoute>
+              <PostDetail />
             </ProtectedRoute>
           } />
           <Route path="/dashboard/training" element={

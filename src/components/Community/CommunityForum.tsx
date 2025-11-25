@@ -1,45 +1,40 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { Plus, MessageSquare, Heart, Pin, Calendar, User } from "lucide-react";
-import { formatDistanceToNow } from "date-fns";
-import { it } from "date-fns/locale";
+import { useToast } from "@/components/ui/use-toast";
+import { Plus, MessageSquare, Heart, Pin, ThumbsUp, ThumbsDown } from "lucide-react";
 import { ForumReplies } from "./ForumReplies";
-import { useEffect } from "react";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
 interface ForumPost {
   id: string;
   title: string;
   content: string;
   author_id: string;
+  author_display_name: string;
+  author_avatar_url?: string;
   category_id: string;
+  category_name: string;
+  category_color: string;
+  created_at: string;
   likes_count: number;
   replies_count: number;
   is_pinned: boolean;
-  created_at: string;
-  profiles?: {
-    display_name: string;
-    avatar_url?: string;
-  } | null;
-  forum_categories?: {
-    name: string;
-    color: string;
-  } | null;
+  is_approved: boolean;
+  user_has_liked?: boolean;
 }
 
 interface ForumCategory {
   id: string;
   name: string;
-  description: string;
   color: string;
 }
 
@@ -51,127 +46,259 @@ export function CommunityForum() {
   const [newPost, setNewPost] = useState({ title: "", content: "", category_id: "" });
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { user, isAdmin } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchCategories();
     fetchPosts();
-  }, [selectedCategory]);
+  }, [selectedCategory, user]);
+
+  // Real-time updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('forum-changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'forum_posts' 
+      }, () => {
+        fetchPosts();
+      })
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'forum_likes'
+      }, () => {
+        fetchPosts();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [selectedCategory, user]);
 
   const fetchCategories = async () => {
     const { data, error } = await supabase
-      .from('forum_categories')
-      .select('*');
-    
+      .from("forum_categories")
+      .select("*")
+      .order("name");
+
     if (error) {
-      toast({
-        title: "Errore",
-        description: "Impossibile caricare le categorie",
-        variant: "destructive",
-      });
-    } else {
-      setCategories(data || []);
+      console.error("Error fetching categories:", error);
+      return;
     }
+
+    setCategories(data || []);
   };
 
   const fetchPosts = async () => {
     setLoading(true);
+    
     let query = supabase
-      .from('forum_posts')
+      .from("forum_posts")
       .select(`
-        *,
-        profiles (display_name, avatar_url),
-        forum_categories (name, color)
+        id,
+        title,
+        content,
+        author_id,
+        created_at,
+        likes_count,
+        replies_count,
+        is_pinned,
+        is_approved,
+        category_id,
+        forum_categories (name, color),
+        profiles!forum_posts_author_fk (display_name, avatar_url)
       `)
-      .eq('is_approved', true)
-      .order('is_pinned', { ascending: false })
-      .order('created_at', { ascending: false });
+      .order("is_pinned", { ascending: false })
+      .order("created_at", { ascending: false });
 
     if (selectedCategory !== "all") {
-      query = query.eq('category_id', selectedCategory);
+      query = query.eq("category_id", selectedCategory);
+    }
+
+    // Admin vede tutti i post, utenti normali solo quelli approvati o propri
+    if (!isAdmin) {
+      query = query.or(`is_approved.eq.true,author_id.eq.${user?.id}`);
     }
 
     const { data, error } = await query;
-    
+
     if (error) {
+      console.error("Error fetching posts:", error);
       toast({
         title: "Errore",
-        description: "Impossibile caricare i post",
+        description: "Impossibile caricare i post del forum",
         variant: "destructive",
       });
-    } else {
-      setPosts((data as any) || []);
+      setLoading(false);
+      return;
     }
+
+    // Check user likes
+    const postsWithLikes = await Promise.all(
+      (data as any[]).map(async (post) => {
+        let userHasLiked = false;
+        if (user) {
+          const { data: likeData } = await supabase
+            .from("forum_likes")
+            .select("id")
+            .eq("post_id", post.id)
+            .eq("user_id", user.id)
+            .maybeSingle();
+          userHasLiked = !!likeData;
+        }
+
+        return {
+          id: post.id,
+          title: post.title,
+          content: post.content,
+          author_id: post.author_id,
+          author_display_name: post.profiles?.display_name || "Utente Anonimo",
+          author_avatar_url: post.profiles?.avatar_url,
+          category_id: post.category_id,
+          category_name: post.forum_categories?.name || "Generale",
+          category_color: post.forum_categories?.color || "#6AA8B3",
+          created_at: post.created_at,
+          likes_count: post.likes_count || 0,
+          replies_count: post.replies_count || 0,
+          is_pinned: post.is_pinned || false,
+          is_approved: post.is_approved || false,
+          user_has_liked: userHasLiked,
+        };
+      })
+    );
+
+    setPosts(postsWithLikes);
     setLoading(false);
   };
 
   const createPost = async () => {
-    if (!newPost.title || !newPost.content || !newPost.category_id) {
-      toast({
-        title: "Errore",
-        description: "Compila tutti i campi richiesti",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const { data: { user } } = await supabase.auth.getUser();
     if (!user) {
       toast({
-        title: "Errore",
-        description: "Devi essere autenticato per creare un post",
+        title: "Accesso richiesto",
+        description: "Devi effettuare l'accesso per creare un post",
         variant: "destructive",
       });
       return;
     }
 
-    const { error } = await supabase
-      .from('forum_posts')
-      .insert({
-        title: newPost.title,
-        content: newPost.content,
-        category_id: newPost.category_id,
-        author_id: user.id,
-        is_approved: false // Moderazione manuale
+    if (!newPost.title.trim() || !newPost.content.trim() || !newPost.category_id) {
+      toast({
+        title: "Campi mancanti",
+        description: "Compila tutti i campi per creare un post",
+        variant: "destructive",
       });
+      return;
+    }
+
+    const { error } = await supabase.from("forum_posts").insert({
+      title: newPost.title,
+      content: newPost.content,
+      category_id: newPost.category_id,
+      author_id: user.id,
+      is_approved: isAdmin, // Auto-approva per admin
+    });
 
     if (error) {
+      console.error("Error creating post:", error);
       toast({
         title: "Errore",
         description: "Impossibile creare il post",
         variant: "destructive",
       });
-    } else {
-      toast({
-        title: "Post creato",
-        description: "Il tuo post è in attesa di approvazione",
-      });
-      setNewPost({ title: "", content: "", category_id: "" });
-      setIsCreateDialogOpen(false);
+      return;
     }
+
+    toast({
+      title: isAdmin ? "Post pubblicato!" : "Post inviato per moderazione",
+      description: isAdmin 
+        ? "Il tuo post è stato pubblicato con successo" 
+        : "Il tuo post sarà visibile dopo l'approvazione",
+    });
+
+    setNewPost({ title: "", content: "", category_id: "" });
+    setIsCreateDialogOpen(false);
+    fetchPosts();
   };
 
-  const likePost = async (postId: string) => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return;
+  const toggleLike = async (postId: string, currentlyLiked: boolean) => {
+    if (!user) {
+      toast({
+        title: "Accesso richiesto",
+        description: "Devi effettuare l'accesso per mettere like",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (currentlyLiked) {
+      await supabase
+        .from("forum_likes")
+        .delete()
+        .eq("post_id", postId)
+        .eq("user_id", user.id);
+    } else {
+      await supabase
+        .from("forum_likes")
+        .insert({ post_id: postId, user_id: user.id });
+    }
+
+    // Update locale immediato
+    setPosts(posts.map(p => 
+      p.id === postId 
+        ? { 
+            ...p, 
+            user_has_liked: !currentlyLiked,
+            likes_count: currentlyLiked ? p.likes_count - 1 : p.likes_count + 1
+          }
+        : p
+    ));
+  };
+
+  const moderatePost = async (postId: string, action: 'approve' | 'reject' | 'pin' | 'unpin') => {
+    if (!isAdmin) return;
+
+    const updates: any = {};
+    if (action === 'approve') updates.is_approved = true;
+    if (action === 'reject') updates.is_approved = false;
+    if (action === 'pin') updates.is_pinned = true;
+    if (action === 'unpin') updates.is_pinned = false;
 
     const { error } = await supabase
-      .from('forum_likes')
-      .insert({ user_id: user.id, post_id: postId });
+      .from("forum_posts")
+      .update(updates)
+      .eq("id", postId);
 
-    if (!error) {
-      fetchPosts(); // Ricarica per aggiornare i contatori
+    if (error) {
+      console.error("Error moderating post:", error);
+      return;
     }
+
+    const messages = {
+      approve: "Post approvato",
+      reject: "Post rifiutato",
+      pin: "Post fissato",
+      unpin: "Post rimosso dai fissati"
+    };
+    
+    toast({ title: messages[action] });
+    fetchPosts();
   };
 
   return (
     <div className="space-y-6">
-      {/* Header con filtri e bottone nuovo post */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex flex-wrap gap-2">
           <Button
             variant={selectedCategory === "all" ? "default" : "outline"}
-            size="sm"
             onClick={() => setSelectedCategory("all")}
+            size="sm"
           >
             Tutti
           </Button>
@@ -179,9 +306,12 @@ export function CommunityForum() {
             <Button
               key={category.id}
               variant={selectedCategory === category.id ? "default" : "outline"}
-              size="sm"
               onClick={() => setSelectedCategory(category.id)}
-              style={{ borderColor: category.color }}
+              size="sm"
+              style={{
+                backgroundColor: selectedCategory === category.id ? category.color : undefined,
+                borderColor: category.color,
+              }}
             >
               {category.name}
             </Button>
@@ -191,27 +321,29 @@ export function CommunityForum() {
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button>
-              <Plus className="h-4 w-4 mr-2" />
+              <Plus className="w-4 h-4 mr-2" />
               Nuovo Post
             </Button>
           </DialogTrigger>
-          <DialogContent className="sm:max-w-[525px]">
+          <DialogContent>
             <DialogHeader>
-              <DialogTitle>Crea Nuovo Post</DialogTitle>
+              <DialogTitle>Crea un nuovo post</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label htmlFor="title">Titolo</Label>
+            <div className="space-y-4">
+              <div>
+                <Label>Titolo</Label>
                 <Input
-                  id="title"
                   value={newPost.title}
                   onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
-                  placeholder="Inserisci il titolo del post"
+                  placeholder="Titolo del post"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="category">Categoria</Label>
-                <Select value={newPost.category_id} onValueChange={(value) => setNewPost({ ...newPost, category_id: value })}>
+              <div>
+                <Label>Categoria</Label>
+                <Select
+                  value={newPost.category_id}
+                  onValueChange={(value) => setNewPost({ ...newPost, category_id: value })}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Seleziona una categoria" />
                   </SelectTrigger>
@@ -224,99 +356,143 @@ export function CommunityForum() {
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="content">Contenuto</Label>
+              <div>
+                <Label>Contenuto</Label>
                 <Textarea
-                  id="content"
                   value={newPost.content}
                   onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
-                  placeholder="Scrivi il contenuto del tuo post..."
+                  placeholder="Scrivi il contenuto del post..."
                   rows={6}
                 />
               </div>
               <Button onClick={createPost} className="w-full">
-                Pubblica Post
+                Pubblica
               </Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Lista dei post */}
-      <div className="space-y-4">
-        {loading ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Caricamento post...</p>
-          </div>
-        ) : posts.length === 0 ? (
-          <div className="text-center py-8">
-            <p className="text-muted-foreground">Nessun post trovato in questa categoria</p>
-          </div>
-        ) : (
-          posts.map((post) => (
-            <Card key={post.id} className="hover:shadow-md transition-shadow">
-              <CardHeader className="pb-3">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center space-x-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage src={post.profiles?.avatar_url} />
-                      <AvatarFallback>
-                        <User className="h-5 w-5" />
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-sm">{post.profiles?.display_name || 'Utente'}</h3>
-                        {post.is_pinned && <Pin className="h-4 w-4 text-primary" />}
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                        <Calendar className="h-3 w-3" />
-                        {formatDistanceToNow(new Date(post.created_at), { 
-                          addSuffix: true, 
-                          locale: it 
-                        })}
-                        {post.forum_categories && (
-                          <Badge 
-                            variant="outline" 
-                            className="text-xs"
-                            style={{ borderColor: post.forum_categories.color }}
-                          >
-                            {post.forum_categories.name}
-                          </Badge>
-                        )}
-                      </div>
-                    </div>
+      {/* Lista post */}
+      {loading ? (
+        <div className="text-center py-12">
+          <p className="text-muted-foreground">Caricamento...</p>
+        </div>
+      ) : posts.length === 0 ? (
+        <Card className="p-12 text-center">
+          <MessageSquare className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
+          <p className="text-lg font-medium mb-2">Nessun post disponibile</p>
+          <p className="text-muted-foreground">Sii il primo a creare un post!</p>
+        </Card>
+      ) : (
+        <div className="space-y-4">
+          {posts.map((post) => (
+            <Card key={post.id} className="p-6">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                    {post.author_avatar_url ? (
+                      <img src={post.author_avatar_url} alt="" className="w-10 h-10 rounded-full" />
+                    ) : (
+                      <span className="text-sm font-medium">{post.author_display_name[0]}</span>
+                    )}
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent className="pt-0">
-                <h2 className="font-semibold text-lg mb-2">{post.title}</h2>
-                <p className="text-muted-foreground mb-4 line-clamp-3">{post.content}</p>
                 
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
+                <div className="flex-grow min-w-0">
+                  <div className="flex items-center gap-2 mb-2 flex-wrap">
+                    <span className="font-medium">{post.author_display_name}</span>
+                    <span className="text-sm text-muted-foreground">
+                      {new Date(post.created_at).toLocaleDateString('it-IT')}
+                    </span>
+                    <Badge style={{ backgroundColor: post.category_color }}>
+                      {post.category_name}
+                    </Badge>
+                    {post.is_pinned && (
+                      <Badge variant="outline">
+                        <Pin className="w-3 h-3 mr-1" />
+                        Fissato
+                      </Badge>
+                    )}
+                    {!post.is_approved && (
+                      <Badge variant="secondary">In attesa</Badge>
+                    )}
+                  </div>
+                  
+                  <h3 
+                    className="text-lg font-semibold mb-2 cursor-pointer hover:text-primary"
+                    onClick={() => navigate(`/dashboard/community/post/${post.id}`)}
+                  >
+                    {post.title}
+                  </h3>
+                  <p className="text-muted-foreground mb-4 line-clamp-3">{post.content}</p>
+                  
+                  <div className="flex items-center gap-4 flex-wrap">
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => likePost(post.id)}
-                      className="flex items-center space-x-1"
+                      onClick={() => toggleLike(post.id, post.user_has_liked || false)}
+                      className="gap-2"
                     >
-                      <Heart className="h-4 w-4" />
-                      <span>{post.likes_count}</span>
+                      <Heart 
+                        className={`w-4 h-4 ${post.user_has_liked ? 'fill-red-500 text-red-500' : ''}`}
+                      />
+                      {post.likes_count}
                     </Button>
+                    
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => navigate(`/dashboard/community/post/${post.id}`)}
+                      className="gap-2"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                      {post.replies_count} risposte
+                    </Button>
+
+                    {isAdmin && (
+                      <div className="flex gap-2 ml-auto">
+                        {!post.is_approved && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => moderatePost(post.id, 'approve')}
+                          >
+                            <ThumbsUp className="w-4 h-4 mr-1" />
+                            Approva
+                          </Button>
+                        )}
+                        {post.is_approved && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => moderatePost(post.id, 'reject')}
+                          >
+                            <ThumbsDown className="w-4 h-4 mr-1" />
+                            Rifiuta
+                          </Button>
+                        )}
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => moderatePost(post.id, post.is_pinned ? 'unpin' : 'pin')}
+                        >
+                          <Pin className="w-4 h-4 mr-1" />
+                          {post.is_pinned ? 'Rimuovi' : 'Fissa'}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="mt-4">
+                    <ForumReplies postId={post.id} repliesCount={post.replies_count} onReplyAdded={fetchPosts} />
                   </div>
                 </div>
-                
-                <ForumReplies 
-                  postId={post.id} 
-                  repliesCount={post.replies_count}
-                  onReplyAdded={fetchPosts}
-                />
-              </CardContent>
+              </div>
             </Card>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
