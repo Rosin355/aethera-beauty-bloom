@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { Check, X, Pin, Trash2, MessageSquare, Briefcase } from "lucide-react";
+import { Check, X, Pin, Trash2, MessageSquare, Briefcase, MessageCircle } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { it } from "date-fns/locale";
 
@@ -46,9 +46,26 @@ interface JobPosting {
   } | null;
 }
 
+interface ForumReply {
+  id: string;
+  content: string;
+  author_id: string;
+  post_id: string;
+  is_approved: boolean;
+  likes_count: number;
+  created_at: string;
+  profiles?: {
+    display_name: string;
+  } | null;
+  forum_posts?: {
+    title: string;
+  } | null;
+}
+
 export function CommunityModeration() {
   const [posts, setPosts] = useState<ForumPost[]>([]);
   const [jobs, setJobs] = useState<JobPosting[]>([]);
+  const [replies, setReplies] = useState<ForumReply[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -82,6 +99,19 @@ export function CommunityModeration() {
 
       if (jobsError) throw jobsError;
       setJobs((jobsData || []) as any);
+
+      // Fetch forum replies
+      const { data: repliesData, error: repliesError } = await supabase
+        .from("forum_replies")
+        .select(`
+          *,
+          profiles!forum_replies_author_fk(display_name),
+          forum_posts(title)
+        `)
+        .order("created_at", { ascending: false });
+
+      if (repliesError) throw repliesError;
+      setReplies((repliesData || []) as any);
     } catch (error: any) {
       toast.error("Errore nel caricamento dei contenuti", {
         description: error.message,
@@ -166,18 +196,54 @@ export function CommunityModeration() {
     }
   };
 
+  const approveReply = async (replyId: string) => {
+    try {
+      const { error } = await supabase
+        .from("forum_replies")
+        .update({ is_approved: true })
+        .eq("id", replyId);
+
+      if (error) throw error;
+      toast.success("Risposta approvata con successo");
+      fetchPendingContent();
+    } catch (error: any) {
+      toast.error("Errore nell'approvazione", { description: error.message });
+    }
+  };
+
+  const rejectReply = async (replyId: string) => {
+    try {
+      const { error } = await supabase
+        .from("forum_replies")
+        .update({ is_approved: false })
+        .eq("id", replyId);
+
+      if (error) throw error;
+      toast.success("Risposta rifiutata");
+      fetchPendingContent();
+    } catch (error: any) {
+      toast.error("Errore nel rifiuto", { description: error.message });
+    }
+  };
+
   const pendingPosts = posts.filter((p) => !p.is_approved);
   const approvedPosts = posts.filter((p) => p.is_approved);
   const pendingJobs = jobs.filter((j) => !j.is_approved);
   const approvedJobs = jobs.filter((j) => j.is_approved);
+  const pendingReplies = replies.filter((r) => !r.is_approved);
+  const approvedReplies = replies.filter((r) => r.is_approved);
 
   return (
     <div className="space-y-6">
       <Tabs defaultValue="posts" className="w-full">
-        <TabsList className="grid w-full grid-cols-2">
+        <TabsList className="grid w-full grid-cols-3">
           <TabsTrigger value="posts" className="flex items-center gap-2">
             <MessageSquare className="h-4 w-4" />
             Post Forum ({pendingPosts.length} in attesa)
+          </TabsTrigger>
+          <TabsTrigger value="replies" className="flex items-center gap-2">
+            <MessageCircle className="h-4 w-4" />
+            Risposte ({pendingReplies.length} in attesa)
           </TabsTrigger>
           <TabsTrigger value="jobs" className="flex items-center gap-2">
             <Briefcase className="h-4 w-4" />
@@ -304,6 +370,115 @@ export function CommunityModeration() {
                             size="sm"
                             variant="outline"
                             onClick={() => rejectPost(post.id)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="replies" className="space-y-4">
+          {pendingReplies.length > 0 && (
+            <Card className="border-orange-200 bg-orange-50">
+              <CardHeader>
+                <CardTitle className="text-orange-900">Risposte in Attesa</CardTitle>
+                <CardDescription className="text-orange-700">
+                  {pendingReplies.length} risposte in attesa di moderazione
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {pendingReplies.map((reply) => (
+                  <Card key={reply.id} className="bg-white">
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline">
+                              Risposta a: {reply.forum_posts?.title || "Post eliminato"}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-foreground">
+                            {reply.content}
+                          </p>
+                          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+                            <span>
+                              Da: {reply.profiles?.display_name || "Anonimo"}
+                            </span>
+                            <span>
+                              {formatDistanceToNow(new Date(reply.created_at), {
+                                addSuffix: true,
+                                locale: it,
+                              })}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="default"
+                            onClick={() => approveReply(reply.id)}
+                          >
+                            <Check className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => rejectReply(reply.id)}
+                          >
+                            <X className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Risposte Approvate</CardTitle>
+              <CardDescription>
+                Gestisci le risposte già approvate
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {loading ? (
+                <p className="text-center text-muted-foreground py-8">Caricamento...</p>
+              ) : approvedReplies.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  Nessuna risposta approvata
+                </p>
+              ) : (
+                approvedReplies.map((reply) => (
+                  <Card key={reply.id}>
+                    <CardContent className="p-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1 space-y-2">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="outline">
+                              Risposta a: {reply.forum_posts?.title || "Post eliminato"}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-foreground line-clamp-2">
+                            {reply.content}
+                          </p>
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                            <span>👍 {reply.likes_count}</span>
+                          </div>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => rejectReply(reply.id)}
                           >
                             <X className="h-4 w-4" />
                           </Button>
