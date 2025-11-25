@@ -29,9 +29,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [displayName, setDisplayName] = useState<string>("");
   const [initials, setInitials] = useState<string>("U");
+  const [userRole, setUserRole] = useState<string>("Utente");
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, signOut } = useAuth();
+  const { user, signOut, isAdmin, isCollaborator } = useAuth();
 
   useEffect(() => {
     const loadUserProfile = async () => {
@@ -41,11 +42,10 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
         .from('profiles')
         .select('display_name')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (profile?.display_name) {
         setDisplayName(profile.display_name);
-        // Generate initials from display name
         const names = profile.display_name.split(' ');
         const userInitials = names.map(n => n.charAt(0).toUpperCase()).join('').slice(0, 2);
         setInitials(userInitials);
@@ -54,6 +54,16 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
     loadUserProfile();
   }, [user]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      setUserRole("Amministratore");
+    } else if (isCollaborator) {
+      setUserRole("Collaboratore");
+    } else {
+      setUserRole("Utente");
+    }
+  }, [isAdmin, isCollaborator]);
 
   const sidebarItems = [
     { name: "Dashboard", path: "/dashboard", icon: ChartPie },
@@ -133,7 +143,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 </div>
                 <div className="ml-3">
                   <p className="text-sm font-medium text-white">{displayName || "Utente"}</p>
-                  <p className="text-xs text-gray-400">Piano Premium</p>
+                  <p className="text-xs text-gray-400">{userRole}</p>
                 </div>
               </div>
             ) : (

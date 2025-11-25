@@ -17,6 +17,7 @@ interface Reply {
   likes_count: number;
   is_approved: boolean;
   created_at: string;
+  user_has_liked: boolean;
   profiles?: {
     display_name: string;
     avatar_url?: string;
@@ -45,6 +46,8 @@ export function ForumReplies({ postId, repliesCount, onReplyAdded }: ForumReplie
   const fetchReplies = async () => {
     setLoading(true);
     try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
       const { data, error } = await supabase
         .from("forum_replies")
         .select(`
@@ -56,7 +59,25 @@ export function ForumReplies({ postId, repliesCount, onReplyAdded }: ForumReplie
         .order("created_at", { ascending: true });
 
       if (error) throw error;
-      setReplies((data || []) as any);
+      
+      // Check user likes
+      const repliesWithLikes = await Promise.all(
+        (data || []).map(async (reply) => {
+          let userHasLiked = false;
+          if (user) {
+            const { data: likeData } = await supabase
+              .from("forum_likes")
+              .select("id")
+              .eq("reply_id", reply.id)
+              .eq("user_id", user.id)
+              .maybeSingle();
+            userHasLiked = !!likeData;
+          }
+          return { ...reply, user_has_liked: userHasLiked };
+        })
+      );
+      
+      setReplies(repliesWithLikes as any);
     } catch (error: any) {
       toast.error("Errore nel caricamento delle risposte", {
         description: error.message,
@@ -119,7 +140,7 @@ export function ForumReplies({ postId, repliesCount, onReplyAdded }: ForumReplie
     }
   };
 
-  const likeReply = async (replyId: string) => {
+  const toggleLikeReply = async (replyId: string, currentlyLiked: boolean) => {
     try {
       const {
         data: { user },
@@ -130,24 +151,15 @@ export function ForumReplies({ postId, repliesCount, onReplyAdded }: ForumReplie
         return;
       }
 
-      // Check if already liked
-      const { data: existingLike } = await supabase
-        .from("forum_likes")
-        .select("id")
-        .eq("reply_id", replyId)
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (existingLike) {
-        // Unlike
+      if (currentlyLiked) {
         const { error } = await supabase
           .from("forum_likes")
           .delete()
-          .eq("id", existingLike.id);
+          .eq("reply_id", replyId)
+          .eq("user_id", user.id);
 
         if (error) throw error;
       } else {
-        // Like
         const { error } = await supabase
           .from("forum_likes")
           .insert({ reply_id: replyId, user_id: user.id });
@@ -206,10 +218,10 @@ export function ForumReplies({ postId, repliesCount, onReplyAdded }: ForumReplie
                       <Button
                         variant="ghost"
                         size="sm"
-                        onClick={() => likeReply(reply.id)}
+                        onClick={() => toggleLikeReply(reply.id, reply.user_has_liked)}
                         className="h-7 px-2"
                       >
-                        <ThumbsUp className="h-3 w-3 mr-1" />
+                        <ThumbsUp className={`h-3 w-3 mr-1 ${reply.user_has_liked ? 'fill-red-500 text-red-500' : ''}`} />
                         <span className="text-xs">{reply.likes_count}</span>
                       </Button>
                     </div>
