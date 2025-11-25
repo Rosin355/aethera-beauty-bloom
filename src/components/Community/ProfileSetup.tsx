@@ -41,6 +41,8 @@ export function ProfileSetup() {
   const [skillInput, setSkillInput] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [uploadingCV, setUploadingCV] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -175,6 +177,165 @@ export function ProfileSetup() {
     });
   };
 
+  const uploadAvatar = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith('image/')) {
+      toast({
+        title: "Errore",
+        description: "Seleziona un'immagine valida",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      toast({
+        title: "Errore",
+        description: "L'immagine deve essere inferiore a 2MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploadingAvatar(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      toast({
+        title: "Errore",
+        description: "Devi essere autenticato",
+        variant: "destructive",
+      });
+      setUploadingAvatar(false);
+      return;
+    }
+
+    try {
+      // Create unique file name
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${user.id}-${Date.now()}.${fileExt}`;
+      const filePath = `${user.id}/${fileName}`;
+
+      // Upload file
+      const { error: uploadError } = await supabase.storage
+        .from('profile-avatars')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data } = supabase.storage
+        .from('profile-avatars')
+        .getPublicUrl(filePath);
+
+      // Update profile with new avatar URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: data.publicUrl })
+        .eq('user_id', user.id);
+
+      if (updateError) throw updateError;
+
+      setProfile(prev => prev ? { ...prev, avatar_url: data.publicUrl } : null);
+      
+      toast({
+        title: "Successo",
+        description: "Avatar aggiornato con successo",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Errore",
+        description: error.message || "Impossibile caricare l'avatar",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingAvatar(false);
+    }
+  };
+
+  const uploadCV = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (file.type !== 'application/pdf') {
+      toast({
+        title: "Errore",
+        description: "Il CV deve essere in formato PDF",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "Errore",
+        description: "Il file deve essere inferiore a 10MB",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setUploadingCV(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    
+    if (!user) {
+      toast({
+        title: "Errore",
+        description: "Devi essere autenticato",
+        variant: "destructive",
+      });
+      setUploadingCV(false);
+      return;
+    }
+
+    try {
+      // Create unique file name
+      const fileName = `${user.id}-cv-${Date.now()}.pdf`;
+      const filePath = `${user.id}/${fileName}`;
+
+      // Upload file
+      const { error: uploadError } = await supabase.storage
+        .from('profile-cvs')
+        .upload(filePath, file, { upsert: true });
+
+      if (uploadError) throw uploadError;
+
+      // Get public URL
+      const { data } = supabase.storage
+        .from('profile-cvs')
+        .getPublicUrl(filePath);
+
+      // Update profile with new CV URL
+      const { error: updateError } = await supabase
+        .from('profiles')
+        .update({ cv_file_url: data.publicUrl })
+        .eq('user_id', user.id);
+
+      if (updateError) throw updateError;
+
+      setProfile(prev => prev ? { ...prev, cv_file_url: data.publicUrl } : null);
+      
+      toast({
+        title: "Successo",
+        description: "CV caricato con successo",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Errore",
+        description: error.message || "Impossibile caricare il CV",
+        variant: "destructive",
+      });
+    } finally {
+      setUploadingCV(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="text-center py-8">
@@ -221,6 +382,40 @@ export function ProfileSetup() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
+            {/* Upload Avatar */}
+            <div className="space-y-2">
+              <Label>Foto Profilo</Label>
+              <div className="flex items-center gap-4">
+                <Avatar className="h-20 w-20">
+                  <AvatarImage src={profile?.avatar_url} />
+                  <AvatarFallback className="text-xl">
+                    {formData.display_name.charAt(0).toUpperCase() || "?"}
+                  </AvatarFallback>
+                </Avatar>
+                <div>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={uploadAvatar}
+                    className="hidden"
+                    id="avatar-upload"
+                    disabled={uploadingAvatar}
+                  />
+                  <Label htmlFor="avatar-upload" className="cursor-pointer">
+                    <Button type="button" disabled={uploadingAvatar} asChild>
+                      <span>
+                        <Upload className="h-4 w-4 mr-2" />
+                        {uploadingAvatar ? "Caricamento..." : "Carica Foto"}
+                      </span>
+                    </Button>
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    JPG, PNG, max 2MB
+                  </p>
+                </div>
+              </div>
+            </div>
+
             {/* Informazioni Base */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -441,7 +636,7 @@ export function ProfileSetup() {
         </Card>
       )}
 
-      {/* Sezione CV Upload (placeholder per future implementazioni) */}
+      {/* Sezione CV Upload */}
       {profile && !isEditing && (
         <Card>
           <CardHeader>
@@ -449,13 +644,40 @@ export function ProfileSetup() {
           </CardHeader>
           <CardContent>
             {profile.cv_file_url ? (
-              <div className="flex items-center justify-between">
-                <span className="text-sm">CV caricato</span>
-                <Button size="sm" asChild>
-                  <a href={profile.cv_file_url} target="_blank" rel="noopener noreferrer">
-                    Visualizza CV
-                  </a>
-                </Button>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-muted rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded bg-primary/10 flex items-center justify-center">
+                      <Upload className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-medium">CV caricato</p>
+                      <p className="text-sm text-muted-foreground">File PDF</p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" asChild>
+                      <a href={profile.cv_file_url} target="_blank" rel="noopener noreferrer">
+                        Visualizza
+                      </a>
+                    </Button>
+                    <div>
+                      <input
+                        type="file"
+                        accept="application/pdf"
+                        onChange={uploadCV}
+                        className="hidden"
+                        id="cv-replace"
+                        disabled={uploadingCV}
+                      />
+                      <Label htmlFor="cv-replace" className="cursor-pointer">
+                        <Button size="sm" variant="outline" disabled={uploadingCV} asChild>
+                          <span>{uploadingCV ? "Caricamento..." : "Sostituisci"}</span>
+                        </Button>
+                      </Label>
+                    </div>
+                  </div>
+                </div>
               </div>
             ) : (
               <div className="text-center py-8">
@@ -463,10 +685,27 @@ export function ProfileSetup() {
                 <p className="text-muted-foreground mb-4">
                   Carica il tuo CV per completare il profilo
                 </p>
-                <Button disabled>
-                  <Upload className="h-4 w-4 mr-2" />
-                  Carica CV (Coming Soon)
-                </Button>
+                <div>
+                  <input
+                    type="file"
+                    accept="application/pdf"
+                    onChange={uploadCV}
+                    className="hidden"
+                    id="cv-upload"
+                    disabled={uploadingCV}
+                  />
+                  <Label htmlFor="cv-upload" className="cursor-pointer">
+                    <Button disabled={uploadingCV} asChild>
+                      <span>
+                        <Upload className="h-4 w-4 mr-2" />
+                        {uploadingCV ? "Caricamento..." : "Carica CV"}
+                      </span>
+                    </Button>
+                  </Label>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Solo file PDF, max 10MB
+                  </p>
+                </div>
               </div>
             )}
           </CardContent>
