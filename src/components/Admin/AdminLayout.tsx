@@ -13,7 +13,8 @@ import {
   LogOut,
   File,
   Database,
-  Video
+  Video,
+  Home
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -163,6 +164,12 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
           </div>
 
           <div className="flex items-center space-x-4">
+            <Link to="/dashboard">
+              <Button variant="outline" size="sm" className="gap-2">
+                <Home size={16} />
+                <span className="hidden md:inline">Dashboard Utente</span>
+              </Button>
+            </Link>
             <Button variant="ghost" size="icon" className="relative">
               <Bell size={20} />
               <span className="absolute top-0 right-0 w-2 h-2 bg-brand-fire rounded-full"></span>

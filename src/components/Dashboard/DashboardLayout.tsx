@@ -12,7 +12,10 @@ import {
   Search, 
   Menu, 
   X,
-  LogOut
+  LogOut,
+  Shield,
+  UserCog,
+  MessageCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +24,13 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { NotificationCenter } from "@/components/Layout/NotificationCenter";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -202,14 +212,49 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
           <div className="flex items-center space-x-4">
             {(isAdmin || isCollaborator) && (
-              <div className={cn(
-                "px-3 py-1 rounded-full text-xs font-medium border",
-                isAdmin 
-                  ? "bg-brand-fire/10 text-brand-fire border-brand-fire/30" 
-                  : "bg-brand-water/10 text-brand-water border-brand-water/30"
-              )}>
-                {isAdmin ? "Admin" : "Collaboratore"}
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className={cn(
+                    "px-3 py-1 rounded-full text-xs font-medium border cursor-pointer hover:opacity-80 transition-opacity",
+                    isAdmin 
+                      ? "bg-brand-fire/10 text-brand-fire border-brand-fire/30" 
+                      : "bg-brand-water/10 text-brand-water border-brand-water/30"
+                  )}>
+                    {isAdmin ? "Admin" : "Collaboratore"}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-background border-border">
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin/dashboard" className="flex items-center cursor-pointer">
+                          <Shield className="mr-2 h-4 w-4" />
+                          <span>Vai all'Admin Dashboard</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin/dashboard?tab=users" className="flex items-center cursor-pointer">
+                          <UserCog className="mr-2 h-4 w-4" />
+                          <span>Gestisci Utenti</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin/dashboard?tab=community" className="flex items-center cursor-pointer">
+                          <MessageCircle className="mr-2 h-4 w-4" />
+                          <span>Moderazione Community</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  <DropdownMenuItem asChild>
+                    <Link to="/dashboard/settings" className="flex items-center cursor-pointer">
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Impostazioni</span>
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             )}
             <NotificationCenter />
             <div className="hidden md:block h-8 w-px bg-neutral-700"></div>
