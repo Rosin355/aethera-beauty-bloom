@@ -1,4 +1,4 @@
-import { ReactNode, useEffect } from 'react';
+import { ReactNode, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -13,22 +13,42 @@ const ProtectedRoute = ({
   requireAdmin = false, 
   requireCollaborator = false 
 }: ProtectedRouteProps) => {
-  const { user, loading, isAdmin, isCollaborator } = useAuth();
+  const { user, loading, isAdmin, isCollaborator, checkUserRoles } = useAuth();
   const navigate = useNavigate();
+  const [rolesChecked, setRolesChecked] = useState(false);
 
   useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        navigate('/login');
-      } else if (requireAdmin && !isAdmin) {
-        navigate('/dashboard');
-      } else if (requireCollaborator && !isCollaborator) {
-        navigate('/dashboard');
-      }
-    }
-  }, [user, loading, isAdmin, isCollaborator, navigate, requireAdmin, requireCollaborator]);
+    if (loading) return;
 
-  if (loading) {
+    if (!user) {
+      navigate('/login');
+      return;
+    }
+
+    // Per le route admin/collaboratore, assicuriamoci di aver ricaricato i ruoli
+    if (!rolesChecked && (requireAdmin || requireCollaborator)) {
+      checkUserRoles(user.id).finally(() => setRolesChecked(true));
+      return;
+    }
+
+    if (requireAdmin && !isAdmin) {
+      navigate('/dashboard');
+    } else if (requireCollaborator && !isCollaborator) {
+      navigate('/dashboard');
+    }
+  }, [
+    user,
+    loading,
+    isAdmin,
+    isCollaborator,
+    navigate,
+    requireAdmin,
+    requireCollaborator,
+    rolesChecked,
+    checkUserRoles,
+  ]);
+
+  if (loading || ((requireAdmin || requireCollaborator) && !rolesChecked)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>
