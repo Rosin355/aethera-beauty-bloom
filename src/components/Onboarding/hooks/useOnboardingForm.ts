@@ -1,5 +1,6 @@
-
 import { useState, ChangeEvent } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export const useOnboardingForm = () => {
   const [personalInfo, setPersonalInfo] = useState({
@@ -38,6 +39,8 @@ export const useOnboardingForm = () => {
       phoneNumber: ""
     }
   });
+
+  const [isSaving, setIsSaving] = useState(false);
   
   const handlePersonalInfoChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -127,13 +130,60 @@ export const useOnboardingForm = () => {
     return isValid;
   };
 
+  const saveOnboardingData = async (): Promise<boolean> => {
+    setIsSaving(true);
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error("Sessione scaduta. Effettua nuovamente l'accesso.");
+        return false;
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          display_name: personalInfo.fullName,
+          business_name: personalInfo.businessName,
+          city: personalInfo.city,
+          phone_number: personalInfo.phoneNumber,
+          experience_level: professionalInfo.experience,
+          team_size: professionalInfo.teamSize,
+          primary_goal: businessGoals.primaryGoal,
+          growth_plan: businessGoals.growthPlan,
+          preferred_learning_format: learningPreferences.preferredFormat,
+          time_availability: learningPreferences.timeAvailability,
+          onboarding_completed: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error saving onboarding data:', error);
+        toast.error("Errore nel salvataggio dei dati. Riprova.");
+        return false;
+      }
+
+      return true;
+    } catch (err) {
+      console.error('Error in saveOnboardingData:', err);
+      toast.error("Si è verificato un errore. Riprova.");
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return {
     personalInfo,
     professionalInfo,
     businessGoals,
     learningPreferences,
     errors: errors.personalInfo,
+    isSaving,
     validateStep,
+    saveOnboardingData,
     handlers: {
       handlePersonalInfoChange,
       handleExperienceChange,

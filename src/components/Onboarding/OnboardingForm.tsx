@@ -1,4 +1,3 @@
-
 import React, { useEffect } from "react";
 import { useOnboardingForm } from "./hooks/useOnboardingForm";
 import PersonalInfoStep from "./Steps/PersonalInfoStep";
@@ -9,28 +8,36 @@ import LearningPreferencesStep from "./Steps/LearningPreferencesStep";
 interface OnboardingFormProps {
   step: number;
   onValidate?: (isValid: boolean) => void;
+  onSaveData?: () => Promise<boolean>;
+  setSaveHandler?: (handler: () => Promise<boolean>) => void;
 }
 
-const OnboardingForm = ({ step, onValidate }: OnboardingFormProps) => {
+const OnboardingForm = ({ step, onValidate, setSaveHandler }: OnboardingFormProps) => {
   const {
     personalInfo,
     professionalInfo,
     businessGoals,
     learningPreferences,
     errors,
+    isSaving,
     validateStep,
+    saveOnboardingData,
     handlers
   } = useOnboardingForm();
   
+  // Expose save handler to parent
+  useEffect(() => {
+    if (setSaveHandler) {
+      setSaveHandler(saveOnboardingData);
+    }
+  }, [setSaveHandler, saveOnboardingData]);
+
   // Validate current step when it changes
   useEffect(() => {
     if (onValidate) {
-      // Prevent infinite updates by not calling validateStep directly in this effect
-      // Instead just check validity based on current state without setting more state
       let isValid = true;
       
       if (step === 0) {
-        // For personal info step
         isValid = !!personalInfo.fullName && 
                  !!personalInfo.businessName && 
                  !!personalInfo.city && 
@@ -44,7 +51,6 @@ const OnboardingForm = ({ step, onValidate }: OnboardingFormProps) => {
   // Render different form based on step
   switch (step) {
     case 0:
-      // Personal Information
       return (
         <PersonalInfoStep 
           personalInfo={personalInfo}
@@ -54,7 +60,6 @@ const OnboardingForm = ({ step, onValidate }: OnboardingFormProps) => {
       );
     
     case 1:
-      // Professional Experience
       return (
         <ProfessionalExperienceStep 
           experience={professionalInfo.experience}
@@ -65,7 +70,6 @@ const OnboardingForm = ({ step, onValidate }: OnboardingFormProps) => {
       );
     
     case 2:
-      // Business Goals
       return (
         <BusinessGoalsStep 
           primaryGoal={businessGoals.primaryGoal}
@@ -76,7 +80,6 @@ const OnboardingForm = ({ step, onValidate }: OnboardingFormProps) => {
       );
     
     case 3:
-      // Learning Preferences
       return (
         <LearningPreferencesStep 
           preferredFormat={learningPreferences.preferredFormat}

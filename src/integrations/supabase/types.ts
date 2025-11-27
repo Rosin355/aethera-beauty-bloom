@@ -378,16 +378,26 @@ export type Database = {
         Row: {
           avatar_url: string | null
           bio: string | null
+          business_name: string | null
+          city: string | null
           created_at: string
           cv_file_url: string | null
           display_name: string
+          experience_level: string | null
           experience_years: number | null
+          growth_plan: string | null
           id: string
           instagram_url: string | null
           is_public: boolean | null
           linkedin_url: string | null
           location: string | null
+          onboarding_completed: boolean | null
+          phone_number: string | null
+          preferred_learning_format: string | null
+          primary_goal: string | null
           skills: string[] | null
+          team_size: string | null
+          time_availability: string | null
           updated_at: string
           user_id: string
           website_url: string | null
@@ -395,16 +405,26 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           bio?: string | null
+          business_name?: string | null
+          city?: string | null
           created_at?: string
           cv_file_url?: string | null
           display_name: string
+          experience_level?: string | null
           experience_years?: number | null
+          growth_plan?: string | null
           id?: string
           instagram_url?: string | null
           is_public?: boolean | null
           linkedin_url?: string | null
           location?: string | null
+          onboarding_completed?: boolean | null
+          phone_number?: string | null
+          preferred_learning_format?: string | null
+          primary_goal?: string | null
           skills?: string[] | null
+          team_size?: string | null
+          time_availability?: string | null
           updated_at?: string
           user_id: string
           website_url?: string | null
@@ -412,16 +432,26 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           bio?: string | null
+          business_name?: string | null
+          city?: string | null
           created_at?: string
           cv_file_url?: string | null
           display_name?: string
+          experience_level?: string | null
           experience_years?: number | null
+          growth_plan?: string | null
           id?: string
           instagram_url?: string | null
           is_public?: boolean | null
           linkedin_url?: string | null
           location?: string | null
+          onboarding_completed?: boolean | null
+          phone_number?: string | null
+          preferred_learning_format?: string | null
+          primary_goal?: string | null
           skills?: string[] | null
+          team_size?: string | null
+          time_availability?: string | null
           updated_at?: string
           user_id?: string
           website_url?: string | null

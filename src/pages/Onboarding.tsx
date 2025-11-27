@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { 
@@ -14,6 +13,8 @@ import { useToast } from "@/hooks/use-toast";
 import Logo from "@/components/Layout/Logo";
 import OnboardingForm from "@/components/Onboarding/OnboardingForm";
 import CompletionDialog from "@/components/Onboarding/CompletionDialog";
+import { supabase } from "@/integrations/supabase/client";
+import { toast as sonnerToast } from "sonner";
 
 const Onboarding = () => {
   const navigate = useNavigate();
@@ -21,6 +22,8 @@ const Onboarding = () => {
   const [currentStep, setCurrentStep] = useState(0);
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [isStepValid, setIsStepValid] = useState(true);
+  const [isCompleting, setIsCompleting] = useState(false);
+  const [saveHandler, setSaveHandler] = useState<(() => Promise<boolean>) | null>(null);
   
   const steps = [
     {
@@ -41,7 +44,7 @@ const Onboarding = () => {
     }
   ];
   
-  const handleNext = () => {
+  const handleNext = async () => {
     if (currentStep === 0 && !isStepValid) {
       toast({
         title: "Compila tutti i campi",
@@ -54,8 +57,19 @@ const Onboarding = () => {
     if (currentStep < steps.length - 1) {
       setCurrentStep(currentStep + 1);
     } else {
-      // Complete onboarding and show completion dialog
-      setShowCompletionDialog(true);
+      // Complete onboarding - save data first
+      setIsCompleting(true);
+      
+      if (saveHandler) {
+        const success = await saveHandler();
+        if (success) {
+          setShowCompletionDialog(true);
+        }
+      } else {
+        sonnerToast.error("Errore nel salvataggio. Riprova.");
+      }
+      
+      setIsCompleting(false);
     }
   };
   
@@ -65,7 +79,20 @@ const Onboarding = () => {
     }
   };
   
-  const handleSkip = () => {
+  const handleSkip = async () => {
+    // Mark onboarding as completed even when skipped
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        await supabase
+          .from('profiles')
+          .update({ onboarding_completed: true })
+          .eq('user_id', user.id);
+      }
+    } catch (err) {
+      console.error('Error marking onboarding as skipped:', err);
+    }
+    
     toast({
       title: "Onboarding saltato",
       description: "Puoi completare il processo di onboarding più tardi nelle impostazioni del profilo."
@@ -76,6 +103,10 @@ const Onboarding = () => {
   const handleValidationChange = (isValid: boolean) => {
     setIsStepValid(isValid);
   };
+
+  const handleSetSaveHandler = useCallback((handler: () => Promise<boolean>) => {
+    setSaveHandler(() => handler);
+  }, []);
   
   const progress = ((currentStep + 1) / steps.length) * 100;
   
@@ -91,7 +122,7 @@ const Onboarding = () => {
               <CardTitle className="text-2xl font-playfair">
                 {steps[currentStep].title}
               </CardTitle>
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-muted-foreground">
                 Passaggio {currentStep + 1} di {steps.length}
               </span>
             </div>
@@ -112,6 +143,7 @@ const Onboarding = () => {
             <OnboardingForm 
               step={currentStep}
               onValidate={handleValidationChange}
+              setSaveHandler={handleSetSaveHandler}
             />
           </CardContent>
           
@@ -121,6 +153,7 @@ const Onboarding = () => {
                 <Button
                   variant="outline"
                   onClick={handlePrevious}
+                  disabled={isCompleting}
                 >
                   Indietro
                 </Button>
@@ -128,6 +161,7 @@ const Onboarding = () => {
                 <Button
                   variant="outline"
                   onClick={handleSkip}
+                  disabled={isCompleting}
                 >
                   Salta
                 </Button>
@@ -136,9 +170,37 @@ const Onboarding = () => {
             <Button 
               onClick={handleNext}
               className={`bg-accent hover:bg-accent/90 ${currentStep === 0 && !isStepValid ? 'opacity-70' : ''}`}
-              disabled={currentStep === 0 && !isStepValid}
+              disabled={(currentStep === 0 && !isStepValid) || isCompleting}
             >
-              {currentStep === steps.length - 1 ? "Completa" : "Continua"}
+              {isCompleting ? (
+                <>
+                  <svg
+                    className="animate-spin -ml-1 mr-2 h-4 w-4"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Salvataggio...
+                </>
+              ) : currentStep === steps.length - 1 ? (
+                "Completa"
+              ) : (
+                "Continua"
+              )}
             </Button>
           </CardFooter>
         </Card>
