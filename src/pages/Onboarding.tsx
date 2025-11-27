@@ -23,9 +23,14 @@ const Onboarding = () => {
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [isStepValid, setIsStepValid] = useState(true);
   const [isCompleting, setIsCompleting] = useState(false);
+  const [isSkipping, setIsSkipping] = useState(false);
   const [saveHandler, setSaveHandler] = useState<(() => Promise<boolean>) | null>(null);
   
   const steps = [
+    {
+      title: "Tipo di account",
+      description: "Dicci chi sei per personalizzare la tua esperienza"
+    },
     {
       title: "Dati personali",
       description: "Parliamo di te e della tua attività"
@@ -45,7 +50,7 @@ const Onboarding = () => {
   ];
   
   const handleNext = async () => {
-    if (currentStep === 0 && !isStepValid) {
+    if (currentStep === 1 && !isStepValid) {
       toast({
         title: "Compila tutti i campi",
         description: "Per favore compila tutti i campi obbligatori per continuare.",
@@ -80,24 +85,34 @@ const Onboarding = () => {
   };
   
   const handleSkip = async () => {
-    // Mark onboarding as completed even when skipped
+    setIsSkipping(true);
+    
     try {
       const { data: { user } } = await supabase.auth.getUser();
+      
       if (user) {
-        await supabase
+        const { error } = await supabase
           .from('profiles')
           .update({ onboarding_completed: true })
           .eq('user_id', user.id);
+          
+        if (error) {
+          console.error('Error marking onboarding as skipped:', error);
+        }
       }
+      
+      toast({
+        title: "Onboarding saltato",
+        description: "Puoi completare il processo di onboarding più tardi nelle impostazioni del profilo."
+      });
+      
+      navigate("/dashboard");
     } catch (err) {
-      console.error('Error marking onboarding as skipped:', err);
+      console.error('Error in handleSkip:', err);
+      sonnerToast.error("Errore durante il salto dell'onboarding");
+    } finally {
+      setIsSkipping(false);
     }
-    
-    toast({
-      title: "Onboarding saltato",
-      description: "Puoi completare il processo di onboarding più tardi nelle impostazioni del profilo."
-    });
-    navigate("/dashboard");
   };
   
   const handleValidationChange = (isValid: boolean) => {
@@ -153,7 +168,7 @@ const Onboarding = () => {
                 <Button
                   variant="outline"
                   onClick={handlePrevious}
-                  disabled={isCompleting}
+                  disabled={isCompleting || isSkipping}
                 >
                   Indietro
                 </Button>
@@ -161,16 +176,42 @@ const Onboarding = () => {
                 <Button
                   variant="outline"
                   onClick={handleSkip}
-                  disabled={isCompleting}
+                  disabled={isCompleting || isSkipping}
                 >
-                  Salta
+                  {isSkipping ? (
+                    <>
+                      <svg
+                        className="animate-spin -ml-1 mr-2 h-4 w-4"
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                      >
+                        <circle
+                          className="opacity-25"
+                          cx="12"
+                          cy="12"
+                          r="10"
+                          stroke="currentColor"
+                          strokeWidth="4"
+                        ></circle>
+                        <path
+                          className="opacity-75"
+                          fill="currentColor"
+                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                        ></path>
+                      </svg>
+                      Salto...
+                    </>
+                  ) : (
+                    'Salta'
+                  )}
                 </Button>
               )}
             </div>
             <Button 
               onClick={handleNext}
-              className={`bg-accent hover:bg-accent/90 ${currentStep === 0 && !isStepValid ? 'opacity-70' : ''}`}
-              disabled={(currentStep === 0 && !isStepValid) || isCompleting}
+              className={`bg-accent hover:bg-accent/90 ${currentStep === 1 && !isStepValid ? 'opacity-70' : ''}`}
+              disabled={(currentStep === 1 && !isStepValid) || isCompleting || isSkipping}
             >
               {isCompleting ? (
                 <>

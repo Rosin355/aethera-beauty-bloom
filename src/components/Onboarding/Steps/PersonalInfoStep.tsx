@@ -1,8 +1,6 @@
-
-import { useState, ChangeEvent } from "react";
+import { ChangeEvent } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { FormMessage } from "@/components/ui/form";
 import { Check } from "lucide-react";
 
 interface PersonalInfoProps {
@@ -19,9 +17,15 @@ interface PersonalInfoProps {
     city?: string;
     phoneNumber?: string;
   };
+  showBusinessName?: boolean;
 }
 
-const PersonalInfoStep = ({ personalInfo, onInfoChange, errors }: PersonalInfoProps) => {
+const PersonalInfoStep = ({ 
+  personalInfo, 
+  onInfoChange, 
+  errors,
+  showBusinessName = true 
+}: PersonalInfoProps) => {
   return (
     <div className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -45,26 +49,28 @@ const PersonalInfoStep = ({ personalInfo, onInfoChange, errors }: PersonalInfoPr
             <p className="text-sm font-medium text-red-500">{errors.fullName}</p>
           )}
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="businessName" className="flex items-center gap-1">
-            Nome attività <span className="text-red-500 inline-block">*</span>
-            {personalInfo.businessName && !errors?.businessName && (
-              <Check className="h-4 w-4 text-green-500 ml-auto" />
+        {showBusinessName && (
+          <div className="space-y-2">
+            <Label htmlFor="businessName" className="flex items-center gap-1">
+              Nome attività <span className="text-red-500 inline-block">*</span>
+              {personalInfo.businessName && !errors?.businessName && (
+                <Check className="h-4 w-4 text-green-500 ml-auto" />
+              )}
+            </Label>
+            <Input
+              id="businessName"
+              name="businessName"
+              value={personalInfo.businessName}
+              onChange={onInfoChange}
+              placeholder="Beauty Salon Milano"
+              className={errors?.businessName ? "border-red-500" : ""}
+              required
+            />
+            {errors?.businessName && (
+              <p className="text-sm font-medium text-red-500">{errors.businessName}</p>
             )}
-          </Label>
-          <Input
-            id="businessName"
-            name="businessName"
-            value={personalInfo.businessName}
-            onChange={onInfoChange}
-            placeholder="Beauty Salon Milano"
-            className={errors?.businessName ? "border-red-500" : ""}
-            required
-          />
-          {errors?.businessName && (
-            <p className="text-sm font-medium text-red-500">{errors.businessName}</p>
-          )}
-        </div>
+          </div>
+        )}
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div className="space-y-2">
