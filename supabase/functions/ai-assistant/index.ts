@@ -29,27 +29,52 @@ serve(async (req) => {
     if (userId) {
       const { data: profile } = await supabase
         .from('profiles')
-        .select('display_name, experience_years, skills, bio, user_type, experience_level, business_name, city, primary_goal, growth_plan, preferred_learning_format, time_availability')
+        .select('display_name, experience_years, skills, bio, user_type, experience_level, business_name, city, primary_goal, growth_plan, preferred_learning_format, time_availability, team_size')
         .eq('user_id', userId)
         .single();
 
       if (profile) {
         const userTypeLabel = profile.user_type === 'professional' ? 'Professionista del settore estetica' : 'Utente interessato al settore';
         userContext = `
-INFORMAZIONI UTENTE:
+PROFILO UTENTE ATTUALE:
 - Nome: ${profile.display_name || 'Non specificato'}
 - Tipo utente: ${userTypeLabel}
 - Nome attività: ${profile.business_name || 'Non specificato'}
 - Città: ${profile.city || 'Non specificata'}
 - Livello esperienza: ${profile.experience_level || 'Non specificato'}
 - Anni esperienza: ${profile.experience_years || 'Non specificati'}
+- Dimensione team: ${profile.team_size || 'Non specificata'}
 - Obiettivo principale: ${profile.primary_goal || 'Non specificato'}
 - Piano di crescita: ${profile.growth_plan || 'Non specificato'}
 - Formato apprendimento preferito: ${profile.preferred_learning_format || 'Non specificato'}
 - Disponibilità tempo: ${profile.time_availability || 'Non specificata'}
 - Competenze: ${profile.skills?.join(', ') || 'Non specificate'}
 - Bio: ${profile.bio || 'Non disponibile'}
-`;
+
+IMPORTANTE: Personalizza le tue risposte in base a questo profilo. Se l'utente è un professionista con esperienza, usa terminologia tecnica. Se è nuovo nel settore, spiega i concetti più semplicemente.`;
+      }
+    }
+
+    // Fetch AI system configuration (operational modules)
+    const { data: systemConfig } = await supabase
+      .from('ai_system_config')
+      .select('config_key, config_value, description')
+      .eq('is_active', true)
+      .order('sort_order', { ascending: true });
+
+    let systemInstructions = '';
+    if (systemConfig && systemConfig.length > 0) {
+      systemInstructions = '\n\nCAPACITÀ OPERATIVE E MODULI DISPONIBILI:\n';
+      systemConfig.forEach((config) => {
+        if (config.config_key !== 'general_context') {
+          systemInstructions += `\n${config.config_value}\n`;
+        }
+      });
+      
+      // Get general context
+      const generalContext = systemConfig.find(c => c.config_key === 'general_context');
+      if (generalContext) {
+        systemInstructions = `\n${generalContext.config_value}\n` + systemInstructions;
       }
     }
 
@@ -58,11 +83,11 @@ INFORMAZIONI UTENTE:
       .from('ai_training_data')
       .select('title, description, content, data_type')
       .order('created_at', { ascending: false })
-      .limit(20);
+      .limit(30);
 
     let trainingContext = '';
     if (trainingData && trainingData.length > 0) {
-      trainingContext = '\n\nBASE DI CONOSCENZA (Dati di training caricati dagli amministratori):\n';
+      trainingContext = '\n\nBASE DI CONOSCENZA (Documenti e dati caricati dagli amministratori - usa queste informazioni per rispondere in modo specifico):\n';
       trainingData.forEach((item, index) => {
         trainingContext += `\n--- Documento ${index + 1}: ${item.title} ---\n`;
         if (item.description) {
@@ -71,37 +96,43 @@ INFORMAZIONI UTENTE:
         if (item.data_type) {
           trainingContext += `Tipo: ${item.data_type}\n`;
         }
-        trainingContext += `Contenuto:\n${item.content}\n`;
+        // Limit content length per document to avoid token overflow
+        const contentPreview = item.content.length > 3000 
+          ? item.content.substring(0, 3000) + '... [contenuto troncato]'
+          : item.content;
+        trainingContext += `Contenuto:\n${contentPreview}\n`;
       });
     }
 
-    const systemPrompt = `Sei un assistente AI esperto nel settore dell'estetica e bellezza, parte della piattaforma 4 Elementi Italia.
-Il tuo ruolo è supportare i professionisti del settore fornendo consigli pratici, suggerimenti operativi e supporto nella gestione della loro attività.
+    const systemPrompt = `Sei l'assistente AI di 4 Elementi Italia, una piattaforma completa dedicata ai professionisti del settore estetica e bellezza.
 
+IDENTITÀ E MISSIONE:
+Sei un consulente esperto e affidabile che supporta titolari di centri estetici, estetiste e operatori del settore fornendo consulenza operativa, strategica e formativa. Il tuo obiettivo è aiutare i professionisti a far crescere la loro attività, ottimizzare i processi e raggiungere i loro obiettivi di business.
+${systemInstructions}
 ${userContext}
 
-LINEE GUIDA:
+LINEE GUIDA DI COMUNICAZIONE:
 - Rispondi SEMPRE in italiano
-- Sii professionale ma cordiale e empatico
-- Personalizza le risposte in base al profilo dell'utente (tipo, esperienza, obiettivi)
-- Fornisci consigli pratici, specifici e attuabili
-- Se l'utente è un professionista, usa terminologia tecnica appropriata
-- Se l'utente è nuovo nel settore, spiega i concetti in modo più semplice
-- Se non conosci la risposta, ammettilo onestamente e suggerisci risorse alternative
-- Usa i dati della base di conoscenza per fornire informazioni accurate e specifiche per 4 Elementi Italia
+- Sii professionale ma cordiale, empatico e incoraggiante
+- Fornisci consigli pratici, specifici e immediatamente attuabili
+- Usa esempi concreti dal settore estetica quando possibile
+- Se non conosci la risposta, ammettilo e suggerisci come l'utente può trovare l'informazione
+- Quando appropriato, fai riferimento ai moduli e funzionalità della piattaforma 4 Elementi
+- Struttura le risposte lunghe con elenchi puntati o numerati per chiarezza
 
-AREE DI COMPETENZA:
-- Gestione clienti e fidelizzazione
-- Marketing e comunicazione per centri estetici
-- Tecniche di trattamento e tendenze del settore
-- Business management e crescita aziendale
-- Formazione continua e sviluppo professionale
-- Pricing e strategie di vendita
-- Social media e presenza online
-- Gestione del team e leadership
+AREE DI COMPETENZA SPECIFICHE:
+1. Gestione operativa del centro estetico
+2. Marketing e comunicazione (social media, contenuti, promozioni)
+3. Gestione clienti, fidelizzazione e CRM
+4. Analisi KPI e performance finanziaria
+5. Gestione team, formazione e incentivi
+6. Protocolli trattamenti e best practices
+7. Pricing, listini e marginalità
+8. Ottimizzazione magazzino e inventario
 ${trainingContext}`;
 
     console.log('Sending request to Lovable AI Gateway...');
+    console.log(`User context length: ${userContext.length}, Training context length: ${trainingContext.length}, System instructions length: ${systemInstructions.length}`);
     
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -141,15 +172,6 @@ ${trainingContext}`;
 
     const data = await response.json();
     console.log('AI response received successfully');
-    
-    // Save chat history for future reference
-    if (userId && messages.length > 0) {
-      const lastUserMessage = messages[messages.length - 1];
-      const assistantMessage = data.choices[0].message.content;
-      
-      // Note: chat_history table would need to be created if you want to persist conversations
-      // For now, we'll skip this as it's optional
-    }
 
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
