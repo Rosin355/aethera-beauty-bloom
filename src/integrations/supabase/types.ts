@@ -14,6 +14,51 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_training_data: {
+        Row: {
+          content: string
+          created_at: string | null
+          created_by: string | null
+          data_type: string | null
+          description: string | null
+          file_name: string | null
+          file_size: number | null
+          file_url: string | null
+          id: string
+          processed: boolean | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          created_by?: string | null
+          data_type?: string | null
+          description?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          processed?: boolean | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          created_by?: string | null
+          data_type?: string | null
+          description?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          processed?: boolean | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       forum_categories: {
         Row: {
           color: string | null
@@ -400,6 +445,7 @@ export type Database = {
           time_availability: string | null
           updated_at: string
           user_id: string
+          user_type: string | null
           website_url: string | null
         }
         Insert: {
@@ -427,6 +473,7 @@ export type Database = {
           time_availability?: string | null
           updated_at?: string
           user_id: string
+          user_type?: string | null
           website_url?: string | null
         }
         Update: {
@@ -454,6 +501,7 @@ export type Database = {
           time_availability?: string | null
           updated_at?: string
           user_id?: string
+          user_type?: string | null
           website_url?: string | null
         }
         Relationships: []
