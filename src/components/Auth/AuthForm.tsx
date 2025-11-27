@@ -47,7 +47,7 @@ const AuthForm = ({ type }: AuthFormProps) => {
           return;
         }
         toast.success("Account creato! Controlla la tua email per confermare l'account.");
-        navigate("/dashboard");
+        navigate("/onboarding");
       }
     } catch (error) {
       toast.error("Si è verificato un errore imprevisto");
