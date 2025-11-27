@@ -12,7 +12,8 @@ import {
   Database,
   CheckCircle,
   AlertCircle,
-  Loader2
+  Loader2,
+  FileText
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
@@ -25,6 +26,10 @@ interface DataUploaderProps {
   onUploadComplete?: () => void;
 }
 
+// File types that need parsing via edge function
+const DOCUMENT_EXTENSIONS = ['.odt', '.docx', '.doc', '.pdf'];
+const SUPPORTED_EXTENSIONS = '.csv,.xlsx,.xls,.json,.txt,.odt,.docx,.doc,.pdf';
+
 const DataUploader = ({ 
   selectedFile, 
   setSelectedFile, 
@@ -33,25 +38,76 @@ const DataUploader = ({
   onUploadComplete
 }: DataUploaderProps) => {
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState('');
   
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
       setSelectedFile(file);
       setUploadStatus(null);
+      setUploadProgress('');
     }
+  };
+
+  const isDocumentFile = (fileName: string): boolean => {
+    const ext = fileName.toLowerCase();
+    return DOCUMENT_EXTENSIONS.some(docExt => ext.endsWith(docExt));
+  };
+
+  const parseDocumentFile = async (file: File): Promise<string> => {
+    setUploadProgress('Estrazione testo dal documento...');
+    
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData?.session?.access_token;
+
+    const response = await fetch(
+      `https://jybewogjncaoscrnlqum.supabase.co/functions/v1/parse-document`,
+      {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+      }
+    );
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.error || 'Errore nel parsing del documento');
+    }
+
+    const result = await response.json();
+    
+    if (!result.success) {
+      throw new Error(result.error || 'Parsing fallito');
+    }
+
+    return result.content;
   };
   
   const handleUpload = async () => {
     if (!selectedFile) return;
     
     setIsUploading(true);
+    setUploadProgress('Preparazione...');
     
     try {
-      // Read file content
-      const fileContent = await readFileContent(selectedFile);
+      let fileContent: string;
+      
+      // Check if file needs document parsing
+      if (isDocumentFile(selectedFile.name)) {
+        fileContent = await parseDocumentFile(selectedFile);
+      } else {
+        // Read as text for CSV, JSON, TXT, etc.
+        setUploadProgress('Lettura file...');
+        fileContent = await readFileContent(selectedFile);
+      }
       
       // Upload file to storage
+      setUploadProgress('Caricamento su storage...');
       const fileName = `${Date.now()}_${selectedFile.name}`;
       const { data: storageData, error: storageError } = await supabase.storage
         .from('ai-training-data')
@@ -72,6 +128,7 @@ const DataUploader = ({
       }
 
       // Save record to database
+      setUploadProgress('Salvataggio nel database...');
       const { error: dbError } = await supabase
         .from('ai_training_data')
         .insert({
@@ -91,18 +148,19 @@ const DataUploader = ({
       }
 
       setUploadStatus('success');
-      toast.success('File caricato con successo!');
+      toast.success('File caricato e processato con successo!');
       
       setTimeout(() => {
         setSelectedFile(null);
         setUploadStatus(null);
+        setUploadProgress('');
         onUploadComplete?.();
       }, 2000);
       
     } catch (error) {
       console.error('Upload error:', error);
       setUploadStatus('error');
-      toast.error('Errore durante il caricamento del file');
+      toast.error(error instanceof Error ? error.message : 'Errore durante il caricamento');
     } finally {
       setIsUploading(false);
     }
@@ -127,6 +185,11 @@ const DataUploader = ({
         return <FileSpreadsheet className="h-8 w-8 text-green-600" />;
       case 'json':
         return <FileJson className="h-8 w-8 text-amber-600" />;
+      case 'odt':
+      case 'doc':
+      case 'docx':
+      case 'pdf':
+        return <FileText className="h-8 w-8 text-red-600" />;
       default:
         return <Database className="h-8 w-8 text-blue-600" />;
     }
@@ -152,6 +215,7 @@ const DataUploader = ({
                     onClick={() => {
                       setSelectedFile(null);
                       setUploadStatus(null);
+                      setUploadProgress('');
                     }}
                     className="border-neutral-700"
                   >
@@ -167,12 +231,23 @@ const DataUploader = ({
                       <p className="text-sm text-muted-foreground">
                         {(selectedFile.size / 1024).toFixed(2)} KB
                       </p>
+                      {isDocumentFile(selectedFile.name) && (
+                        <p className="text-xs text-brand-water mt-1">
+                          Il testo verrà estratto automaticamente
+                        </p>
+                      )}
                     </div>
                   </div>
+                  {uploadProgress && (
+                    <p className="text-sm text-muted-foreground">{uploadProgress}</p>
+                  )}
                   <div className="flex space-x-2">
                     <Button 
                       variant="outline"
-                      onClick={() => setSelectedFile(null)}
+                      onClick={() => {
+                        setSelectedFile(null);
+                        setUploadProgress('');
+                      }}
                       disabled={isUploading}
                       className="border-neutral-700"
                     >
@@ -186,7 +261,7 @@ const DataUploader = ({
                       {isUploading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Caricamento...
+                          Elaborazione...
                         </>
                       ) : (
                         'Carica File'
@@ -200,13 +275,18 @@ const DataUploader = ({
             <>
               <Upload className="h-12 w-12 text-muted-foreground mb-4" />
               <p className="text-lg font-medium mb-2 text-foreground">Trascina il file qui</p>
-              <p className="text-sm text-muted-foreground mb-4">Supporta file CSV, XLSX, JSON, TXT</p>
+              <p className="text-sm text-muted-foreground mb-2">
+                Supporta: CSV, XLSX, JSON, TXT
+              </p>
+              <p className="text-sm text-brand-water mb-4">
+                + ODT, DOCX, DOC, PDF (estrazione testo automatica)
+              </p>
               <div className="flex space-x-2">
                 <Input
                   type="file"
                   className="hidden"
                   id="file-upload"
-                  accept=".csv,.xlsx,.xls,.json,.txt"
+                  accept={SUPPORTED_EXTENSIONS}
                   onChange={handleFileChange}
                 />
                 <label htmlFor="file-upload">

@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_system_config: {
+        Row: {
+          config_key: string
+          config_value: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          sort_order: number | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          config_key: string
+          config_value: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          sort_order?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          config_key?: string
+          config_value?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          sort_order?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       ai_training_data: {
         Row: {
           content: string
