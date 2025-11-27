@@ -1,5 +1,6 @@
 
-import { useState } from "react";
+import { useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet";
 import AdminLayout from "@/components/Admin/AdminLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,7 +15,12 @@ import CollaboratorManagement from "@/components/Admin/CollaboratorManagement";
 import { Users, FileText, MessageSquare, BarChart3, Database, Activity, UserCog } from "lucide-react";
 
 const AdminDashboard = () => {
-  const [activeTab, setActiveTab] = useState("clients");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get("tab") || "clients";
+
+  const handleTabChange = (value: string) => {
+    setSearchParams({ tab: value });
+  };
   
   return (
     <AdminLayout>
@@ -22,7 +28,7 @@ const AdminDashboard = () => {
         <title>Area Amministrazione | 4 elementi Italia</title>
       </Helmet>
       <div className="space-y-6">
-        <Card className="bg-gradient-to-r from-brand-earth to-brand-earth/70 text-white">
+        <Card className="bg-gradient-to-r from-brand-earth to-brand-earth/70 text-white border-0">
           <CardHeader>
             <CardTitle className="text-2xl font-playfair">
               Pannello di Amministrazione
@@ -35,35 +41,35 @@ const AdminDashboard = () => {
           </CardContent>
         </Card>
         
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-7 mb-8">
-            <TabsTrigger value="clients" className="flex items-center gap-2">
+        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
+          <TabsList className="grid grid-cols-7 mb-8 bg-neutral-900 border border-neutral-800">
+            <TabsTrigger value="clients" className="flex items-center gap-2 data-[state=active]:bg-neutral-800 data-[state=active]:text-white">
               <Users className="h-4 w-4" />
-              Clienti
+              <span className="hidden lg:inline">Clienti</span>
             </TabsTrigger>
-            <TabsTrigger value="content" className="flex items-center gap-2">
+            <TabsTrigger value="content" className="flex items-center gap-2 data-[state=active]:bg-neutral-800 data-[state=active]:text-white">
               <FileText className="h-4 w-4" />
-              Contenuti
+              <span className="hidden lg:inline">Contenuti</span>
             </TabsTrigger>
-            <TabsTrigger value="community" className="flex items-center gap-2">
+            <TabsTrigger value="community" className="flex items-center gap-2 data-[state=active]:bg-neutral-800 data-[state=active]:text-white">
               <MessageSquare className="h-4 w-4" />
-              Community
+              <span className="hidden lg:inline">Community</span>
             </TabsTrigger>
-            <TabsTrigger value="stats" className="flex items-center gap-2">
+            <TabsTrigger value="stats" className="flex items-center gap-2 data-[state=active]:bg-neutral-800 data-[state=active]:text-white">
               <BarChart3 className="h-4 w-4" />
-              Statistiche
+              <span className="hidden lg:inline">Statistiche</span>
             </TabsTrigger>
-            <TabsTrigger value="aidata" className="flex items-center gap-2">
+            <TabsTrigger value="aidata" className="flex items-center gap-2 data-[state=active]:bg-neutral-800 data-[state=active]:text-white">
               <Database className="h-4 w-4" />
-              Dati AI
+              <span className="hidden lg:inline">Dati AI</span>
             </TabsTrigger>
-            <TabsTrigger value="monitoring" className="flex items-center gap-2">
+            <TabsTrigger value="monitoring" className="flex items-center gap-2 data-[state=active]:bg-neutral-800 data-[state=active]:text-white">
               <Activity className="h-4 w-4" />
-              Monitoraggio
+              <span className="hidden lg:inline">Monitoraggio</span>
             </TabsTrigger>
-            <TabsTrigger value="users" className="flex items-center gap-2">
+            <TabsTrigger value="users" className="flex items-center gap-2 data-[state=active]:bg-neutral-800 data-[state=active]:text-white">
               <UserCog className="h-4 w-4" />
-              Utenti
+              <span className="hidden lg:inline">Utenti</span>
             </TabsTrigger>
           </TabsList>
           
@@ -92,10 +98,10 @@ const AdminDashboard = () => {
           </TabsContent>
 
           <TabsContent value="users" className="space-y-4">
-            <Card>
+            <Card className="bg-neutral-900 border-neutral-800">
               <CardHeader>
-                <CardTitle>Gestione Utenti e Ruoli</CardTitle>
-                <CardDescription>
+                <CardTitle className="text-white">Gestione Utenti e Ruoli</CardTitle>
+                <CardDescription className="text-neutral-400">
                   Gestisci utenti, assegna ruoli admin e collaboratori
                 </CardDescription>
               </CardHeader>
