@@ -6,7 +6,51 @@ import { CommunityForum } from "@/components/Community/CommunityForum";
 import { ProfessionalNetwork } from "@/components/Community/ProfessionalNetwork";
 import { JobBoard } from "@/components/Community/JobBoard";
 import { ProfileSetup } from "@/components/Community/ProfileSetup";
+import { SectionGuide } from "@/components/Community/SectionGuide";
 import { Users, MessageSquare, Briefcase, User } from "lucide-react";
+
+const sectionDescriptions = {
+  forum: {
+    title: "Come funziona il Forum",
+    description: "Il forum è il cuore della nostra community. Qui puoi condividere esperienze, chiedere consigli e partecipare a discussioni con altri professionisti del settore beauty.",
+    tips: [
+      "Scegli la categoria più adatta per il tuo post (Business, Consigli Tecnici, Eventi, ecc.)",
+      "Usa un titolo chiaro e descrittivo per attirare l'attenzione",
+      "Rispetta gli altri membri e mantieni un tono professionale",
+      "I post sono organizzati per categoria: Business per strategie aziendali, Consigli Tecnici per trattamenti, Eventi per formazioni"
+    ]
+  },
+  network: {
+    title: "Cos'è il Network Professionale",
+    description: "Scopri e connettiti con altri professionisti del settore beauty. Visualizza i profili, le competenze e l'esperienza di titolari, dipendenti, studenti e freelance.",
+    tips: [
+      "Usa i filtri per trovare professionisti nella tua zona o con competenze specifiche",
+      "I badge colorati indicano il tipo di professionista (Titolare, Dipendente, Studente)",
+      "Visita i profili per vedere le competenze dettagliate e i link social",
+      "Contatta i professionisti tramite LinkedIn o i loro siti web"
+    ]
+  },
+  jobs: {
+    title: "Come usare la Bacheca Lavoro",
+    description: "Trova opportunità di lavoro nel settore beauty o pubblica annunci per cercare collaboratori. La bacheca è aperta a titolari che cercano personale e a professionisti in cerca di impiego.",
+    tips: [
+      "Chi cerca lavoro: consulta gli annunci e candidati direttamente",
+      "Chi offre lavoro: pubblica annunci dettagliati con competenze richieste e retribuzione",
+      "Gli annunci sono moderati per garantire qualità e serietà",
+      "Filtra per tipo di contratto: tempo pieno, part-time, freelance o stage"
+    ]
+  },
+  profile: {
+    title: "Perché completare il tuo Profilo",
+    description: "Il tuo profilo professionale è la tua vetrina nella community. Completalo per farti trovare da altri professionisti, ricevere proposte di lavoro e aumentare la tua visibilità.",
+    tips: [
+      "Aggiungi una foto professionale per aumentare la fiducia",
+      "Elenca le tue competenze specifiche (trattamenti viso, massaggi, ecc.)",
+      "Carica il tuo CV se sei in cerca di opportunità lavorative",
+      "Collega i tuoi profili social per facilitare i contatti"
+    ]
+  }
+};
 
 export default function Community() {
   const [activeTab, setActiveTab] = useState("forum");
@@ -42,59 +86,23 @@ export default function Community() {
           </TabsList>
 
           <TabsContent value="forum" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Forum della Community</CardTitle>
-                <CardDescription>
-                  Partecipa alle discussioni, condividi esperienze e chiedi consigli
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <CommunityForum />
-              </CardContent>
-            </Card>
+            <SectionGuide {...sectionDescriptions.forum} />
+            <CommunityForum />
           </TabsContent>
 
           <TabsContent value="network" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Network Professionale</CardTitle>
-                <CardDescription>
-                  Scopri professionisti del settore e amplia la tua rete
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ProfessionalNetwork />
-              </CardContent>
-            </Card>
+            <SectionGuide {...sectionDescriptions.network} />
+            <ProfessionalNetwork />
           </TabsContent>
 
           <TabsContent value="jobs" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Bacheca Lavoro</CardTitle>
-                <CardDescription>
-                  Trova opportunità lavorative o pubblica annunci
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <JobBoard />
-              </CardContent>
-            </Card>
+            <SectionGuide {...sectionDescriptions.jobs} />
+            <JobBoard />
           </TabsContent>
 
           <TabsContent value="profile" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Il Tuo Profilo Professionale</CardTitle>
-                <CardDescription>
-                  Configura il tuo profilo per farti trovare dalla community
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ProfileSetup />
-              </CardContent>
-            </Card>
+            <SectionGuide {...sectionDescriptions.profile} />
+            <ProfileSetup />
           </TabsContent>
         </Tabs>
       </div>

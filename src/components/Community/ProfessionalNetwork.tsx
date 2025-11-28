@@ -5,9 +5,11 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Search, MapPin, Globe, Linkedin, Instagram, FileText, Users, Star } from "lucide-react";
+import { Search, MapPin, Globe, Linkedin, Instagram, FileText, Users, Star, Filter } from "lucide-react";
+import { UserTypeBadge } from "./UserTypeBadge";
 
 interface Profile {
   id: string;
@@ -21,11 +23,21 @@ interface Profile {
   avatar_url?: string;
   linkedin_url?: string;
   instagram_url?: string;
+  user_type?: string;
 }
+
+const userTypeOptions = [
+  { value: "all", label: "Tutti i profili" },
+  { value: "professional", label: "Titolari" },
+  { value: "employee", label: "Dipendenti" },
+  { value: "student", label: "Studenti" },
+  { value: "freelance", label: "Freelance" },
+];
 
 export function ProfessionalNetwork() {
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedUserType, setSelectedUserType] = useState("all");
   const [selectedProfile, setSelectedProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
@@ -38,7 +50,8 @@ export function ProfessionalNetwork() {
     setLoading(true);
     const { data, error } = await supabase
       .from('profiles')
-      .select('*')
+      .select('id, display_name, bio, skills, experience_years, location, website_url, cv_file_url, avatar_url, linkedin_url, instagram_url, user_type')
+      .eq('is_public', true)
       .order('created_at', { ascending: false });
     
     if (error) {
@@ -53,12 +66,17 @@ export function ProfessionalNetwork() {
     setLoading(false);
   };
 
-  const filteredProfiles = profiles.filter(profile =>
-    profile.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    profile.bio?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    profile.skills?.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    profile.location?.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredProfiles = profiles.filter(profile => {
+    const matchesSearch = 
+      profile.display_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      profile.bio?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      profile.skills?.some(skill => skill.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      profile.location?.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesUserType = selectedUserType === "all" || profile.user_type === selectedUserType;
+    
+    return matchesSearch && matchesUserType;
+  });
 
   const getExperienceLevel = (years?: number) => {
     if (!years) return "Non specificato";
@@ -78,8 +96,8 @@ export function ProfessionalNetwork() {
 
   return (
     <div className="space-y-6">
-      {/* Barra di ricerca */}
-      <div className="flex items-center space-x-2">
+      {/* Barra di ricerca e filtri */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
           <Input
@@ -89,10 +107,19 @@ export function ProfessionalNetwork() {
             className="pl-10"
           />
         </div>
-        <Button variant="outline">
-          <Users className="h-4 w-4 mr-2" />
-          Filtri
-        </Button>
+        <Select value={selectedUserType} onValueChange={setSelectedUserType}>
+          <SelectTrigger className="w-full sm:w-[180px]">
+            <Filter className="h-4 w-4 mr-2" />
+            <SelectValue placeholder="Tipo profilo" />
+          </SelectTrigger>
+          <SelectContent>
+            {userTypeOptions.map((option) => (
+              <SelectItem key={option.value} value={option.value}>
+                {option.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
       </div>
 
       {/* Statistiche */}
@@ -146,9 +173,11 @@ export function ProfessionalNetwork() {
                   <div className="space-y-2">
                     <h3 className="font-semibold text-lg">{profile.display_name}</h3>
                     
+                    <UserTypeBadge userType={profile.user_type} />
+                    
                     {profile.experience_years && (
                       <Badge 
-                        className={`${getExperienceColor(profile.experience_years)} text-white`}
+                        className={`${getExperienceColor(profile.experience_years)} text-white ml-1`}
                       >
                         <Star className="h-3 w-3 mr-1" />
                         {getExperienceLevel(profile.experience_years)}
@@ -237,11 +266,14 @@ export function ProfessionalNetwork() {
                           </Avatar>
                           <div>
                             <h3 className="font-semibold text-lg">{profile.display_name}</h3>
-                            {profile.experience_years && (
-                              <Badge className={`${getExperienceColor(profile.experience_years)} text-white`}>
-                                {profile.experience_years} anni di esperienza
-                              </Badge>
-                            )}
+                            <div className="flex items-center gap-2 mt-1">
+                              <UserTypeBadge userType={profile.user_type} />
+                              {profile.experience_years && (
+                                <Badge className={`${getExperienceColor(profile.experience_years)} text-white`}>
+                                  {profile.experience_years} anni di esperienza
+                                </Badge>
+                              )}
+                            </div>
                           </div>
                         </div>
                         

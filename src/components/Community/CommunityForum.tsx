@@ -8,9 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/components/ui/use-toast";
-import { Plus, MessageSquare, Heart, Pin, ThumbsUp, ThumbsDown } from "lucide-react";
+import { Plus, MessageSquare, Heart, Pin, ThumbsUp, ThumbsDown, Info } from "lucide-react";
 import { ForumReplies } from "./ForumReplies";
+import { UserTypeBadge } from "./UserTypeBadge";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 
@@ -21,9 +23,11 @@ interface ForumPost {
   author_id: string;
   author_display_name: string;
   author_avatar_url?: string;
+  author_user_type?: string;
   category_id: string;
   category_name: string;
   category_color: string;
+  category_description?: string;
   created_at: string;
   likes_count: number;
   replies_count: number;
@@ -36,6 +40,7 @@ interface ForumCategory {
   id: string;
   name: string;
   color: string;
+  description?: string;
 }
 
 export function CommunityForum() {
@@ -84,7 +89,7 @@ export function CommunityForum() {
   const fetchCategories = async () => {
     const { data, error } = await supabase
       .from("forum_categories")
-      .select("*")
+      .select("id, name, color, description")
       .order("name");
 
     if (error) {
@@ -111,8 +116,8 @@ export function CommunityForum() {
         is_pinned,
         is_approved,
         category_id,
-        forum_categories (name, color),
-        profiles!forum_posts_author_fk (display_name, avatar_url)
+        forum_categories (name, color, description),
+        profiles!forum_posts_author_fk (display_name, avatar_url, user_type)
       `)
       .order("is_pinned", { ascending: false })
       .order("created_at", { ascending: false });
@@ -123,7 +128,11 @@ export function CommunityForum() {
 
     // Admin vede tutti i post, utenti normali solo quelli approvati o propri
     if (!isAdmin) {
-      query = query.or(`is_approved.eq.true,author_id.eq.${user?.id}`);
+      if (user?.id) {
+        query = query.or(`is_approved.eq.true,author_id.eq.${user.id}`);
+      } else {
+        query = query.eq("is_approved", true);
+      }
     }
 
     const { data, error } = await query;
@@ -160,9 +169,11 @@ export function CommunityForum() {
           author_id: post.author_id,
           author_display_name: post.profiles?.display_name || "Utente Anonimo",
           author_avatar_url: post.profiles?.avatar_url,
+          author_user_type: post.profiles?.user_type,
           category_id: post.category_id,
           category_name: post.forum_categories?.name || "Generale",
           category_color: post.forum_categories?.color || "#6AA8B3",
+          category_description: post.forum_categories?.description,
           created_at: post.created_at,
           likes_count: post.likes_count || 0,
           replies_count: post.replies_count || 0,
@@ -302,20 +313,32 @@ export function CommunityForum() {
           >
             Tutti
           </Button>
-          {categories.map((category) => (
-            <Button
-              key={category.id}
-              variant={selectedCategory === category.id ? "default" : "outline"}
-              onClick={() => setSelectedCategory(category.id)}
-              size="sm"
-              style={{
-                backgroundColor: selectedCategory === category.id ? category.color : undefined,
-                borderColor: category.color,
-              }}
-            >
-              {category.name}
-            </Button>
-          ))}
+          <TooltipProvider>
+            {categories.map((category) => (
+              <Tooltip key={category.id}>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={selectedCategory === category.id ? "default" : "outline"}
+                    onClick={() => setSelectedCategory(category.id)}
+                    size="sm"
+                    className="gap-1"
+                    style={{
+                      backgroundColor: selectedCategory === category.id ? category.color : undefined,
+                      borderColor: category.color,
+                    }}
+                  >
+                    {category.name}
+                    {category.description && <Info className="h-3 w-3 opacity-60" />}
+                  </Button>
+                </TooltipTrigger>
+                {category.description && (
+                  <TooltipContent className="max-w-xs">
+                    <p>{category.description}</p>
+                  </TooltipContent>
+                )}
+              </Tooltip>
+            ))}
+          </TooltipProvider>
         </div>
 
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -402,6 +425,7 @@ export function CommunityForum() {
                 <div className="flex-grow min-w-0">
                   <div className="flex items-center gap-2 mb-2 flex-wrap">
                     <span className="font-medium">{post.author_display_name}</span>
+                    <UserTypeBadge userType={post.author_user_type} />
                     <span className="text-sm text-muted-foreground">
                       {new Date(post.created_at).toLocaleDateString('it-IT')}
                     </span>
