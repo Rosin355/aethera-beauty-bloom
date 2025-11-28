@@ -10,11 +10,27 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useToast } from "@/components/ui/use-toast";
-import { Plus, MessageSquare, Heart, Pin, ThumbsUp, ThumbsDown, Info } from "lucide-react";
+import { Plus, MessageSquare, Heart, Pin, ThumbsUp, ThumbsDown, Info, Loader2 } from "lucide-react";
 import { ForumReplies } from "./ForumReplies";
 import { UserTypeBadge } from "./UserTypeBadge";
+import { PostMediaUploader, uploadPostMedia } from "./PostMediaUploader";
+import { PostMediaDisplay } from "./PostMediaDisplay";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+
+interface MediaItem {
+  type: "image" | "video_embed";
+  url: string;
+  file?: File;
+  thumbnailUrl?: string;
+}
+
+interface PostMedia {
+  id: string;
+  media_type: string;
+  media_url: string;
+  thumbnail_url?: string;
+}
 
 interface ForumPost {
   id: string;
@@ -34,6 +50,7 @@ interface ForumPost {
   is_pinned: boolean;
   is_approved: boolean;
   user_has_liked?: boolean;
+  media?: PostMedia[];
 }
 
 interface ForumCategory {
@@ -49,6 +66,8 @@ export function CommunityForum() {
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [newPost, setNewPost] = useState({ title: "", content: "", category_id: "" });
+  const [newPostMedia, setNewPostMedia] = useState<MediaItem[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
   const { user, isAdmin } = useAuth();
@@ -162,6 +181,13 @@ export function CommunityForum() {
           userHasLiked = !!likeData;
         }
 
+        // Fetch media for each post
+        const { data: mediaData } = await supabase
+          .from("forum_post_media")
+          .select("id, media_type, media_url, thumbnail_url")
+          .eq("post_id", post.id)
+          .order("sort_order");
+
         return {
           id: post.id,
           title: post.title,
@@ -180,6 +206,7 @@ export function CommunityForum() {
           is_pinned: post.is_pinned || false,
           is_approved: post.is_approved || false,
           user_has_liked: userHasLiked,
+          media: mediaData || [],
         };
       })
     );
@@ -207,34 +234,65 @@ export function CommunityForum() {
       return;
     }
 
-    const { error } = await supabase.from("forum_posts").insert({
-      title: newPost.title,
-      content: newPost.content,
-      category_id: newPost.category_id,
-      author_id: user.id,
-      is_approved: isAdmin, // Auto-approva per admin
-    });
+    setIsSubmitting(true);
 
-    if (error) {
+    try {
+      // Create the post first
+      const { data: postData, error: postError } = await supabase
+        .from("forum_posts")
+        .insert({
+          title: newPost.title,
+          content: newPost.content,
+          category_id: newPost.category_id,
+          author_id: user.id,
+          is_approved: isAdmin,
+        })
+        .select("id")
+        .single();
+
+      if (postError) {
+        throw postError;
+      }
+
+      // Upload media if any
+      if (newPostMedia.length > 0 && postData?.id) {
+        const { uploadedMedia } = await uploadPostMedia(postData.id, user.id, newPostMedia);
+        
+        // Insert media records
+        if (uploadedMedia.length > 0) {
+          const mediaRecords = uploadedMedia.map((m, index) => ({
+            post_id: postData.id,
+            media_type: m.media_type,
+            media_url: m.media_url,
+            thumbnail_url: m.thumbnail_url,
+            sort_order: index,
+          }));
+
+          await supabase.from("forum_post_media").insert(mediaRecords);
+        }
+      }
+
+      toast({
+        title: isAdmin ? "Post pubblicato!" : "Post inviato per moderazione",
+        description: isAdmin 
+          ? "Il tuo post è stato pubblicato con successo" 
+          : "Il tuo post sarà visibile dopo l'approvazione",
+      });
+
+      setNewPost({ title: "", content: "", category_id: "" });
+      setNewPostMedia([]);
+      setIsCreateDialogOpen(false);
+      fetchPosts();
+    } catch (error) {
       console.error("Error creating post:", error);
       toast({
         title: "Errore",
         description: "Impossibile creare il post",
         variant: "destructive",
       });
-      return;
+    } finally {
+      setIsSubmitting(false);
     }
-
-    toast({
-      title: isAdmin ? "Post pubblicato!" : "Post inviato per moderazione",
-      description: isAdmin 
-        ? "Il tuo post è stato pubblicato con successo" 
-        : "Il tuo post sarà visibile dopo l'approvazione",
-    });
-
-    setNewPost({ title: "", content: "", category_id: "" });
-    setIsCreateDialogOpen(false);
-    fetchPosts();
   };
 
   const toggleLike = async (postId: string, currentlyLiked: boolean) => {
@@ -385,11 +443,22 @@ export function CommunityForum() {
                   value={newPost.content}
                   onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
                   placeholder="Scrivi il contenuto del post..."
-                  rows={6}
+                  rows={4}
                 />
               </div>
-              <Button onClick={createPost} className="w-full">
-                Pubblica
+              <PostMediaUploader
+                media={newPostMedia}
+                onMediaChange={setNewPostMedia}
+              />
+              <Button onClick={createPost} className="w-full" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Pubblicazione...
+                  </>
+                ) : (
+                  "Pubblica"
+                )}
               </Button>
             </div>
           </DialogContent>
@@ -449,9 +518,14 @@ export function CommunityForum() {
                   >
                     {post.title}
                   </h3>
-                  <p className="text-muted-foreground mb-4 line-clamp-3">{post.content}</p>
+                  <p className="text-muted-foreground mb-2 line-clamp-3">{post.content}</p>
                   
-                  <div className="flex items-center gap-4 flex-wrap">
+                  {/* Post Media */}
+                  {post.media && post.media.length > 0 && (
+                    <PostMediaDisplay media={post.media} compact />
+                  )}
+                  
+                  <div className="flex items-center gap-4 flex-wrap mt-4">
                     <Button
                       variant="ghost"
                       size="sm"
