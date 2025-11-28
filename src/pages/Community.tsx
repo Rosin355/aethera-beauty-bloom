@@ -59,50 +59,50 @@ export default function Community() {
   return (
     <DashboardLayout>
       {showTour && <GuidedTour onComplete={completeTour} onSkip={skipTour} />}
-      <div className="p-6 space-y-6">
-        <div className="flex flex-col space-y-2">
-          <h1 className="text-3xl font-bold text-foreground">Community</h1>
-          <p className="text-muted-foreground">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+        <div className="flex flex-col space-y-1 sm:space-y-2">
+          <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Community</h1>
+          <p className="text-sm sm:text-base text-muted-foreground">
             Connettiti con professionisti del settore, condividi esperienze e trova nuove opportunità
           </p>
         </div>
 
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="forum" className="flex items-center gap-2">
+          <TabsList className="grid w-full grid-cols-4 h-auto p-1">
+            <TabsTrigger value="forum" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 px-1 sm:px-3 text-xs sm:text-sm">
               <MessageSquare className="h-4 w-4" />
-              Forum
+              <span className="hidden xs:inline sm:inline">Forum</span>
             </TabsTrigger>
-            <TabsTrigger value="network" className="flex items-center gap-2">
+            <TabsTrigger value="network" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 px-1 sm:px-3 text-xs sm:text-sm">
               <Users className="h-4 w-4" />
-              Network
+              <span className="hidden xs:inline sm:inline">Network</span>
             </TabsTrigger>
-            <TabsTrigger value="jobs" className="flex items-center gap-2">
+            <TabsTrigger value="jobs" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 px-1 sm:px-3 text-xs sm:text-sm">
               <Briefcase className="h-4 w-4" />
-              Lavoro
+              <span className="hidden xs:inline sm:inline">Lavoro</span>
             </TabsTrigger>
-            <TabsTrigger value="profile" className="flex items-center gap-2">
+            <TabsTrigger value="profile" className="flex flex-col sm:flex-row items-center gap-1 sm:gap-2 py-2 px-1 sm:px-3 text-xs sm:text-sm">
               <User className="h-4 w-4" />
-              Profilo
+              <span className="hidden xs:inline sm:inline">Profilo</span>
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="forum" className="space-y-6">
+          <TabsContent value="forum" className="space-y-4 sm:space-y-6 mt-4">
             <SectionGuide {...sectionDescriptions.forum} />
             <CommunityForum />
           </TabsContent>
 
-          <TabsContent value="network" className="space-y-6">
+          <TabsContent value="network" className="space-y-4 sm:space-y-6 mt-4">
             <SectionGuide {...sectionDescriptions.network} />
             <ProfessionalNetwork />
           </TabsContent>
 
-          <TabsContent value="jobs" className="space-y-6">
+          <TabsContent value="jobs" className="space-y-4 sm:space-y-6 mt-4">
             <SectionGuide {...sectionDescriptions.jobs} />
             <JobBoard />
           </TabsContent>
 
-          <TabsContent value="profile" className="space-y-6">
+          <TabsContent value="profile" className="space-y-4 sm:space-y-6 mt-4">
             <SectionGuide {...sectionDescriptions.profile} />
             <ProfileSetup />
           </TabsContent>
