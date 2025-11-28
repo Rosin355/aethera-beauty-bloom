@@ -1,12 +1,12 @@
 import { useState } from "react";
 import DashboardLayout from "@/components/Dashboard/DashboardLayout";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CommunityForum } from "@/components/Community/CommunityForum";
 import { ProfessionalNetwork } from "@/components/Community/ProfessionalNetwork";
 import { JobBoard } from "@/components/Community/JobBoard";
 import { ProfileSetup } from "@/components/Community/ProfileSetup";
 import { SectionGuide } from "@/components/Community/SectionGuide";
+import { GuidedTour, useCommunityTour } from "@/components/Community/GuidedTour";
 import { Users, MessageSquare, Briefcase, User } from "lucide-react";
 
 const sectionDescriptions = {
@@ -54,9 +54,11 @@ const sectionDescriptions = {
 
 export default function Community() {
   const [activeTab, setActiveTab] = useState("forum");
+  const { showTour, completeTour, skipTour } = useCommunityTour();
 
   return (
     <DashboardLayout>
+      {showTour && <GuidedTour onComplete={completeTour} onSkip={skipTour} />}
       <div className="p-6 space-y-6">
         <div className="flex flex-col space-y-2">
           <h1 className="text-3xl font-bold text-foreground">Community</h1>
