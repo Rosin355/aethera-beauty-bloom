@@ -28,10 +28,14 @@ interface Profile {
 
 const userTypeOptions = [
   { value: "all", label: "Tutti i profili" },
-  { value: "professional", label: "Titolari" },
+  { value: "owner", label: "Titolari / Spa Manager" },
+  { value: "professional", label: "Titolari (legacy)" },
+  { value: "senior_esthetician", label: "Estetiste Senior" },
+  { value: "esthetician", label: "Estetiste" },
+  { value: "hairdresser", label: "Parrucchieri" },
   { value: "employee", label: "Dipendenti" },
-  { value: "student", label: "Studenti" },
   { value: "freelance", label: "Freelance" },
+  { value: "student", label: "Studenti" },
 ];
 
 export function ProfessionalNetwork() {

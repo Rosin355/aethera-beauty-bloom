@@ -158,6 +158,44 @@ export type Database = {
           },
         ]
       }
+      forum_post_media: {
+        Row: {
+          created_at: string
+          id: string
+          media_type: string
+          media_url: string
+          post_id: string
+          sort_order: number | null
+          thumbnail_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          media_type: string
+          media_url: string
+          post_id: string
+          sort_order?: number | null
+          thumbnail_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          media_type?: string
+          media_url?: string
+          post_id?: string
+          sort_order?: number | null
+          thumbnail_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_post_media_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "forum_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forum_posts: {
         Row: {
           author_id: string
