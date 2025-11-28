@@ -360,14 +360,16 @@ export function CommunityForum() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div className="flex flex-wrap gap-2">
+      <div className="flex flex-col gap-3">
+        {/* Categorie - scrollabile su mobile */}
+        <div className="flex gap-1.5 sm:gap-2 overflow-x-auto pb-2 -mx-1 px-1 scrollbar-hide">
           <Button
             variant={selectedCategory === "all" ? "default" : "outline"}
             onClick={() => setSelectedCategory("all")}
             size="sm"
+            className="flex-shrink-0 text-xs sm:text-sm h-8 px-2 sm:px-3"
           >
             Tutti
           </Button>
@@ -379,14 +381,13 @@ export function CommunityForum() {
                     variant={selectedCategory === category.id ? "default" : "outline"}
                     onClick={() => setSelectedCategory(category.id)}
                     size="sm"
-                    className="gap-1"
+                    className="flex-shrink-0 gap-1 text-xs sm:text-sm h-8 px-2 sm:px-3"
                     style={{
                       backgroundColor: selectedCategory === category.id ? category.color : undefined,
                       borderColor: category.color,
                     }}
                   >
                     {category.name}
-                    {category.description && <Info className="h-3 w-3 opacity-60" />}
                   </Button>
                 </TooltipTrigger>
                 {category.description && (
@@ -399,33 +400,35 @@ export function CommunityForum() {
           </TooltipProvider>
         </div>
 
+        {/* Bottone Nuovo Post */}
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
+            <Button size="sm" className="w-full sm:w-auto self-end text-sm">
+              <Plus className="w-4 h-4 mr-1.5" />
               Nuovo Post
             </Button>
           </DialogTrigger>
-          <DialogContent>
+          <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>Crea un nuovo post</DialogTitle>
+              <DialogTitle className="text-base sm:text-lg">Crea un nuovo post</DialogTitle>
             </DialogHeader>
-            <div className="space-y-4">
+            <div className="space-y-3 sm:space-y-4">
               <div>
-                <Label>Titolo</Label>
+                <Label className="text-sm">Titolo</Label>
                 <Input
                   value={newPost.title}
                   onChange={(e) => setNewPost({ ...newPost, title: e.target.value })}
                   placeholder="Titolo del post"
+                  className="text-sm"
                 />
               </div>
               <div>
-                <Label>Categoria</Label>
+                <Label className="text-sm">Categoria</Label>
                 <Select
                   value={newPost.category_id}
                   onValueChange={(value) => setNewPost({ ...newPost, category_id: value })}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="text-sm">
                     <SelectValue placeholder="Seleziona una categoria" />
                   </SelectTrigger>
                   <SelectContent>
@@ -438,19 +441,20 @@ export function CommunityForum() {
                 </Select>
               </div>
               <div>
-                <Label>Contenuto</Label>
+                <Label className="text-sm">Contenuto</Label>
                 <Textarea
                   value={newPost.content}
                   onChange={(e) => setNewPost({ ...newPost, content: e.target.value })}
                   placeholder="Scrivi il contenuto del post..."
-                  rows={4}
+                  rows={3}
+                  className="text-sm"
                 />
               </div>
               <PostMediaUploader
                 media={newPostMedia}
                 onMediaChange={setNewPostMedia}
               />
-              <Button onClick={createPost} className="w-full" disabled={isSubmitting}>
+              <Button onClick={createPost} className="w-full text-sm" disabled={isSubmitting}>
                 {isSubmitting ? (
                   <>
                     <Loader2 className="h-4 w-4 mr-2 animate-spin" />
@@ -467,21 +471,21 @@ export function CommunityForum() {
 
       {/* Lista post */}
       {loading ? (
-        <div className="text-center py-12">
-          <p className="text-muted-foreground">Caricamento...</p>
+        <div className="text-center py-8 sm:py-12">
+          <p className="text-sm sm:text-base text-muted-foreground">Caricamento...</p>
         </div>
       ) : posts.length === 0 ? (
-        <Card className="p-12 text-center">
-          <MessageSquare className="w-12 h-12 mx-auto mb-4 text-muted-foreground" />
-          <p className="text-lg font-medium mb-2">Nessun post disponibile</p>
-          <p className="text-muted-foreground">Sii il primo a creare un post!</p>
+        <Card className="p-6 sm:p-12 text-center">
+          <MessageSquare className="w-8 h-8 sm:w-12 sm:h-12 mx-auto mb-3 sm:mb-4 text-muted-foreground" />
+          <p className="text-base sm:text-lg font-medium mb-1 sm:mb-2">Nessun post disponibile</p>
+          <p className="text-sm text-muted-foreground">Sii il primo a creare un post!</p>
         </Card>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3 sm:space-y-4">
           {posts.map((post) => (
-            <Card key={post.id} className="p-6">
-              <div className="flex items-start gap-4">
-                <div className="flex-shrink-0">
+            <Card key={post.id} className="p-3 sm:p-6">
+              <div className="flex items-start gap-2 sm:gap-4">
+                <div className="flex-shrink-0 hidden sm:block">
                   <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
                     {post.author_avatar_url ? (
                       <img src={post.author_avatar_url} alt="" className="w-10 h-10 rounded-full" />
@@ -492,48 +496,51 @@ export function CommunityForum() {
                 </div>
                 
                 <div className="flex-grow min-w-0">
-                  <div className="flex items-center gap-2 mb-2 flex-wrap">
-                    <span className="font-medium">{post.author_display_name}</span>
-                    <UserTypeBadge userType={post.author_user_type} />
-                    <span className="text-sm text-muted-foreground">
+                  <div className="flex items-center gap-1.5 sm:gap-2 mb-2 flex-wrap">
+                    <span className="font-medium text-sm sm:text-base">{post.author_display_name}</span>
+                    <UserTypeBadge userType={post.author_user_type} size="sm" />
+                    <span className="text-xs sm:text-sm text-muted-foreground">
                       {new Date(post.created_at).toLocaleDateString('it-IT')}
                     </span>
-                    <Badge style={{ backgroundColor: post.category_color }}>
+                  </div>
+                  
+                  <div className="flex items-center gap-1.5 mb-2 flex-wrap">
+                    <Badge className="text-xs" style={{ backgroundColor: post.category_color }}>
                       {post.category_name}
                     </Badge>
                     {post.is_pinned && (
-                      <Badge variant="outline">
-                        <Pin className="w-3 h-3 mr-1" />
+                      <Badge variant="outline" className="text-xs">
+                        <Pin className="w-2.5 h-2.5 mr-0.5" />
                         Fissato
                       </Badge>
                     )}
                     {!post.is_approved && (
-                      <Badge variant="secondary">In attesa</Badge>
+                      <Badge variant="secondary" className="text-xs">In attesa</Badge>
                     )}
                   </div>
                   
                   <h3 
-                    className="text-lg font-semibold mb-2 cursor-pointer hover:text-primary"
+                    className="text-sm sm:text-lg font-semibold mb-1.5 sm:mb-2 cursor-pointer hover:text-primary"
                     onClick={() => navigate(`/dashboard/community/post/${post.id}`)}
                   >
                     {post.title}
                   </h3>
-                  <p className="text-muted-foreground mb-2 line-clamp-3">{post.content}</p>
+                  <p className="text-xs sm:text-base text-muted-foreground mb-2 line-clamp-2 sm:line-clamp-3">{post.content}</p>
                   
                   {/* Post Media */}
                   {post.media && post.media.length > 0 && (
                     <PostMediaDisplay media={post.media} compact />
                   )}
                   
-                  <div className="flex items-center gap-4 flex-wrap mt-4">
+                  <div className="flex items-center gap-2 sm:gap-4 flex-wrap mt-3 sm:mt-4">
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => toggleLike(post.id, post.user_has_liked || false)}
-                      className="gap-2"
+                      className="gap-1 sm:gap-2 h-8 px-2 sm:px-3 text-xs sm:text-sm"
                     >
                       <Heart 
-                        className={`w-4 h-4 ${post.user_has_liked ? 'fill-red-500 text-red-500' : ''}`}
+                        className={`w-3.5 h-3.5 sm:w-4 sm:h-4 ${post.user_has_liked ? 'fill-red-500 text-red-500' : ''}`}
                       />
                       {post.likes_count}
                     </Button>
@@ -542,22 +549,23 @@ export function CommunityForum() {
                       variant="ghost"
                       size="sm"
                       onClick={() => navigate(`/dashboard/community/post/${post.id}`)}
-                      className="gap-2"
+                      className="gap-1 sm:gap-2 h-8 px-2 sm:px-3 text-xs sm:text-sm"
                     >
-                      <MessageSquare className="w-4 h-4" />
-                      {post.replies_count} risposte
+                      <MessageSquare className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      {post.replies_count}
                     </Button>
 
                     {isAdmin && (
-                      <div className="flex gap-2 ml-auto">
+                      <div className="flex gap-1.5 sm:gap-2 ml-auto flex-wrap">
                         {!post.is_approved && (
                           <Button
                             variant="outline"
                             size="sm"
                             onClick={() => moderatePost(post.id, 'approve')}
+                            className="h-7 px-2 text-xs"
                           >
-                            <ThumbsUp className="w-4 h-4 mr-1" />
-                            Approva
+                            <ThumbsUp className="w-3 h-3 sm:mr-1" />
+                            <span className="hidden sm:inline">Approva</span>
                           </Button>
                         )}
                         {post.is_approved && (
@@ -565,24 +573,26 @@ export function CommunityForum() {
                             variant="outline"
                             size="sm"
                             onClick={() => moderatePost(post.id, 'reject')}
+                            className="h-7 px-2 text-xs"
                           >
-                            <ThumbsDown className="w-4 h-4 mr-1" />
-                            Rifiuta
+                            <ThumbsDown className="w-3 h-3 sm:mr-1" />
+                            <span className="hidden sm:inline">Rifiuta</span>
                           </Button>
                         )}
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => moderatePost(post.id, post.is_pinned ? 'unpin' : 'pin')}
+                          className="h-7 px-2 text-xs"
                         >
-                          <Pin className="w-4 h-4 mr-1" />
-                          {post.is_pinned ? 'Rimuovi' : 'Fissa'}
+                          <Pin className="w-3 h-3 sm:mr-1" />
+                          <span className="hidden sm:inline">{post.is_pinned ? 'Rimuovi' : 'Fissa'}</span>
                         </Button>
                       </div>
                     )}
                   </div>
 
-                  <div className="mt-4">
+                  <div className="mt-3 sm:mt-4">
                     <ForumReplies postId={post.id} repliesCount={post.replies_count} onReplyAdded={fetchPosts} />
                   </div>
                 </div>
