@@ -1,6 +1,7 @@
 import { useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import DashboardLayout from "@/components/Dashboard/DashboardLayout";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CommunityForum } from "@/components/Community/CommunityForum";
 import { ProfessionalNetwork } from "@/components/Community/ProfessionalNetwork";
 import { JobBoard } from "@/components/Community/JobBoard";
@@ -52,9 +53,98 @@ const sectionDescriptions = {
   }
 };
 
+const tabVariants = {
+  initial: { 
+    opacity: 0, 
+    y: 10,
+    scale: 0.98
+  },
+  animate: { 
+    opacity: 1, 
+    y: 0,
+    scale: 1,
+    transition: {
+      duration: 0.3,
+      ease: [0.4, 0, 0.2, 1]
+    }
+  },
+  exit: { 
+    opacity: 0, 
+    y: -10,
+    scale: 0.98,
+    transition: {
+      duration: 0.2,
+      ease: [0.4, 0, 1, 1]
+    }
+  }
+};
+
 export default function Community() {
   const [activeTab, setActiveTab] = useState("forum");
   const { showTour, completeTour, skipTour } = useCommunityTour();
+
+  const renderTabContent = () => {
+    switch (activeTab) {
+      case "forum":
+        return (
+          <motion.div
+            key="forum"
+            variants={tabVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="space-y-4 sm:space-y-6"
+          >
+            <SectionGuide {...sectionDescriptions.forum} />
+            <CommunityForum />
+          </motion.div>
+        );
+      case "network":
+        return (
+          <motion.div
+            key="network"
+            variants={tabVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="space-y-4 sm:space-y-6"
+          >
+            <SectionGuide {...sectionDescriptions.network} />
+            <ProfessionalNetwork />
+          </motion.div>
+        );
+      case "jobs":
+        return (
+          <motion.div
+            key="jobs"
+            variants={tabVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="space-y-4 sm:space-y-6"
+          >
+            <SectionGuide {...sectionDescriptions.jobs} />
+            <JobBoard />
+          </motion.div>
+        );
+      case "profile":
+        return (
+          <motion.div
+            key="profile"
+            variants={tabVariants}
+            initial="initial"
+            animate="animate"
+            exit="exit"
+            className="space-y-4 sm:space-y-6"
+          >
+            <SectionGuide {...sectionDescriptions.profile} />
+            <ProfileSetup />
+          </motion.div>
+        );
+      default:
+        return null;
+    }
+  };
 
   return (
     <DashboardLayout>
@@ -87,25 +177,11 @@ export default function Community() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="forum" className="space-y-4 sm:space-y-6 mt-4">
-            <SectionGuide {...sectionDescriptions.forum} />
-            <CommunityForum />
-          </TabsContent>
-
-          <TabsContent value="network" className="space-y-4 sm:space-y-6 mt-4">
-            <SectionGuide {...sectionDescriptions.network} />
-            <ProfessionalNetwork />
-          </TabsContent>
-
-          <TabsContent value="jobs" className="space-y-4 sm:space-y-6 mt-4">
-            <SectionGuide {...sectionDescriptions.jobs} />
-            <JobBoard />
-          </TabsContent>
-
-          <TabsContent value="profile" className="space-y-4 sm:space-y-6 mt-4">
-            <SectionGuide {...sectionDescriptions.profile} />
-            <ProfileSetup />
-          </TabsContent>
+          <div className="mt-4">
+            <AnimatePresence mode="wait">
+              {renderTabContent()}
+            </AnimatePresence>
+          </div>
         </Tabs>
       </div>
     </DashboardLayout>
