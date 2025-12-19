@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Bot, Send, X, Loader2 } from "lucide-react";
+import { Bot, Send, X, Loader2, Sparkles } from "lucide-react";
 import { toast } from "sonner";
 
 interface Message {
@@ -16,6 +16,13 @@ interface Message {
 interface ChatAssistantProps {
   embedded?: boolean;
 }
+
+const QUICK_SUGGESTIONS = [
+  "Come migliorare la gestione clienti?",
+  "Consigli per aumentare le vendite",
+  "Best practices per il mio centro",
+  "Come fidelizzare i clienti",
+];
 
 export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
   const [isOpen, setIsOpen] = useState(embedded);
@@ -50,57 +57,129 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
     }
   }, [isOpen, embedded]);
 
-  const sendMessage = async (retryCount = 0) => {
-    if (!input.trim() || isLoading) return;
+  const streamChat = async (userMessage: Message) => {
+    const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`;
+    
+    const resp = await fetch(CHAT_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+      },
+      body: JSON.stringify({ 
+        messages: [...messages, userMessage],
+        userId,
+      }),
+    });
 
-    const userMessage: Message = { role: 'user', content: input };
+    if (!resp.ok) {
+      if (resp.status === 429) {
+        throw new Error('Limite richieste superato. Riprova tra qualche secondo.');
+      }
+      if (resp.status === 402) {
+        throw new Error('Crediti AI esauriti. Contatta l\'amministratore.');
+      }
+      const errorData = await resp.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Errore nella comunicazione con l\'assistente');
+    }
+
+    if (!resp.body) throw new Error('Nessuna risposta dal server');
+
+    const reader = resp.body.getReader();
+    const decoder = new TextDecoder();
+    let textBuffer = '';
+    let assistantContent = '';
+    let streamDone = false;
+
+    // Create initial assistant message
+    setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+
+    while (!streamDone) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      textBuffer += decoder.decode(value, { stream: true });
+
+      let newlineIndex: number;
+      while ((newlineIndex = textBuffer.indexOf('\n')) !== -1) {
+        let line = textBuffer.slice(0, newlineIndex);
+        textBuffer = textBuffer.slice(newlineIndex + 1);
+
+        if (line.endsWith('\r')) line = line.slice(0, -1);
+        if (line.startsWith(':') || line.trim() === '') continue;
+        if (!line.startsWith('data: ')) continue;
+
+        const jsonStr = line.slice(6).trim();
+        if (jsonStr === '[DONE]') {
+          streamDone = true;
+          break;
+        }
+
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+          if (content) {
+            assistantContent += content;
+            setMessages(prev => {
+              const newMessages = [...prev];
+              const lastIndex = newMessages.length - 1;
+              if (lastIndex >= 0 && newMessages[lastIndex].role === 'assistant') {
+                newMessages[lastIndex] = { ...newMessages[lastIndex], content: assistantContent };
+              }
+              return newMessages;
+            });
+          }
+        } catch {
+          // Incomplete JSON, put it back
+          textBuffer = line + '\n' + textBuffer;
+          break;
+        }
+      }
+    }
+
+    // Final flush
+    if (textBuffer.trim()) {
+      for (let raw of textBuffer.split('\n')) {
+        if (!raw) continue;
+        if (raw.endsWith('\r')) raw = raw.slice(0, -1);
+        if (raw.startsWith(':') || raw.trim() === '') continue;
+        if (!raw.startsWith('data: ')) continue;
+        const jsonStr = raw.slice(6).trim();
+        if (jsonStr === '[DONE]') continue;
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const content = parsed.choices?.[0]?.delta?.content as string | undefined;
+          if (content) {
+            assistantContent += content;
+            setMessages(prev => {
+              const newMessages = [...prev];
+              const lastIndex = newMessages.length - 1;
+              if (lastIndex >= 0 && newMessages[lastIndex].role === 'assistant') {
+                newMessages[lastIndex] = { ...newMessages[lastIndex], content: assistantContent };
+              }
+              return newMessages;
+            });
+          }
+        } catch { /* ignore partial leftovers */ }
+      }
+    }
+
+    return assistantContent;
+  };
+
+  const sendMessage = async (messageText?: string) => {
+    const textToSend = messageText || input;
+    if (!textToSend.trim() || isLoading) return;
+
+    const userMessage: Message = { role: 'user', content: textToSend };
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
 
     try {
-      console.log('Invoking ai-assistant function...');
-      const { data, error } = await supabase.functions.invoke('ai-assistant', {
-        body: { 
-          messages: [...messages, userMessage],
-          userId,
-        },
-      });
-
-      console.log('Response received:', { data, error });
-
-      if (error) {
-        if (error.message?.includes('404') || error.message?.includes('not found')) {
-          throw new Error('Servizio AI temporaneamente non disponibile. Riprova tra qualche minuto.');
-        }
-        if (error.message?.includes('401') || error.message?.includes('unauthorized')) {
-          throw new Error('Sessione scaduta. Effettua nuovamente il login.');
-        }
-        throw error;
-      }
-
-      if (data?.error) {
-        throw new Error(data.error);
-      }
-
-      if (!data?.choices?.[0]?.message?.content) {
-        throw new Error('Risposta non valida dal servizio AI');
-      }
-
-      const assistantMessage: Message = {
-        role: 'assistant',
-        content: data.choices[0].message.content,
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
+      console.log('Starting streaming chat...');
+      await streamChat(userMessage);
     } catch (error: any) {
       console.error('Error sending message:', error);
-      
-      if (retryCount === 0 && (error.message?.includes('network') || error.message?.includes('fetch'))) {
-        console.log('Retrying due to network error...');
-        setTimeout(() => sendMessage(1), 1000);
-        return;
-      }
       
       const errorMessage = error.message || 'Errore nella comunicazione con l\'assistente';
       toast.error(errorMessage, {
@@ -108,7 +187,8 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
         duration: 5000,
       });
       
-      setMessages(prev => prev.slice(0, -1));
+      // Remove the failed messages
+      setMessages(prev => prev.slice(0, -2));
       setInput(userMessage.content);
     } finally {
       setIsLoading(false);
@@ -121,6 +201,102 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
       sendMessage();
     }
   };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    sendMessage(suggestion);
+  };
+
+  const showSuggestions = messages.length === 1 && messages[0].role === 'assistant';
+
+  const renderMessages = () => (
+    <div className="space-y-4">
+      {messages.map((message, index) => (
+        <div
+          key={index}
+          className={`flex gap-3 ${
+            message.role === 'user' ? 'flex-row-reverse' : 'flex-row'
+          }`}
+        >
+          <Avatar className="h-8 w-8 flex-shrink-0">
+            <AvatarFallback className={message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}>
+              {message.role === 'user' ? 'U' : <Bot className="h-4 w-4" />}
+            </AvatarFallback>
+          </Avatar>
+          <div
+            className={`rounded-lg p-3 max-w-[80%] ${
+              message.role === 'user'
+                ? 'bg-primary text-primary-foreground'
+                : 'bg-muted'
+            }`}
+          >
+            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+          </div>
+        </div>
+      ))}
+      {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
+        <div className="flex gap-3">
+          <Avatar className="h-8 w-8">
+            <AvatarFallback className="bg-muted">
+              <Bot className="h-4 w-4" />
+            </AvatarFallback>
+          </Avatar>
+          <div className="rounded-lg p-3 bg-muted">
+            <Loader2 className="h-4 w-4 animate-spin" />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
+  const renderQuickSuggestions = () => (
+    <div className="mt-4 space-y-2">
+      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        <Sparkles className="h-3 w-3" />
+        <span>Suggerimenti rapidi</span>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {QUICK_SUGGESTIONS.map((suggestion, index) => (
+          <Button
+            key={index}
+            variant="outline"
+            size="sm"
+            className="text-xs h-auto py-2 px-3 whitespace-normal text-left"
+            onClick={() => handleSuggestionClick(suggestion)}
+            disabled={isLoading}
+          >
+            {suggestion}
+          </Button>
+        ))}
+      </div>
+    </div>
+  );
+
+  const renderInputArea = () => (
+    <div className="p-4 border-t border-border">
+      <div className="flex items-end gap-3">
+        <Textarea
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyPress={handleKeyPress}
+          placeholder="Scrivi un messaggio..."
+          className="min-h-[44px] max-h-[120px] resize-none"
+          disabled={isLoading}
+        />
+        <Button
+          onClick={() => sendMessage()}
+          disabled={!input.trim() || isLoading}
+          size="icon"
+          className="h-10 w-10 flex-shrink-0 rounded-full"
+        >
+          {isLoading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Send className="h-4 w-4" />
+          )}
+        </Button>
+      </div>
+    </div>
+  );
 
   // Floating button mode (non-embedded)
   if (!embedded && !isOpen) {
@@ -150,69 +326,11 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
         </div>
 
         <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-          <div className="space-y-4">
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={`flex gap-3 ${
-                  message.role === 'user' ? 'flex-row-reverse' : 'flex-row'
-                }`}
-              >
-                <Avatar className="h-8 w-8 flex-shrink-0">
-                  <AvatarFallback className={message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}>
-                    {message.role === 'user' ? 'U' : <Bot className="h-4 w-4" />}
-                  </AvatarFallback>
-                </Avatar>
-                <div
-                  className={`rounded-lg p-3 max-w-[80%] ${
-                    message.role === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted'
-                  }`}
-                >
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                </div>
-              </div>
-            ))}
-            {isLoading && (
-              <div className="flex gap-3">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-muted">
-                    <Bot className="h-4 w-4" />
-                  </AvatarFallback>
-                </Avatar>
-                <div className="rounded-lg p-3 bg-muted">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                </div>
-              </div>
-            )}
-          </div>
+          {renderMessages()}
+          {showSuggestions && renderQuickSuggestions()}
         </ScrollArea>
 
-        <div className="p-4 border-t border-border">
-          <div className="flex items-end gap-3">
-            <Textarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyPress={handleKeyPress}
-              placeholder="Scrivi un messaggio..."
-              className="min-h-[44px] max-h-[120px] resize-none"
-              disabled={isLoading}
-            />
-            <Button
-              onClick={() => sendMessage()}
-              disabled={!input.trim() || isLoading}
-              size="icon"
-              className="h-10 w-10 flex-shrink-0 rounded-full"
-            >
-              {isLoading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
-        </div>
+        {renderInputArea()}
       </div>
     );
   }
@@ -241,60 +359,25 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
 
       <CardContent className="flex-1 flex flex-col p-0">
         <ScrollArea className="flex-1 p-4" ref={scrollRef}>
-          <div className="space-y-4">
-            {messages.map((message, index) => (
-              <div
-                key={index}
-                className={`flex gap-3 ${
-                  message.role === 'user' ? 'flex-row-reverse' : 'flex-row'
-                }`}
-              >
-                <Avatar className="h-8 w-8 flex-shrink-0">
-                  <AvatarFallback className={message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}>
-                    {message.role === 'user' ? 'U' : <Bot className="h-4 w-4" />}
-                  </AvatarFallback>
-                </Avatar>
-                <div
-                  className={`rounded-lg p-3 max-w-[80%] ${
-                    message.role === 'user'
-                      ? 'bg-primary text-primary-foreground'
-                      : 'bg-muted'
-                  }`}
-                >
-                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                </div>
-              </div>
-            ))}
-            {isLoading && (
-              <div className="flex gap-3">
-                <Avatar className="h-8 w-8">
-                  <AvatarFallback className="bg-muted">
-                    <Bot className="h-4 w-4" />
-                  </AvatarFallback>
-                </Avatar>
-                <div className="rounded-lg p-3 bg-muted">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                </div>
-              </div>
-            )}
-          </div>
+          {renderMessages()}
+          {showSuggestions && renderQuickSuggestions()}
         </ScrollArea>
 
         <div className="p-4 border-t">
-          <div className="flex gap-2">
+          <div className="flex items-end gap-3">
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Scrivi un messaggio..."
-              className="min-h-[60px] max-h-[120px]"
+              className="min-h-[44px] max-h-[120px] resize-none"
               disabled={isLoading}
             />
             <Button
               onClick={() => sendMessage()}
               disabled={!input.trim() || isLoading}
               size="icon"
-              className="h-[60px] w-[60px] flex-shrink-0"
+              className="h-10 w-10 flex-shrink-0 rounded-full"
             >
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
