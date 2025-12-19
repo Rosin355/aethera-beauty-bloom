@@ -190,20 +190,20 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
         </ScrollArea>
 
         <div className="p-4 border-t border-border">
-          <div className="flex gap-2">
+          <div className="flex items-end gap-3">
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Scrivi un messaggio..."
-              className="min-h-[60px] max-h-[120px]"
+              className="min-h-[44px] max-h-[120px] resize-none"
               disabled={isLoading}
             />
             <Button
               onClick={() => sendMessage()}
               disabled={!input.trim() || isLoading}
               size="icon"
-              className="h-[60px] w-[60px] flex-shrink-0"
+              className="h-10 w-10 flex-shrink-0 rounded-full"
             >
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
