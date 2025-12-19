@@ -27,6 +27,7 @@ import VideoManagementPage from "./pages/Admin/VideoManagement";
 import LandingPage from "./pages/LandingPage";
 import Welcome from "./pages/Welcome";
 import RecuperaAccesso from "./pages/RecuperaAccesso";
+import AIAssistant from "./pages/AIAssistant";
 
 const queryClient = new QueryClient();
 
@@ -75,6 +76,11 @@ const App = () => (
           <Route path="/dashboard/training" element={
             <ProtectedRoute>
               <Training />
+            </ProtectedRoute>
+          } />
+          <Route path="/dashboard/ai-assistant" element={
+            <ProtectedRoute>
+              <AIAssistant />
             </ProtectedRoute>
           } />
           <Route path="/onboarding" element={
