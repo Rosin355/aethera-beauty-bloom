@@ -46,7 +46,7 @@ export function ChatAssistant() {
     }
   }, [isOpen]);
 
-  const sendMessage = async () => {
+  const sendMessage = async (retryCount = 0) => {
     if (!input.trim() || isLoading) return;
 
     const userMessage: Message = { role: 'user', content: input };
@@ -55,6 +55,7 @@ export function ChatAssistant() {
     setIsLoading(true);
 
     try {
+      console.log('Invoking ai-assistant function...');
       const { data, error } = await supabase.functions.invoke('ai-assistant', {
         body: { 
           messages: [...messages, userMessage],
@@ -62,10 +63,24 @@ export function ChatAssistant() {
         },
       });
 
-      if (error) throw error;
+      console.log('Response received:', { data, error });
 
-      if (data.error) {
+      if (error) {
+        if (error.message?.includes('404') || error.message?.includes('not found')) {
+          throw new Error('Servizio AI temporaneamente non disponibile. Riprova tra qualche minuto.');
+        }
+        if (error.message?.includes('401') || error.message?.includes('unauthorized')) {
+          throw new Error('Sessione scaduta. Effettua nuovamente il login.');
+        }
+        throw error;
+      }
+
+      if (data?.error) {
         throw new Error(data.error);
+      }
+
+      if (!data?.choices?.[0]?.message?.content) {
+        throw new Error('Risposta non valida dal servizio AI');
       }
 
       const assistantMessage: Message = {
@@ -76,11 +91,21 @@ export function ChatAssistant() {
       setMessages(prev => [...prev, assistantMessage]);
     } catch (error: any) {
       console.error('Error sending message:', error);
-      toast.error(error.message || 'Errore nella comunicazione con l\'assistente');
       
-      // Remove user message if failed
+      if (retryCount === 0 && (error.message?.includes('network') || error.message?.includes('fetch'))) {
+        console.log('Retrying due to network error...');
+        setTimeout(() => sendMessage(1), 1000);
+        return;
+      }
+      
+      const errorMessage = error.message || 'Errore nella comunicazione con l\'assistente';
+      toast.error(errorMessage, {
+        description: 'Se il problema persiste, ricarica la pagina.',
+        duration: 5000,
+      });
+      
       setMessages(prev => prev.slice(0, -1));
-      setInput(userMessage.content); // Restore input
+      setInput(userMessage.content);
     } finally {
       setIsLoading(false);
     }
@@ -179,7 +204,7 @@ export function ChatAssistant() {
               disabled={isLoading}
             />
             <Button
-              onClick={sendMessage}
+              onClick={() => sendMessage()}
               disabled={!input.trim() || isLoading}
               size="icon"
               className="h-[60px] w-[60px] flex-shrink-0"
