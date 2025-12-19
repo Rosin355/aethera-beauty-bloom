@@ -13,8 +13,12 @@ interface Message {
   content: string;
 }
 
-export function ChatAssistant() {
-  const [isOpen, setIsOpen] = useState(false);
+interface ChatAssistantProps {
+  embedded?: boolean;
+}
+
+export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
+  const [isOpen, setIsOpen] = useState(embedded);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -36,7 +40,7 @@ export function ChatAssistant() {
   }, [messages]);
 
   useEffect(() => {
-    if (isOpen && messages.length === 0) {
+    if ((isOpen || embedded) && messages.length === 0) {
       setMessages([
         {
           role: 'assistant',
@@ -44,7 +48,7 @@ export function ChatAssistant() {
         },
       ]);
     }
-  }, [isOpen]);
+  }, [isOpen, embedded]);
 
   const sendMessage = async (retryCount = 0) => {
     if (!input.trim() || isLoading) return;
@@ -118,7 +122,8 @@ export function ChatAssistant() {
     }
   };
 
-  if (!isOpen) {
+  // Floating button mode (non-embedded)
+  if (!embedded && !isOpen) {
     return (
       <Button
         onClick={() => setIsOpen(true)}
@@ -127,6 +132,88 @@ export function ChatAssistant() {
       >
         <Bot className="h-6 w-6" />
       </Button>
+    );
+  }
+
+  // Embedded mode - render as full container
+  if (embedded) {
+    return (
+      <div className="flex flex-col h-full">
+        <div className="flex items-center gap-3 p-4 border-b border-border">
+          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+            <Bot className="h-5 w-5 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-foreground">Assistente AI</h2>
+            <p className="text-xs text-muted-foreground">4 Elementi Italia</p>
+          </div>
+        </div>
+
+        <ScrollArea className="flex-1 p-4" ref={scrollRef}>
+          <div className="space-y-4">
+            {messages.map((message, index) => (
+              <div
+                key={index}
+                className={`flex gap-3 ${
+                  message.role === 'user' ? 'flex-row-reverse' : 'flex-row'
+                }`}
+              >
+                <Avatar className="h-8 w-8 flex-shrink-0">
+                  <AvatarFallback className={message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}>
+                    {message.role === 'user' ? 'U' : <Bot className="h-4 w-4" />}
+                  </AvatarFallback>
+                </Avatar>
+                <div
+                  className={`rounded-lg p-3 max-w-[80%] ${
+                    message.role === 'user'
+                      ? 'bg-primary text-primary-foreground'
+                      : 'bg-muted'
+                  }`}
+                >
+                  <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                </div>
+              </div>
+            ))}
+            {isLoading && (
+              <div className="flex gap-3">
+                <Avatar className="h-8 w-8">
+                  <AvatarFallback className="bg-muted">
+                    <Bot className="h-4 w-4" />
+                  </AvatarFallback>
+                </Avatar>
+                <div className="rounded-lg p-3 bg-muted">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                </div>
+              </div>
+            )}
+          </div>
+        </ScrollArea>
+
+        <div className="p-4 border-t border-border">
+          <div className="flex gap-2">
+            <Textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyPress={handleKeyPress}
+              placeholder="Scrivi un messaggio..."
+              className="min-h-[60px] max-h-[120px]"
+              disabled={isLoading}
+            />
+            <Button
+              onClick={() => sendMessage()}
+              disabled={!input.trim() || isLoading}
+              size="icon"
+              className="h-[60px] w-[60px] flex-shrink-0"
+            >
+              {isLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+            </Button>
+          </div>
+        </div>
+      </div>
     );
   }
 
