@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Switch } from "@/components/ui/switch";
 import { FileSpreadsheet, FileJson, FileText, Database, Loader2, Trash2, RefreshCw } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
@@ -15,6 +16,7 @@ interface TrainingData {
   file_name: string | null;
   file_size: number | null;
   processed: boolean;
+  is_active: boolean;
   created_at: string;
 }
 
@@ -44,7 +46,13 @@ const RecentFilesList = ({ refreshTrigger }: RecentFilesListProps) => {
         return;
       }
 
-      setData(trainingData || []);
+      // Handle the case where is_active might not exist yet (default to true)
+      const normalizedData = (trainingData || []).map(item => ({
+        ...item,
+        is_active: item.is_active ?? true,
+      }));
+
+      setData(normalizedData);
     } catch (err) {
       console.error('Error:', err);
     } finally {
@@ -82,6 +90,23 @@ const RecentFilesList = ({ refreshTrigger }: RecentFilesListProps) => {
       fetchData();
     } catch (err) {
       console.error('Update error:', err);
+      toast.error('Errore durante l\'aggiornamento');
+    }
+  };
+
+  const handleToggleActive = async (id: string, isActive: boolean) => {
+    try {
+      const { error } = await supabase
+        .from('ai_training_data')
+        .update({ is_active: !isActive })
+        .eq('id', id);
+
+      if (error) throw error;
+
+      toast.success(isActive ? 'Documento disattivato' : 'Documento attivato');
+      fetchData();
+    } catch (err) {
+      console.error('Toggle error:', err);
       toast.error('Errore durante l\'aggiornamento');
     }
   };
@@ -145,7 +170,11 @@ const RecentFilesList = ({ refreshTrigger }: RecentFilesListProps) => {
           {data.map((item) => (
             <div 
               key={item.id} 
-              className="flex justify-between items-center p-3 border border-neutral-800 rounded-md bg-neutral-900/50 hover:bg-neutral-800/50 transition-colors"
+              className={`flex justify-between items-center p-3 border border-neutral-800 rounded-md transition-colors ${
+                item.is_active 
+                  ? 'bg-neutral-900/50 hover:bg-neutral-800/50' 
+                  : 'bg-neutral-900/20 opacity-60'
+              }`}
             >
               <div className="flex items-center flex-1 min-w-0">
                 {getFileIcon(item.data_type, item.file_name)}
@@ -164,7 +193,16 @@ const RecentFilesList = ({ refreshTrigger }: RecentFilesListProps) => {
                   </div>
                 </div>
               </div>
-              <div className="flex items-center gap-2 ml-4">
+              <div className="flex items-center gap-3 ml-4">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground">
+                    {item.is_active ? 'Attivo' : 'Inattivo'}
+                  </span>
+                  <Switch
+                    checked={item.is_active}
+                    onCheckedChange={() => handleToggleActive(item.id, item.is_active)}
+                  />
+                </div>
                 <Badge 
                   className={`cursor-pointer ${item.processed ? 'bg-green-500' : 'bg-amber-500'}`}
                   onClick={() => handleMarkProcessed(item.id, item.processed)}

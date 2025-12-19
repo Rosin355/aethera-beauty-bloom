@@ -61,6 +61,7 @@ export type Database = {
           file_size: number | null
           file_url: string | null
           id: string
+          is_active: boolean | null
           processed: boolean | null
           title: string
           updated_at: string | null
@@ -75,6 +76,7 @@ export type Database = {
           file_size?: number | null
           file_url?: string | null
           id?: string
+          is_active?: boolean | null
           processed?: boolean | null
           title: string
           updated_at?: string | null
@@ -89,6 +91,7 @@ export type Database = {
           file_size?: number | null
           file_url?: string | null
           id?: string
+          is_active?: boolean | null
           processed?: boolean | null
           title?: string
           updated_at?: string | null

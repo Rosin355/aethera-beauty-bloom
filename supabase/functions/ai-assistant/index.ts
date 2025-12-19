@@ -99,18 +99,19 @@ IMPORTANTE: Personalizza le tue risposte in base a questo profilo. Se l'utente Ã
       }
     }
 
-    // Fetch AI training data (uploaded files and manual entries)
+    // Fetch AI training data (only active documents)
     console.log('Fetching AI training data...');
     const { data: trainingData, error: trainingError } = await supabase
       .from('ai_training_data')
       .select('title, description, content, data_type')
+      .eq('is_active', true)
       .order('created_at', { ascending: false })
       .limit(30);
 
     if (trainingError) {
       console.log('Training data fetch error (non-critical):', trainingError.message);
     } else {
-      console.log('Training documents found:', trainingData?.length || 0);
+      console.log('Active training documents found:', trainingData?.length || 0);
     }
 
     let trainingContext = '';
@@ -161,7 +162,7 @@ ${trainingContext}`;
     console.log('System prompt built successfully');
     console.log(`Context lengths - User: ${userContext.length}, Training: ${trainingContext.length}, System: ${systemInstructions.length}`);
     
-    console.log('Sending request to Lovable AI Gateway...');
+    console.log('Sending streaming request to Lovable AI Gateway...');
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -174,7 +175,7 @@ ${trainingContext}`;
           { role: 'system', content: systemPrompt },
           ...messages,
         ],
-        stream: false,
+        stream: true,
       }),
     });
 
@@ -200,12 +201,15 @@ ${trainingContext}`;
       throw new Error(`Errore nella comunicazione con l'AI: ${response.status}`);
     }
 
-    const data = await response.json();
-    console.log('AI response received successfully');
-    console.log('Response tokens used:', data.usage?.total_tokens || 'unknown');
-
-    return new Response(JSON.stringify(data), {
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    // Return the streaming response directly
+    console.log('Streaming response to client...');
+    return new Response(response.body, {
+      headers: { 
+        ...corsHeaders, 
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      },
     });
   } catch (error) {
     console.error('=== ERROR in ai-assistant ===');
