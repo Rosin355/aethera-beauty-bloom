@@ -129,7 +129,7 @@ const DataUploader = ({
 
       // Save record to database
       setUploadProgress('Salvataggio nel database...');
-      const { error: dbError } = await supabase
+      const { data: insertData, error: dbError } = await supabase
         .from('ai_training_data')
         .insert({
           title: selectedFile.name,
@@ -140,15 +140,42 @@ const DataUploader = ({
           file_url: fileUrl,
           file_size: selectedFile.size,
           processed: false
-        });
+        })
+        .select('id')
+        .single();
 
       if (dbError) {
         console.error('Database error:', dbError);
         throw dbError;
       }
 
+      // Generate embedding for the document
+      setUploadProgress('Generazione embedding per ricerca semantica...');
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+
+        await fetch(
+          `https://jybewogjncaoscrnlqum.supabase.co/functions/v1/generate-embedding`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              text: fileContent,
+              documentId: insertData.id
+            }),
+          }
+        );
+        console.log('Embedding generated successfully');
+      } catch (embeddingError) {
+        console.warn('Embedding generation failed (non-critical):', embeddingError);
+      }
+
       setUploadStatus('success');
-      toast.success('File caricato e processato con successo!');
+      toast.success('File caricato e indicizzato con successo!');
       
       setTimeout(() => {
         setSelectedFile(null);
