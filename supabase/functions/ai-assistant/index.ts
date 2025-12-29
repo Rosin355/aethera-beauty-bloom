@@ -102,37 +102,61 @@ IMPORTANTE: Personalizza le tue risposte in base a questo profilo. Se l'utente �
       }
     }
 
-    // Fetch AI training data (only active documents)
-    console.log('Fetching AI training data...');
-    const { data: trainingData, error: trainingError } = await supabase
-      .from('ai_training_data')
-      .select('title, description, content, data_type')
-      .eq('is_active', true)
-      .order('created_at', { ascending: false })
-      .limit(30);
+    // Generate embedding for user's query for semantic search
+    const lastUserMessage = messages[messages.length - 1]?.content || '';
+    console.log('Generating embedding for semantic search...');
+    const queryEmbedding = generateSimpleEmbedding(lastUserMessage);
+    const embeddingStr = `[${queryEmbedding.join(',')}]`;
 
-    if (trainingError) {
-      console.log('Training data fetch error (non-critical):', trainingError.message);
-    } else {
-      console.log('Active training documents found:', trainingData?.length || 0);
-    }
+    // Semantic search for relevant training data
+    console.log('Performing semantic search...');
+    const { data: semanticResults, error: semanticError } = await supabase
+      .rpc('search_training_data', {
+        query_embedding: embeddingStr,
+        match_threshold: 0.3,
+        match_count: 5
+      });
 
     let trainingContext = '';
-    if (trainingData && trainingData.length > 0) {
-      trainingContext = '\n\nBASE DI CONOSCENZA (Documenti e dati caricati dagli amministratori - usa queste informazioni per rispondere in modo specifico):\n';
-      trainingData.forEach((item, index) => {
-        trainingContext += `\n--- Documento ${index + 1}: ${item.title} ---\n`;
+    if (semanticError) {
+      console.log('Semantic search error, falling back to standard fetch:', semanticError.message);
+      
+      // Fallback to standard fetch if semantic search fails
+      const { data: trainingData, error: trainingError } = await supabase
+        .from('ai_training_data')
+        .select('title, description, content, data_type')
+        .eq('is_active', true)
+        .order('created_at', { ascending: false })
+        .limit(5);
+
+      if (!trainingError && trainingData && trainingData.length > 0) {
+        trainingContext = '\n\nBASE DI CONOSCENZA:\n';
+        trainingData.forEach((item, index) => {
+          trainingContext += `\n--- Documento ${index + 1}: ${item.title} ---\n`;
+          if (item.description) {
+            trainingContext += `Descrizione: ${item.description}\n`;
+          }
+          const contentPreview = item.content.length > 4000 
+            ? item.content.substring(0, 4000) + '... [contenuto troncato]'
+            : item.content;
+          trainingContext += `Contenuto:\n${contentPreview}\n`;
+        });
+      }
+    } else if (semanticResults && semanticResults.length > 0) {
+      console.log('Semantic search found:', semanticResults.length, 'relevant documents');
+      trainingContext = '\n\nDOCUMENTI PERTINENTI (selezionati in base alla tua domanda):\n';
+      semanticResults.forEach((item: any, index: number) => {
+        trainingContext += `\n--- Documento ${index + 1}: ${item.title} (rilevanza: ${Math.round(item.similarity * 100)}%) ---\n`;
         if (item.description) {
           trainingContext += `Descrizione: ${item.description}\n`;
         }
-        if (item.data_type) {
-          trainingContext += `Tipo: ${item.data_type}\n`;
-        }
-        const contentPreview = item.content.length > 3000 
-          ? item.content.substring(0, 3000) + '... [contenuto troncato]'
+        const contentPreview = item.content.length > 5000 
+          ? item.content.substring(0, 5000) + '... [contenuto troncato]'
           : item.content;
         trainingContext += `Contenuto:\n${contentPreview}\n`;
       });
+    } else {
+      console.log('No relevant documents found via semantic search');
     }
 
     const systemPrompt = `Sei l'assistente AI di 4 Elementi Italia, una piattaforma completa dedicata ai professionisti del settore estetica e bellezza.
@@ -253,3 +277,71 @@ ${trainingContext}`;
     );
   }
 });
+
+// Simple embedding function using TF-IDF-like approach
+// Creates a 768-dimension vector from text content
+function generateSimpleEmbedding(text: string): number[] {
+  const dimension = 768;
+  const embedding = new Array(dimension).fill(0);
+  
+  // Normalize and tokenize
+  const normalized = text.toLowerCase().replace(/[^a-zàèéìòù0-9\s]/g, ' ');
+  const words = normalized.split(/\s+/).filter(w => w.length > 2);
+  
+  if (words.length === 0) {
+    for (let i = 0; i < dimension; i++) {
+      embedding[i] = (Math.random() - 0.5) * 0.1;
+    }
+    return normalizeVector(embedding);
+  }
+  
+  // Word frequency map
+  const wordFreq: { [key: string]: number } = {};
+  words.forEach(word => {
+    wordFreq[word] = (wordFreq[word] || 0) + 1;
+  });
+  
+  // Hash each word to specific dimensions
+  Object.entries(wordFreq).forEach(([word, freq]) => {
+    for (let h = 0; h < 3; h++) {
+      const hash = hashString(word + h.toString());
+      const pos = Math.abs(hash) % dimension;
+      const sign = hash > 0 ? 1 : -1;
+      embedding[pos] += sign * Math.log(1 + freq) / words.length;
+    }
+    
+    // Character n-gram features
+    for (let i = 0; i < word.length - 1; i++) {
+      const bigram = word.substring(i, i + 2);
+      const bigramHash = hashString('bg_' + bigram);
+      const bigramPos = Math.abs(bigramHash) % dimension;
+      embedding[bigramPos] += (bigramHash > 0 ? 1 : -1) * 0.1 / words.length;
+    }
+  });
+  
+  // Structural features
+  const uniqueWordRatio = Object.keys(wordFreq).length / words.length;
+  embedding[0] = uniqueWordRatio;
+  embedding[1] = Math.log(1 + words.length) / 10;
+  embedding[2] = text.split(/[.!?]/).length / 100;
+  
+  return normalizeVector(embedding);
+}
+
+function hashString(str: string): number {
+  let hash = 0;
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash;
+  }
+  return hash;
+}
+
+function normalizeVector(vec: number[]): number[] {
+  const magnitude = Math.sqrt(vec.reduce((sum, val) => sum + val * val, 0));
+  if (magnitude === 0) {
+    return vec.map(() => 1 / Math.sqrt(vec.length));
+  }
+  return vec.map(val => val / magnitude);
+}

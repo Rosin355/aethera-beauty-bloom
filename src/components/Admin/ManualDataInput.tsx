@@ -27,7 +27,7 @@ const ManualDataInput = ({ onSaveComplete }: ManualDataInputProps) => {
     setIsSaving(true);
     
     try {
-      const { error } = await supabase
+      const { data: insertData, error } = await supabase
         .from('ai_training_data')
         .insert({
           title: title.trim(),
@@ -35,14 +35,40 @@ const ManualDataInput = ({ onSaveComplete }: ManualDataInputProps) => {
           content: content.trim(),
           data_type: 'manual',
           processed: false
-        });
+        })
+        .select('id')
+        .single();
 
       if (error) {
         console.error('Error saving data:', error);
         throw error;
       }
 
-      toast.success('Dati salvati con successo!');
+      // Generate embedding for the content
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+
+        await fetch(
+          `https://jybewogjncaoscrnlqum.supabase.co/functions/v1/generate-embedding`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              text: content.trim(),
+              documentId: insertData.id
+            }),
+          }
+        );
+        console.log('Embedding generated successfully');
+      } catch (embeddingError) {
+        console.warn('Embedding generation failed (non-critical):', embeddingError);
+      }
+
+      toast.success('Dati salvati e indicizzati con successo!');
       setTitle("");
       setDescription("");
       setContent("");

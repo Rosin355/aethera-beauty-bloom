@@ -84,6 +84,7 @@ export type Database = {
           created_by: string | null
           data_type: string | null
           description: string | null
+          embedding: string | null
           file_name: string | null
           file_size: number | null
           file_url: string | null
@@ -99,6 +100,7 @@ export type Database = {
           created_by?: string | null
           data_type?: string | null
           description?: string | null
+          embedding?: string | null
           file_name?: string | null
           file_size?: number | null
           file_url?: string | null
@@ -114,6 +116,7 @@ export type Database = {
           created_by?: string | null
           data_type?: string | null
           description?: string | null
+          embedding?: string | null
           file_name?: string | null
           file_size?: number | null
           file_url?: string | null
@@ -752,6 +755,21 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      search_training_data: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+        }
+        Returns: {
+          content: string
+          data_type: string
+          description: string
+          id: string
+          similarity: number
+          title: string
+        }[]
       }
       validate_access_token: {
         Args: { token_to_validate: string }
