@@ -15,10 +15,13 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startTime = Date.now();
+
   try {
-    const { messages, userId } = await req.json();
+    const { messages, userId, conversationId } = await req.json();
     console.log('Request body parsed successfully');
     console.log('User ID:', userId || 'anonymous');
+    console.log('Conversation ID:', conversationId || 'new');
     console.log('Messages count:', messages?.length || 0);
     
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
@@ -162,6 +165,7 @@ ${trainingContext}`;
     console.log('System prompt built successfully');
     console.log(`Context lengths - User: ${userContext.length}, Training: ${trainingContext.length}, System: ${systemInstructions.length}`);
     
+    const modelName = 'google/gemini-2.5-flash';
     console.log('Sending streaming request to Lovable AI Gateway...');
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -170,7 +174,7 @@ ${trainingContext}`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: modelName,
         messages: [
           { role: 'system', content: systemPrompt },
           ...messages,
@@ -200,6 +204,27 @@ ${trainingContext}`;
       
       throw new Error(`Errore nella comunicazione con l'AI: ${response.status}`);
     }
+
+    // Log usage asynchronously (don't block the response)
+    const responseTime = Date.now() - startTime;
+    EdgeRuntime.waitUntil((async () => {
+      try {
+        // Estimate token counts (rough approximation)
+        const inputTokens = Math.ceil((systemPrompt.length + messages.reduce((acc: number, m: any) => acc + m.content.length, 0)) / 4);
+        
+        await supabase.from('ai_usage_logs').insert({
+          user_id: userId || null,
+          conversation_id: conversationId || null,
+          tokens_input: inputTokens,
+          tokens_output: null, // We can't easily track streaming output tokens
+          model: modelName,
+          response_time_ms: responseTime,
+        });
+        console.log('Usage log saved successfully');
+      } catch (logError) {
+        console.error('Error saving usage log:', logError);
+      }
+    })());
 
     // Return the streaming response directly
     console.log('Streaming response to client...');

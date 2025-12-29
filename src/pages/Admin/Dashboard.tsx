@@ -1,5 +1,4 @@
 
-import { useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet";
 import AdminLayout from "@/components/Admin/AdminLayout";
@@ -8,11 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import ClientsList from "@/components/Admin/ClientsList";
 import ContentManagement from "@/components/Admin/ContentManagement";
 import AIDataTools from "@/components/Admin/AIDataTools";
+import { AIUsageStats } from "@/components/Admin/AIUsageStats";
 import ClientMonitoring from "@/components/Admin/ClientMonitoring";
 import { CommunityModeration } from "@/components/Admin/CommunityModeration";
 import { CommunityStats } from "@/components/Admin/CommunityStats";
 import CollaboratorManagement from "@/components/Admin/CollaboratorManagement";
-import { Users, FileText, MessageSquare, BarChart3, Database, Activity, UserCog } from "lucide-react";
+import { Users, FileText, MessageSquare, BarChart3, Database, Activity, UserCog, Bot } from "lucide-react";
 
 const AdminDashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -42,7 +42,7 @@ const AdminDashboard = () => {
         </Card>
         
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className="grid grid-cols-7 mb-8 bg-neutral-900 border border-neutral-800">
+          <TabsList className="grid grid-cols-8 mb-8 bg-neutral-900 border border-neutral-800">
             <TabsTrigger value="clients" className="flex items-center gap-2 data-[state=active]:bg-neutral-800 data-[state=active]:text-white">
               <Users className="h-4 w-4" />
               <span className="hidden lg:inline">Clienti</span>
@@ -62,6 +62,10 @@ const AdminDashboard = () => {
             <TabsTrigger value="aidata" className="flex items-center gap-2 data-[state=active]:bg-neutral-800 data-[state=active]:text-white">
               <Database className="h-4 w-4" />
               <span className="hidden lg:inline">Dati AI</span>
+            </TabsTrigger>
+            <TabsTrigger value="aistats" className="flex items-center gap-2 data-[state=active]:bg-neutral-800 data-[state=active]:text-white">
+              <Bot className="h-4 w-4" />
+              <span className="hidden lg:inline">AI Stats</span>
             </TabsTrigger>
             <TabsTrigger value="monitoring" className="flex items-center gap-2 data-[state=active]:bg-neutral-800 data-[state=active]:text-white">
               <Activity className="h-4 w-4" />
@@ -93,6 +97,10 @@ const AdminDashboard = () => {
             <AIDataTools />
           </TabsContent>
           
+          <TabsContent value="aistats" className="space-y-4">
+            <AIUsageStats />
+          </TabsContent>
+
           <TabsContent value="monitoring" className="space-y-4">
             <ClientMonitoring />
           </TabsContent>

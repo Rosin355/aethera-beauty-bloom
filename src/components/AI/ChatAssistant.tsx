@@ -1,28 +1,96 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Bot, Send, X, Loader2, Sparkles } from "lucide-react";
+import { Bot, Send, X, Loader2, Sparkles, History, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from "@/components/ui/dropdown-menu";
 
 interface Message {
   role: 'user' | 'assistant';
   content: string;
 }
 
+interface Conversation {
+  id: string;
+  title: string | null;
+  messages: Message[];
+  created_at: string;
+  updated_at: string;
+}
+
+interface UserProfile {
+  user_type: string | null;
+  primary_goal: string | null;
+  experience_level: string | null;
+  business_name: string | null;
+  team_size: string | null;
+}
+
 interface ChatAssistantProps {
   embedded?: boolean;
 }
 
-const QUICK_SUGGESTIONS = [
+// Suggerimenti base per tutti
+const BASE_SUGGESTIONS = [
   "Come migliorare la gestione clienti?",
   "Consigli per aumentare le vendite",
-  "Best practices per il mio centro",
-  "Come fidelizzare i clienti",
 ];
+
+// Suggerimenti per tipo utente
+const USER_TYPE_SUGGESTIONS: Record<string, string[]> = {
+  "titolare": [
+    "Come ottimizzare il margine sui trattamenti?",
+    "Strategie per gestire meglio il team",
+  ],
+  "estetista": [
+    "Tecniche per fidelizzare i clienti",
+    "Come proporre trattamenti premium?",
+  ],
+  "parrucchiere": [
+    "Come aumentare lo scontrino medio?",
+    "Tendenze colore della stagione",
+  ],
+  "dipendente": [
+    "Come crescere professionalmente?",
+    "Suggerimenti per la gestione del tempo",
+  ],
+  "freelance": [
+    "Come trovare nuovi clienti?",
+    "Gestione partita IVA e prezzi",
+  ],
+  "studente": [
+    "Consigli per iniziare la carriera",
+    "Competenze più richieste nel settore",
+  ],
+  "professional": [
+    "Best practices per il mio centro",
+    "Come fidelizzare i clienti",
+  ],
+  "user": [
+    "Cosa offre 4 Elementi Italia?",
+    "Come posso iniziare?",
+  ],
+};
+
+// Suggerimenti per obiettivo principale
+const GOAL_SUGGESTIONS: Record<string, string[]> = {
+  "increase_revenue": ["Strategie per aumentare il fatturato"],
+  "improve_skills": ["Quali competenze dovrei sviluppare?"],
+  "expand_business": ["Consigli per espandere l'attività"],
+  "better_management": ["Come ottimizzare i processi gestionali?"],
+  "team_growth": ["Come far crescere il mio team?"],
+  "work_life_balance": ["Come bilanciare lavoro e vita privata?"],
+};
 
 export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
   const [isOpen, setIsOpen] = useState(embedded);
@@ -30,15 +98,162 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+  const [isLoadingConversations, setIsLoadingConversations] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  // Genera suggerimenti personalizzati
+  const personalizedSuggestions = useMemo(() => {
+    const suggestions = [...BASE_SUGGESTIONS];
+    
+    if (userProfile) {
+      // Aggiungi suggerimenti per tipo utente
+      const userType = userProfile.user_type?.toLowerCase() || 'user';
+      const typeMatch = Object.keys(USER_TYPE_SUGGESTIONS).find(key => 
+        userType.includes(key)
+      );
+      if (typeMatch) {
+        suggestions.push(...USER_TYPE_SUGGESTIONS[typeMatch]);
+      }
+
+      // Aggiungi suggerimenti per obiettivo
+      const goal = userProfile.primary_goal;
+      if (goal && GOAL_SUGGESTIONS[goal]) {
+        suggestions.push(...GOAL_SUGGESTIONS[goal]);
+      }
+    }
+
+    // Limita a 4 suggerimenti unici
+    return [...new Set(suggestions)].slice(0, 4);
+  }, [userProfile]);
 
   useEffect(() => {
     const getUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       setUserId(user?.id || null);
+      
+      if (user?.id) {
+        // Fetch user profile for personalization
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('user_type, primary_goal, experience_level, business_name, team_size')
+          .eq('user_id', user.id)
+          .single();
+        
+        if (profile) {
+          setUserProfile(profile);
+        }
+
+        // Load recent conversations
+        loadConversations(user.id);
+      }
     };
     getUser();
   }, []);
+
+  const loadConversations = async (uid: string) => {
+    setIsLoadingConversations(true);
+    try {
+      const { data, error } = await supabase
+        .from('ai_conversations')
+        .select('*')
+        .eq('user_id', uid)
+        .order('updated_at', { ascending: false })
+        .limit(10);
+
+      if (error) throw error;
+      
+      // Parse the messages from JSONB - cast to unknown first then to target type
+      const parsed = (data || []).map(conv => ({
+        ...conv,
+        messages: (conv.messages as unknown) as Message[]
+      }));
+      setConversations(parsed);
+    } catch (error) {
+      console.error('Error loading conversations:', error);
+    } finally {
+      setIsLoadingConversations(false);
+    }
+  };
+
+  const saveConversation = async (newMessages: Message[]) => {
+    if (!userId || newMessages.length < 2) return;
+
+    try {
+      // Generate title from first user message
+      const firstUserMsg = newMessages.find(m => m.role === 'user');
+      const title = firstUserMsg 
+        ? firstUserMsg.content.slice(0, 50) + (firstUserMsg.content.length > 50 ? '...' : '') 
+        : 'Nuova conversazione';
+
+      // Cast messages to Json compatible type
+      const messagesJson = JSON.parse(JSON.stringify(newMessages));
+
+      if (currentConversationId) {
+        // Update existing conversation
+        await supabase
+          .from('ai_conversations')
+          .update({ 
+            messages: messagesJson,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', currentConversationId);
+      } else {
+        // Create new conversation
+        const { data, error } = await supabase
+          .from('ai_conversations')
+          .insert([{
+            user_id: userId,
+            title,
+            messages: messagesJson,
+          }])
+          .select()
+          .single();
+
+        if (!error && data) {
+          setCurrentConversationId(data.id);
+          loadConversations(userId);
+        }
+      }
+    } catch (error) {
+      console.error('Error saving conversation:', error);
+    }
+  };
+
+  const loadConversation = (conv: Conversation) => {
+    setMessages(conv.messages);
+    setCurrentConversationId(conv.id);
+  };
+
+  const startNewConversation = () => {
+    setMessages([
+      {
+        role: 'assistant',
+        content: 'Ciao! Sono l\'assistente AI di 4 Elementi Italia. Come posso aiutarti oggi? Posso darti consigli su gestione clienti, marketing, tecniche di trattamento o business management.',
+      },
+    ]);
+    setCurrentConversationId(null);
+  };
+
+  const deleteConversation = async (convId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await supabase
+        .from('ai_conversations')
+        .delete()
+        .eq('id', convId);
+      
+      setConversations(prev => prev.filter(c => c.id !== convId));
+      if (currentConversationId === convId) {
+        startNewConversation();
+      }
+      toast.success('Conversazione eliminata');
+    } catch (error) {
+      toast.error('Errore nell\'eliminazione');
+    }
+  };
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -69,6 +284,7 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
       body: JSON.stringify({ 
         messages: [...messages, userMessage],
         userId,
+        conversationId: currentConversationId,
       }),
     });
 
@@ -171,13 +387,18 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
     if (!textToSend.trim() || isLoading) return;
 
     const userMessage: Message = { role: 'user', content: textToSend };
-    setMessages(prev => [...prev, userMessage]);
+    const newMessages = [...messages, userMessage];
+    setMessages(newMessages);
     setInput('');
     setIsLoading(true);
 
     try {
       console.log('Starting streaming chat...');
-      await streamChat(userMessage);
+      const assistantContent = await streamChat(userMessage);
+      
+      // Save conversation after successful response
+      const finalMessages = [...newMessages, { role: 'assistant' as const, content: assistantContent }];
+      saveConversation(finalMessages);
     } catch (error: any) {
       console.error('Error sending message:', error);
       
@@ -252,10 +473,10 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
     <div className="mt-4 space-y-2">
       <div className="flex items-center gap-2 text-xs text-muted-foreground">
         <Sparkles className="h-3 w-3" />
-        <span>Suggerimenti rapidi</span>
+        <span>Suggerimenti per te</span>
       </div>
       <div className="flex flex-wrap gap-2">
-        {QUICK_SUGGESTIONS.map((suggestion, index) => (
+        {personalizedSuggestions.map((suggestion, index) => (
           <Button
             key={index}
             variant="outline"
@@ -269,6 +490,44 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
         ))}
       </div>
     </div>
+  );
+
+  const renderConversationHistory = () => (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" size="icon" className="h-8 w-8">
+          <History className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuItem onClick={startNewConversation}>
+          <Plus className="h-4 w-4 mr-2" />
+          Nuova conversazione
+        </DropdownMenuItem>
+        {conversations.length > 0 && (
+          <>
+            <DropdownMenuSeparator />
+            {conversations.map((conv) => (
+              <DropdownMenuItem 
+                key={conv.id} 
+                onClick={() => loadConversation(conv)}
+                className="flex justify-between items-center"
+              >
+                <span className="truncate flex-1 mr-2">{conv.title || 'Senza titolo'}</span>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 shrink-0"
+                  onClick={(e) => deleteConversation(conv.id, e)}
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </DropdownMenuItem>
+            ))}
+          </>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 
   const renderInputArea = () => (
@@ -315,14 +574,17 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
   if (embedded) {
     return (
       <div className="flex flex-col h-full">
-        <div className="flex items-center gap-3 p-4 border-b border-border">
-          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-            <Bot className="h-5 w-5 text-primary" />
+        <div className="flex items-center justify-between p-4 border-b border-border">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+              <Bot className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h2 className="text-base font-semibold text-foreground">Assistente AI</h2>
+              <p className="text-xs text-muted-foreground">4 Elementi Italia</p>
+            </div>
           </div>
-          <div>
-            <h2 className="text-base font-semibold text-foreground">Assistente AI</h2>
-            <p className="text-xs text-muted-foreground">4 Elementi Italia</p>
-          </div>
+          {userId && renderConversationHistory()}
         </div>
 
         <ScrollArea className="flex-1 p-4" ref={scrollRef}>
@@ -347,14 +609,17 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
             <p className="text-xs text-muted-foreground">4 Elementi Italia</p>
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setIsOpen(false)}
-          className="h-8 w-8"
-        >
-          <X className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          {userId && renderConversationHistory()}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsOpen(false)}
+            className="h-8 w-8"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
       </CardHeader>
 
       <CardContent className="flex-1 flex flex-col p-0">
