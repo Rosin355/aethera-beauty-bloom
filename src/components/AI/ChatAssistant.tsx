@@ -7,6 +7,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Bot, Send, X, Loader2, Sparkles, History, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
+import { FeedbackButtons } from "./FeedbackButtons";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -443,14 +444,23 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
               {message.role === 'user' ? 'U' : <Bot className="h-4 w-4" />}
             </AvatarFallback>
           </Avatar>
-          <div
-            className={`rounded-lg p-3 max-w-[80%] ${
-              message.role === 'user'
-                ? 'bg-primary text-primary-foreground'
-                : 'bg-muted'
-            }`}
-          >
-            <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+          <div className="flex flex-col max-w-[80%]">
+            <div
+              className={`rounded-lg p-3 ${
+                message.role === 'user'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'bg-muted'
+              }`}
+            >
+              <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+            </div>
+            {message.role === 'assistant' && index > 0 && !isLoading && (
+              <FeedbackButtons 
+                userId={userId} 
+                conversationId={currentConversationId} 
+                messageIndex={index} 
+              />
+            )}
           </div>
         </div>
       ))}

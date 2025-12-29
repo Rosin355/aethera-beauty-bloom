@@ -11,6 +11,7 @@ import DataUploader from "./DataUploader";
 import RecentFilesList from "./RecentFilesList";
 import ManualDataInput from "./ManualDataInput";
 import EmbeddingStats from "./EmbeddingStats";
+import { FeedbackStats } from "./FeedbackStats";
 
 const AIDataTools = () => {
   const [activeTab, setActiveTab] = useState("upload");
@@ -24,7 +25,10 @@ const AIDataTools = () => {
   
   return (
     <div className="space-y-6">
-      <EmbeddingStats key={refreshTrigger} />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <EmbeddingStats key={refreshTrigger} />
+        <FeedbackStats />
+      </div>
       <Card className="bg-neutral-900 border-neutral-800">
         <CardHeader>
           <CardTitle className="text-xl text-foreground">Strumenti Dati AI</CardTitle>
