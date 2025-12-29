@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
-import { FileSpreadsheet, FileJson, FileText, Database, Loader2, Trash2, RefreshCw } from "lucide-react";
+import { FileSpreadsheet, FileJson, FileText, Database, Loader2, Trash2, RefreshCw, Zap, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
@@ -12,12 +12,14 @@ interface TrainingData {
   id: string;
   title: string;
   description: string | null;
+  content: string;
   data_type: string;
   file_name: string | null;
   file_size: number | null;
   processed: boolean;
   is_active: boolean;
   created_at: string;
+  embedding: any | null;
 }
 
 interface RecentFilesListProps {
@@ -27,6 +29,8 @@ interface RecentFilesListProps {
 const RecentFilesList = ({ refreshTrigger }: RecentFilesListProps) => {
   const [data, setData] = useState<TrainingData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [generatingEmbedding, setGeneratingEmbedding] = useState<string | null>(null);
+  const [generatingAll, setGeneratingAll] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -37,16 +41,15 @@ const RecentFilesList = ({ refreshTrigger }: RecentFilesListProps) => {
     try {
       const { data: trainingData, error } = await supabase
         .from('ai_training_data')
-        .select('*')
+        .select('id, title, description, content, data_type, file_name, file_size, processed, is_active, created_at, embedding')
         .order('created_at', { ascending: false })
-        .limit(10);
+        .limit(20);
 
       if (error) {
         console.error('Error fetching data:', error);
         return;
       }
 
-      // Handle the case where is_active might not exist yet (default to true)
       const normalizedData = (trainingData || []).map(item => ({
         ...item,
         is_active: item.is_active ?? true,
@@ -57,6 +60,92 @@ const RecentFilesList = ({ refreshTrigger }: RecentFilesListProps) => {
       console.error('Error:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const generateEmbedding = async (item: TrainingData) => {
+    setGeneratingEmbedding(item.id);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+
+      const response = await fetch(
+        `https://jybewogjncaoscrnlqum.supabase.co/functions/v1/generate-embedding`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            text: item.content,
+            documentId: item.id
+          }),
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Errore nella generazione embedding');
+      }
+
+      toast.success(`Embedding generato per "${item.title}"`);
+      fetchData();
+    } catch (error) {
+      console.error('Embedding generation error:', error);
+      toast.error('Errore nella generazione embedding');
+    } finally {
+      setGeneratingEmbedding(null);
+    }
+  };
+
+  const generateAllMissingEmbeddings = async () => {
+    const missingEmbeddings = data.filter(item => !item.embedding);
+    if (missingEmbeddings.length === 0) {
+      toast.info('Tutti i documenti hanno già un embedding');
+      return;
+    }
+
+    setGeneratingAll(true);
+    let successCount = 0;
+    let errorCount = 0;
+
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData?.session?.access_token;
+
+    for (const item of missingEmbeddings) {
+      try {
+        const response = await fetch(
+          `https://jybewogjncaoscrnlqum.supabase.co/functions/v1/generate-embedding`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              text: item.content,
+              documentId: item.id
+            }),
+          }
+        );
+
+        if (response.ok) {
+          successCount++;
+        } else {
+          errorCount++;
+        }
+      } catch {
+        errorCount++;
+      }
+    }
+
+    setGeneratingAll(false);
+    fetchData();
+
+    if (errorCount === 0) {
+      toast.success(`${successCount} embedding generati con successo!`);
+    } else {
+      toast.warning(`${successCount} generati, ${errorCount} errori`);
     }
   };
 
@@ -136,6 +225,8 @@ const RecentFilesList = ({ refreshTrigger }: RecentFilesListProps) => {
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
+  const missingEmbeddingsCount = data.filter(item => !item.embedding).length;
+
   if (loading) {
     return (
       <div className="mt-6 flex items-center justify-center py-8">
@@ -148,15 +239,38 @@ const RecentFilesList = ({ refreshTrigger }: RecentFilesListProps) => {
     <div className="mt-6">
       <div className="flex items-center justify-between mb-4">
         <h3 className="text-lg font-medium text-foreground">Dati Recenti</h3>
-        <Button 
-          variant="ghost" 
-          size="sm" 
-          onClick={fetchData}
-          className="text-muted-foreground hover:text-foreground"
-        >
-          <RefreshCw className="h-4 w-4 mr-1" />
-          Aggiorna
-        </Button>
+        <div className="flex items-center gap-2">
+          {missingEmbeddingsCount > 0 && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={generateAllMissingEmbeddings}
+              disabled={generatingAll}
+              className="text-brand-water border-brand-water/30 hover:bg-brand-water/10"
+            >
+              {generatingAll ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                  Indicizzazione...
+                </>
+              ) : (
+                <>
+                  <Zap className="h-4 w-4 mr-1" />
+                  Indicizza tutti ({missingEmbeddingsCount})
+                </>
+              )}
+            </Button>
+          )}
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={fetchData}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <RefreshCw className="h-4 w-4 mr-1" />
+            Aggiorna
+          </Button>
+        </div>
       </div>
 
       {data.length === 0 ? (
@@ -179,7 +293,18 @@ const RecentFilesList = ({ refreshTrigger }: RecentFilesListProps) => {
               <div className="flex items-center flex-1 min-w-0">
                 {getFileIcon(item.data_type, item.file_name)}
                 <div className="ml-3 min-w-0">
-                  <p className="font-medium text-foreground truncate">{item.title}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium text-foreground truncate">{item.title}</p>
+                    {item.embedding ? (
+                      <span className="flex items-center gap-1 text-xs text-green-500" title="Indicizzato per ricerca semantica">
+                        <Zap className="h-3 w-3" />
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1 text-xs text-amber-500" title="Embedding mancante">
+                        <AlertCircle className="h-3 w-3" />
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <span>{format(new Date(item.created_at), 'dd/MM/yyyy HH:mm', { locale: it })}</span>
                     {item.file_size && (
@@ -190,10 +315,48 @@ const RecentFilesList = ({ refreshTrigger }: RecentFilesListProps) => {
                     )}
                     <span>•</span>
                     <span className="capitalize">{item.data_type === 'manual' ? 'Manuale' : 'File'}</span>
+                    {item.embedding && (
+                      <>
+                        <span>•</span>
+                        <span className="text-green-500">Indicizzato</span>
+                      </>
+                    )}
                   </div>
                 </div>
               </div>
               <div className="flex items-center gap-3 ml-4">
+                {!item.embedding && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => generateEmbedding(item)}
+                    disabled={generatingEmbedding === item.id}
+                    className="text-brand-water hover:text-brand-water/80"
+                    title="Genera embedding"
+                  >
+                    {generatingEmbedding === item.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Zap className="h-4 w-4" />
+                    )}
+                  </Button>
+                )}
+                {item.embedding && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => generateEmbedding(item)}
+                    disabled={generatingEmbedding === item.id}
+                    className="text-muted-foreground hover:text-brand-water"
+                    title="Rigenera embedding"
+                  >
+                    {generatingEmbedding === item.id ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <RefreshCw className="h-3 w-3" />
+                    )}
+                  </Button>
+                )}
                 <div className="flex items-center gap-2">
                   <span className="text-xs text-muted-foreground">
                     {item.is_active ? 'Attivo' : 'Inattivo'}
