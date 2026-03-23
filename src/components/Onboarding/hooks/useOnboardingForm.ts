@@ -1,7 +1,10 @@
-
-import { useState, ChangeEvent } from 'react';
+import { useState, ChangeEvent, useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 export const useOnboardingForm = () => {
+  const [userType, setUserType] = useState("professional");
+
   const [personalInfo, setPersonalInfo] = useState({
     fullName: "",
     businessName: "",
@@ -38,6 +41,12 @@ export const useOnboardingForm = () => {
       phoneNumber: ""
     }
   });
+
+  const [isSaving, setIsSaving] = useState(false);
+
+  const handleUserTypeChange = (value: string) => {
+    setUserType(value);
+  };
   
   const handlePersonalInfoChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -82,7 +91,7 @@ export const useOnboardingForm = () => {
   const validateStep = (step: number): boolean => {
     let isValid = true;
     
-    if (step === 0) {
+    if (step === 1) {
       // Validate personal info
       const newErrors = {
         fullName: "",
@@ -96,7 +105,7 @@ export const useOnboardingForm = () => {
         isValid = false;
       }
       
-      if (!personalInfo.businessName.trim()) {
+      if (userType === "professional" && !personalInfo.businessName.trim()) {
         newErrors.businessName = "Il nome dell'attività è obbligatorio";
         isValid = false;
       }
@@ -127,14 +136,64 @@ export const useOnboardingForm = () => {
     return isValid;
   };
 
+  const saveOnboardingData = useCallback(async (): Promise<boolean> => {
+    setIsSaving(true);
+    
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      if (!user) {
+        toast.error("Sessione scaduta. Effettua nuovamente l'accesso.");
+        return false;
+      }
+
+      const { error } = await supabase
+        .from('profiles')
+        .update({
+          display_name: personalInfo.fullName,
+          business_name: personalInfo.businessName || null,
+          city: personalInfo.city,
+          phone_number: personalInfo.phoneNumber,
+          user_type: userType,
+          experience_level: professionalInfo.experience,
+          team_size: professionalInfo.teamSize || null,
+          primary_goal: businessGoals.primaryGoal,
+          growth_plan: businessGoals.growthPlan || null,
+          preferred_learning_format: learningPreferences.preferredFormat,
+          time_availability: learningPreferences.timeAvailability || null,
+          onboarding_completed: true,
+          updated_at: new Date().toISOString()
+        })
+        .eq('user_id', user.id);
+
+      if (error) {
+        console.error('Error saving onboarding data:', error);
+        toast.error("Errore nel salvataggio dei dati. Riprova.");
+        return false;
+      }
+
+      return true;
+    } catch (err) {
+      console.error('Error in saveOnboardingData:', err);
+      toast.error("Si è verificato un errore. Riprova.");
+      return false;
+    } finally {
+      setIsSaving(false);
+    }
+  }, [personalInfo, professionalInfo, businessGoals, learningPreferences, userType]);
+
   return {
+    userType,
     personalInfo,
     professionalInfo,
     businessGoals,
     learningPreferences,
     errors: errors.personalInfo,
+    isSaving,
     validateStep,
+    saveOnboardingData,
     handlers: {
+      handleUserTypeChange,
       handlePersonalInfoChange,
       handleExperienceChange,
       handleTeamSizeChange,

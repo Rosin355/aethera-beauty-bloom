@@ -1,6 +1,6 @@
 
-import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { 
   BookOpen, 
   Calendar, 
@@ -12,13 +12,25 @@ import {
   Search, 
   Menu, 
   X,
-  LogOut
+  LogOut,
+  Shield,
+  UserCog,
+  MessageCircle
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Logo from "../Layout/Logo";
-
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
+import { NotificationCenter } from "@/components/Layout/NotificationCenter";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -26,7 +38,43 @@ interface DashboardLayoutProps {
 
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [displayName, setDisplayName] = useState<string>("");
+  const [initials, setInitials] = useState<string>("U");
+  const [userRole, setUserRole] = useState<string>("Utente");
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, signOut, isAdmin, isCollaborator } = useAuth();
+
+  useEffect(() => {
+    const loadUserProfile = async () => {
+      if (!user) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (profile?.display_name) {
+        setDisplayName(profile.display_name);
+        const names = profile.display_name.split(' ');
+        const userInitials = names.map(n => n.charAt(0).toUpperCase()).join('').slice(0, 2);
+        setInitials(userInitials);
+      }
+    };
+
+    loadUserProfile();
+  }, [user]);
+
+  useEffect(() => {
+    if (isAdmin) {
+      setUserRole("Amministratore");
+    } else if (isCollaborator) {
+      setUserRole("Collaboratore");
+    } else {
+      setUserRole("Utente");
+    }
+  }, [isAdmin, isCollaborator]);
 
   const sidebarItems = [
     { name: "Dashboard", path: "/dashboard", icon: ChartPie },
@@ -43,6 +91,11 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   const toggleSidebar = () => {
     setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/home');
   };
 
   return (
@@ -97,26 +150,28 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             {isSidebarOpen ? (
               <div className="flex items-center">
                 <div className="w-10 h-10 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center">
-                  <span className="text-white font-bold">JS</span>
+                  <span className="text-white font-bold">{initials}</span>
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm font-medium text-white">Jane Smith</p>
-                  <p className="text-xs text-gray-400">Piano Premium</p>
+                  <p className="text-sm font-medium text-white">{displayName || "Utente"}</p>
+                  <p className="text-xs text-gray-400">{userRole}</p>
                 </div>
               </div>
             ) : (
               <div className="flex justify-center">
                 <div className="w-10 h-10 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center">
-                  <span className="text-white font-bold">JS</span>
+                  <span className="text-white font-bold">{initials}</span>
                 </div>
               </div>
             )}
-            <Link to="/logout">
-              <Button variant="ghost" className="mt-4 text-gray-300 hover:text-white hover:bg-neutral-900 w-full justify-start">
-                <LogOut size={18} />
-                {isSidebarOpen && <span className="ml-2">Logout</span>}
-              </Button>
-            </Link>
+            <Button 
+              variant="ghost" 
+              className="mt-4 text-gray-300 hover:text-white hover:bg-neutral-900 w-full justify-start"
+              onClick={handleLogout}
+            >
+              <LogOut size={18} />
+              {isSidebarOpen && <span className="ml-2">Logout</span>}
+            </Button>
           </div>
         </div>
       </aside>
@@ -156,16 +211,58 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </div>
 
           <div className="flex items-center space-x-4">
-            <Button variant="ghost" size="icon" className="relative text-neutral-300 hover:text-white hover:bg-neutral-900">
-              <Bell size={20} />
-              <span className="absolute top-0 right-0 w-2 h-2 bg-neutral-400 rounded-full"></span>
-            </Button>
+            {(isAdmin || isCollaborator) && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className={cn(
+                    "px-3 py-1 rounded-full text-xs font-medium border cursor-pointer hover:opacity-80 transition-opacity",
+                    isAdmin 
+                      ? "bg-brand-fire/10 text-brand-fire border-brand-fire/30" 
+                      : "bg-brand-water/10 text-brand-water border-brand-water/30"
+                  )}>
+                    {isAdmin ? "Admin" : "Collaboratore"}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56 bg-background border-border">
+                  {isAdmin && (
+                    <>
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin/dashboard" className="flex items-center cursor-pointer">
+                          <Shield className="mr-2 h-4 w-4" />
+                          <span>Vai all'Admin Dashboard</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin/dashboard?tab=users" className="flex items-center cursor-pointer">
+                          <UserCog className="mr-2 h-4 w-4" />
+                          <span>Gestisci Utenti</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link to="/admin/dashboard?tab=community" className="flex items-center cursor-pointer">
+                          <MessageCircle className="mr-2 h-4 w-4" />
+                          <span>Moderazione Community</span>
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
+                  <DropdownMenuItem asChild>
+                    <Link to="/dashboard/settings" className="flex items-center cursor-pointer">
+                      <Settings className="mr-2 h-4 w-4" />
+                      <span>Impostazioni</span>
+                    </Link>
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            <NotificationCenter />
             <div className="hidden md:block h-8 w-px bg-neutral-700"></div>
             <div className="hidden md:flex items-center space-x-2">
               <div className="w-8 h-8 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center">
-                <span className="text-white font-bold text-sm">JS</span>
+                <span className="text-white font-bold text-sm">{initials}</span>
               </div>
-              <span className="text-sm font-medium text-neutral-200">Jane Smith</span>
+              <span className="text-sm font-medium text-neutral-200">{displayName || "Utente"}</span>
             </div>
           </div>
         </header>

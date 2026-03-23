@@ -10,10 +10,203 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "13.0.4"
+    PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
+      ai_conversations: {
+        Row: {
+          created_at: string
+          id: string
+          messages: Json
+          title: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          messages?: Json
+          title?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          messages?: Json
+          title?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_feedback: {
+        Row: {
+          comment: string | null
+          conversation_id: string | null
+          created_at: string
+          id: string
+          message_index: number
+          rating: string
+          user_id: string
+        }
+        Insert: {
+          comment?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          message_index: number
+          rating: string
+          user_id: string
+        }
+        Update: {
+          comment?: string | null
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          message_index?: number
+          rating?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_feedback_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_system_config: {
+        Row: {
+          config_key: string
+          config_value: string
+          created_at: string | null
+          description: string | null
+          id: string
+          is_active: boolean | null
+          sort_order: number | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Insert: {
+          config_key: string
+          config_value: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          sort_order?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Update: {
+          config_key?: string
+          config_value?: string
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean | null
+          sort_order?: number | null
+          updated_at?: string | null
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
+      ai_training_data: {
+        Row: {
+          content: string
+          created_at: string | null
+          created_by: string | null
+          data_type: string | null
+          description: string | null
+          embedding: string | null
+          file_name: string | null
+          file_size: number | null
+          file_url: string | null
+          id: string
+          is_active: boolean | null
+          processed: boolean | null
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string | null
+          created_by?: string | null
+          data_type?: string | null
+          description?: string | null
+          embedding?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          processed?: boolean | null
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string | null
+          created_by?: string | null
+          data_type?: string | null
+          description?: string | null
+          embedding?: string | null
+          file_name?: string | null
+          file_size?: number | null
+          file_url?: string | null
+          id?: string
+          is_active?: boolean | null
+          processed?: boolean | null
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      ai_usage_logs: {
+        Row: {
+          conversation_id: string | null
+          created_at: string
+          id: string
+          model: string
+          response_time_ms: number | null
+          tokens_input: number | null
+          tokens_output: number | null
+          user_id: string | null
+        }
+        Insert: {
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          model: string
+          response_time_ms?: number | null
+          tokens_input?: number | null
+          tokens_output?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          conversation_id?: string | null
+          created_at?: string
+          id?: string
+          model?: string
+          response_time_ms?: number | null
+          tokens_input?: number | null
+          tokens_output?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_usage_logs_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forum_categories: {
         Row: {
           color: string | null
@@ -77,6 +270,44 @@ export type Database = {
           },
         ]
       }
+      forum_post_media: {
+        Row: {
+          created_at: string
+          id: string
+          media_type: string
+          media_url: string
+          post_id: string
+          sort_order: number | null
+          thumbnail_url: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          media_type: string
+          media_url: string
+          post_id: string
+          sort_order?: number | null
+          thumbnail_url?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          media_type?: string
+          media_url?: string
+          post_id?: string
+          sort_order?: number | null
+          thumbnail_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "forum_post_media_post_id_fkey"
+            columns: ["post_id"]
+            isOneToOne: false
+            referencedRelation: "forum_posts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       forum_posts: {
         Row: {
           author_id: string
@@ -119,6 +350,13 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "forum_posts_author_fk"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
             foreignKeyName: "forum_posts_category_id_fkey"
             columns: ["category_id"]
             isOneToOne: false
@@ -156,6 +394,13 @@ export type Database = {
           post_id?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "forum_replies_author_fk"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
           {
             foreignKeyName: "forum_replies_post_id_fkey"
             columns: ["post_id"]
@@ -249,7 +494,15 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "job_postings_posted_by_fk"
+            columns: ["posted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
       }
       mailing_list: {
         Row: {
@@ -310,54 +563,201 @@ export type Database = {
           },
         ]
       }
+      notifications: {
+        Row: {
+          created_at: string
+          id: string
+          is_read: boolean
+          link: string | null
+          message: string
+          related_post_id: string | null
+          related_reply_id: string | null
+          related_user_id: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          message: string
+          related_post_id?: string | null
+          related_reply_id?: string | null
+          related_user_id?: string | null
+          title: string
+          type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_read?: boolean
+          link?: string | null
+          message?: string
+          related_post_id?: string | null
+          related_reply_id?: string | null
+          related_user_id?: string | null
+          title?: string
+          type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
           bio: string | null
+          business_name: string | null
+          city: string | null
           created_at: string
           cv_file_url: string | null
           display_name: string
+          experience_level: string | null
           experience_years: number | null
+          growth_plan: string | null
           id: string
           instagram_url: string | null
+          is_public: boolean | null
           linkedin_url: string | null
           location: string | null
+          onboarding_completed: boolean | null
+          phone_number: string | null
+          preferred_learning_format: string | null
+          primary_goal: string | null
           skills: string[] | null
+          team_size: string | null
+          time_availability: string | null
           updated_at: string
           user_id: string
+          user_type: string | null
           website_url: string | null
         }
         Insert: {
           avatar_url?: string | null
           bio?: string | null
+          business_name?: string | null
+          city?: string | null
           created_at?: string
           cv_file_url?: string | null
           display_name: string
+          experience_level?: string | null
           experience_years?: number | null
+          growth_plan?: string | null
           id?: string
           instagram_url?: string | null
+          is_public?: boolean | null
           linkedin_url?: string | null
           location?: string | null
+          onboarding_completed?: boolean | null
+          phone_number?: string | null
+          preferred_learning_format?: string | null
+          primary_goal?: string | null
           skills?: string[] | null
+          team_size?: string | null
+          time_availability?: string | null
           updated_at?: string
           user_id: string
+          user_type?: string | null
           website_url?: string | null
         }
         Update: {
           avatar_url?: string | null
           bio?: string | null
+          business_name?: string | null
+          city?: string | null
           created_at?: string
           cv_file_url?: string | null
           display_name?: string
+          experience_level?: string | null
           experience_years?: number | null
+          growth_plan?: string | null
           id?: string
           instagram_url?: string | null
+          is_public?: boolean | null
           linkedin_url?: string | null
           location?: string | null
+          onboarding_completed?: boolean | null
+          phone_number?: string | null
+          preferred_learning_format?: string | null
+          primary_goal?: string | null
           skills?: string[] | null
+          team_size?: string | null
+          time_availability?: string | null
           updated_at?: string
           user_id?: string
+          user_type?: string | null
           website_url?: string | null
+        }
+        Relationships: []
+      }
+      security_audit_log: {
+        Row: {
+          action: string
+          id: string
+          ip_address: unknown
+          resource: string
+          timestamp: string | null
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          id?: string
+          ip_address?: unknown
+          resource: string
+          timestamp?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          id?: string
+          ip_address?: unknown
+          resource?: string
+          timestamp?: string | null
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      site_videos: {
+        Row: {
+          created_at: string
+          file_name: string | null
+          id: string
+          is_active: boolean
+          source_type: string
+          thumbnail_url: string | null
+          updated_at: string
+          video_type: string
+          youtube_url: string | null
+          youtube_video_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          file_name?: string | null
+          id?: string
+          is_active?: boolean
+          source_type?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          video_type: string
+          youtube_url?: string | null
+          youtube_video_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          file_name?: string | null
+          id?: string
+          is_active?: boolean
+          source_type?: string
+          thumbnail_url?: string | null
+          updated_at?: string
+          video_type?: string
+          youtube_url?: string | null
+          youtube_video_id?: string | null
         }
         Relationships: []
       }
@@ -393,6 +793,25 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      search_training_data: {
+        Args: {
+          match_count?: number
+          match_threshold?: number
+          query_embedding: string
+        }
+        Returns: {
+          content: string
+          data_type: string
+          description: string
+          id: string
+          similarity: number
+          title: string
+        }[]
+      }
+      validate_access_token: {
+        Args: { token_to_validate: string }
+        Returns: Json
       }
     }
     Enums: {

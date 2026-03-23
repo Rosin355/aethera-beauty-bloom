@@ -1,6 +1,6 @@
-
 import React, { useEffect } from "react";
 import { useOnboardingForm } from "./hooks/useOnboardingForm";
+import UserTypeStep from "./Steps/UserTypeStep";
 import PersonalInfoStep from "./Steps/PersonalInfoStep";
 import ProfessionalExperienceStep from "./Steps/ProfessionalExperienceStep";
 import BusinessGoalsStep from "./Steps/BusinessGoalsStep";
@@ -9,52 +9,75 @@ import LearningPreferencesStep from "./Steps/LearningPreferencesStep";
 interface OnboardingFormProps {
   step: number;
   onValidate?: (isValid: boolean) => void;
+  setSaveHandler?: (handler: () => Promise<boolean>) => void;
 }
 
-const OnboardingForm = ({ step, onValidate }: OnboardingFormProps) => {
+const OnboardingForm = ({ step, onValidate, setSaveHandler }: OnboardingFormProps) => {
   const {
+    userType,
     personalInfo,
     professionalInfo,
     businessGoals,
     learningPreferences,
     errors,
-    validateStep,
+    saveOnboardingData,
     handlers
   } = useOnboardingForm();
   
+  // Expose save handler to parent
+  useEffect(() => {
+    if (setSaveHandler) {
+      setSaveHandler(saveOnboardingData);
+    }
+  }, [setSaveHandler, saveOnboardingData]);
+
   // Validate current step when it changes
   useEffect(() => {
     if (onValidate) {
-      // Prevent infinite updates by not calling validateStep directly in this effect
-      // Instead just check validity based on current state without setting more state
       let isValid = true;
       
       if (step === 0) {
-        // For personal info step
+        // User type step is always valid (has default value)
+        isValid = true;
+      } else if (step === 1) {
+        // Personal info step
         isValid = !!personalInfo.fullName && 
-                 !!personalInfo.businessName && 
                  !!personalInfo.city && 
                  !!personalInfo.phoneNumber;
+        // Business name required only for professionals
+        if (userType === "professional") {
+          isValid = isValid && !!personalInfo.businessName;
+        }
       }
       
       onValidate(isValid);
     }
-  }, [step, onValidate, personalInfo, professionalInfo, businessGoals, learningPreferences]);
+  }, [step, onValidate, personalInfo, userType]);
   
   // Render different form based on step
   switch (step) {
     case 0:
+      // User Type Selection
+      return (
+        <UserTypeStep 
+          userType={userType}
+          onUserTypeChange={handlers.handleUserTypeChange}
+        />
+      );
+
+    case 1:
       // Personal Information
       return (
         <PersonalInfoStep 
           personalInfo={personalInfo}
           onInfoChange={handlers.handlePersonalInfoChange}
           errors={errors}
+          showBusinessName={userType === "professional"}
         />
       );
     
-    case 1:
-      // Professional Experience
+    case 2:
+      // Professional Experience (only for professionals)
       return (
         <ProfessionalExperienceStep 
           experience={professionalInfo.experience}
@@ -64,7 +87,7 @@ const OnboardingForm = ({ step, onValidate }: OnboardingFormProps) => {
         />
       );
     
-    case 2:
+    case 3:
       // Business Goals
       return (
         <BusinessGoalsStep 
@@ -75,7 +98,7 @@ const OnboardingForm = ({ step, onValidate }: OnboardingFormProps) => {
         />
       );
     
-    case 3:
+    case 4:
       // Learning Preferences
       return (
         <LearningPreferencesStep 

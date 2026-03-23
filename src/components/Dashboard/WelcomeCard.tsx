@@ -1,20 +1,26 @@
 
-const WelcomeCard = () => {
+interface WelcomeCardProps {
+  displayName?: string;
+}
+
+const WelcomeCard = ({ displayName = "Ospite" }: WelcomeCardProps) => {
   const currentTime = new Date();
   const hour = currentTime.getHours();
   
-  let greeting = "Good morning";
+  let greeting = "Buongiorno";
   if (hour >= 12 && hour < 18) {
-    greeting = "Good afternoon";
+    greeting = "Buon pomeriggio";
   } else if (hour >= 18) {
-    greeting = "Good evening";
+    greeting = "Buonasera";
   }
+
+  const firstName = displayName.split(' ')[0];
 
   return (
     <div className="glass rounded-2xl p-6 md:p-8 shadow-sm text-white mb-6 border border-neutral-800">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold font-playfair">{greeting}, Jane!</h1>
+          <h1 className="text-2xl md:text-3xl font-bold font-playfair">{greeting}, {firstName}!</h1>
           <p className="mt-2 text-neutral-300">
             Here's what's happening with your beauty business today.
           </p>

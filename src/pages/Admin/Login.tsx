@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { Helmet } from "react-helmet";
 import Logo from "@/components/Layout/Logo";
+import { supabase } from "@/integrations/supabase/client";
 
 const AdminLogin = () => {
   const [email, setEmail] = useState("");
@@ -15,28 +16,63 @@ const AdminLogin = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
-    // Simulate admin authentication process
-    setTimeout(() => {
-      setLoading(false);
-      // Only allow admin@4elementi.it/admin123 to login as admin
-      if (email === "admin@4elementi.it" && password === "admin123") {
+    try {
+      // Use proper Supabase authentication instead of hardcoded credentials
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
         toast({
-          title: "Accesso effettuato",
-          description: "Benvenuto nell'area amministrazione.",
-        });
-        navigate("/admin/dashboard");
-      } else {
-        toast({
-          title: "Accesso negato",
-          description: "Credenziali amministratore non valide",
+          title: "Errore di accesso",
+          description: error.message,
           variant: "destructive",
         });
+      } else if (data.user) {
+        // Check if user has admin role
+        const { data: roleData, error: roleError } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', data.user.id)
+          .eq('role', 'admin')
+          .maybeSingle();
+
+        if (roleError) {
+          toast({
+            title: "Errore",
+            description: "Errore nella verifica dei permessi.",
+            variant: "destructive",
+          });
+          await supabase.auth.signOut();
+        } else if (roleData) {
+          toast({
+            title: "Accesso effettuato",
+            description: "Benvenuto nell'area amministrazione.",
+          });
+          navigate("/admin/dashboard");
+        } else {
+          toast({
+            title: "Accesso negato",
+            description: "Non hai i permessi di amministratore.",
+            variant: "destructive",
+          });
+          await supabase.auth.signOut();
+        }
       }
-    }, 1500);
+    } catch (error) {
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante l'accesso.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (

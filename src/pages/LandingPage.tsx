@@ -1,21 +1,44 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import { GlowCard } from "@/components/ui/spotlight-card";
 import { AuroraBackground } from "@/components/ui/aurora-background";
-import { Check, Play, Users, Award, BookOpen, Headphones } from "lucide-react";
+import { Check, Play, Users, Award, BookOpen, Headphones, User, Download, ChevronDown, ArrowRight } from "lucide-react";
+import { AnimatedButton } from "@/components/ui/animated-button";
 import { Glow } from "@/components/ui/glow";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { getSiteVideo, SiteVideo, getYouTubeEmbedUrl } from "@/lib/siteVideos";
+import { getVideoUrl } from "@/lib/videoStorage";
+import VideoPlayer from "@/components/ui/VideoPlayer";
 const LandingPage = () => {
   const [formData, setFormData] = useState({
     name: "",
     email: ""
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [newsletterData, setNewsletterData] = useState({
+    name: "",
+    email: ""
+  });
+  const [isSubmittingNewsletter, setIsSubmittingNewsletter] = useState(false);
   const { toast } = useToast();
-  const [useIframePreview, setUseIframePreview] = useState(true);
+  const navigate = useNavigate();
+  const [previewVideo, setPreviewVideo] = useState<SiteVideo | null>(null);
+
+  useEffect(() => {
+    const loadVideo = async () => {
+      const video = await getSiteVideo('preview'); // Usando 'preview' per il modal
+      if (video) {
+        setPreviewVideo(video);
+      }
+    };
+    
+    loadVideo();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,33 +52,56 @@ const LandingPage = () => {
     }
 
     setIsSubmitting(true);
+    console.log('🔍 Inizio registrazione per:', formData.email);
     try {
-      const { data, error } = await supabase
-        .from('mailing_list')
-        .insert([{
+      const response = await supabase.functions.invoke('mailing-list-signup', {
+        body: {
           name: formData.name.trim(),
           email: formData.email.trim(),
-          source: 'landing_page'
-        }])
-        .select()
-        .single();
-
-      if (error) {
-        if (error.code === '23505') {
-          toast({
-            title: "Email già registrata",
-            description: "Questa email è già registrata. Controlla la tua casella per il link al video.",
-            variant: "destructive"
-          });
-        } else {
-          throw error;
+          source: 'hero_section'
         }
-        return;
+      });
+
+      console.log('📧 Risposta edge function:', response);
+
+      if (response.error) {
+        if (response.error.message?.includes('già registrata')) {
+          // Email già registrata, recupero l'access token
+          const { data: existingData } = await supabase
+            .from('mailing_list')
+            .select('access_token')
+            .eq('email', formData.email.trim())
+            .single();
+          
+          if (existingData?.access_token) {
+            toast({
+              title: "Accesso trovato!",
+              description: "Ti stiamo reindirizzando alla tua area riservata. Email di promemoria inviata!",
+            });
+            
+            setTimeout(() => {
+              window.location.href = `/welcome?token=${existingData.access_token}`;
+            }, 1000);
+            return;
+          }
+        }
+        throw new Error(response.error.message || 'Errore durante la registrazione');
       }
 
       // Redirect to welcome page with token
+      const data = response.data;
       if (data?.access_token) {
-        window.location.href = `/welcome?token=${data.access_token}`;
+        // Mostra feedback basato sullo stato dell'email
+        const emailStatus = data.email_sent ? "Email di benvenuto inviata!" : "Registrazione completata (email in sospeso)";
+        
+        toast({
+          title: "Perfetto! 🎉",
+          description: emailStatus + " Ti stiamo reindirizzando...",
+        });
+        
+        setTimeout(() => {
+          window.location.href = `/welcome?token=${data.access_token}`;
+        }, 1500);
       }
 
     } catch (error) {
@@ -69,14 +115,63 @@ const LandingPage = () => {
       setIsSubmitting(false);
     }
   };
+
+  const handleNewsletterSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newsletterData.name.trim() || !newsletterData.email.trim()) {
+      toast({
+        title: "Campi obbligatori",
+        description: "Inserisci nome e email per iscriverti alla newsletter",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setIsSubmittingNewsletter(true);
+    try {
+      const response = await supabase.functions.invoke('newsletter-subscribe', {
+        body: {
+          email: newsletterData.email.trim(),
+          name: newsletterData.name.trim(),
+          source: 'newsletter_section'
+        }
+      });
+
+      if (response.error) {
+        throw response.error;
+      }
+
+      toast({
+        title: "Iscrizione completata!",
+        description: "Ti sei iscritto con successo alla nostra newsletter. Riceverai presto contenuti esclusivi!",
+      });
+
+      setNewsletterData({ name: "", email: "" });
+
+    } catch (error: any) {
+      console.error('Errore durante l\'iscrizione alla newsletter:', error);
+      
+      const errorMessage = error.message?.includes('Email già iscritta') 
+        ? "Questa email è già iscritta alla newsletter"
+        : "Si è verificato un errore. Riprova tra qualche minuto.";
+        
+      toast({
+        title: "Errore",
+        description: errorMessage,
+        variant: "destructive"
+      });
+    } finally {
+      setIsSubmittingNewsletter(false);
+    }
+  };
   return <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
       <Glow variant="top" className="opacity-30" />
       
       {/* Header */}
-      <header className="relative z-10 px-4 py-6">
+      <header className="relative z-10 px-6 py-4 sm:px-4 sm:py-6">
         <div className="container mx-auto flex justify-between items-center">
           <div className="flex items-center space-x-3">
-            <img src="/4-elementi-logo.png" alt="4 Elementi Italia Logo" className="h-12 w-auto" />
+            <img src="/4-elementi-logo.png" alt="4 Elementi Italia Logo" className="h-10 sm:h-12 w-auto" />
             
           </div>
           <nav className="hidden md:flex space-x-8">
@@ -89,69 +184,64 @@ const LandingPage = () => {
       </header>
 
       {/* Hero Section with Aurora Background */}
-      <AuroraBackground className="h-auto py-16">
-        <div className="container mx-auto relative z-10">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div className="space-y-8">
-              <div className="space-y-4">
-                <h1 className="font-playfair text-4xl lg:text-6xl font-bold leading-tight text-white">
+      <AuroraBackground className="h-auto py-8 sm:py-12 lg:py-16">
+        <div className="container mx-auto relative z-10 px-6 sm:px-4">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+            <div className="space-y-4 sm:space-y-6 lg:space-y-8">
+              <div className="space-y-2 sm:space-y-3 lg:space-y-4">
+                <h1 className="font-playfair text-2xl sm:text-3xl lg:text-5xl xl:text-6xl font-bold leading-tight text-white">
                   SEI UN'ESTETISTA
                   <span className="gradient-text"> PROFESSIONISTA?</span>
                 </h1>
-                <p className="text-xl text-gray-300 leading-relaxed">
+                <p className="text-base sm:text-lg lg:text-xl text-gray-300 leading-relaxed">
                   Ecco come strutturare il tuo listino in modo strategico (senza stress)
                 </p>
               </div>
               
-              <div className="space-y-6">
-                <p className="text-muted-foreground leading-relaxed">
+              <div className="space-y-4 sm:space-y-6">
+                <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
                   Ciao! Se sei un'estetista professionista e ti stai chiedendo come strutturare un listino prezzi che sia chiaro, professionale e che valorizzi davvero i tuoi servizi... sei nel posto giusto.
                 </p>
-                <p className="text-muted-foreground leading-relaxed">
+                <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
                   Mi chiamo <strong className="text-white">Davide</strong> e con <strong className="text-white">4 Elementi Italia</strong> aiutiamo estetiste e professionisti del benessere a diventare imprenditori consapevoli, strategici e autonomi – senza stress, senza perdere tempo in corsi complicati o contenuti poco chiari.
                 </p>
               </div>
 
-              <Button size="lg" className="bg-white hover:bg-gray-200 text-black px-8 py-6 text-lg font-medium">
-                <Play className="w-5 h-5 mr-2" />
-                ACCEDI AL VIDEO GRATUITO
-              </Button>
+              <div className="w-full sm:w-auto">
+                <AnimatedButton
+                  IconLeft={Download}
+                  IconRight={ChevronDown}
+                  className="w-full sm:w-auto text-sm sm:text-base lg:text-lg px-4 sm:px-6 lg:px-8"
+                  onClick={() => document.getElementById('video-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+                >
+                  SCARICA IL MINI CORSO GRATUITO
+                </AnimatedButton>
+                <p className="text-xs sm:text-sm text-white/70 text-center sm:text-left mt-3">
+                  ✓ Nessun pagamento richiesto • Download immediato • Guarda quando vuoi
+                </p>
+              </div>
             </div>
 
-            <div className="relative space-y-6">
+            <div className="relative space-y-4 sm:space-y-6 mt-8 lg:mt-0">
               {/* Video Anteprima */}
               <div className="w-full aspect-video bg-card/30 backdrop-blur-sm border-white/10 border rounded-lg overflow-hidden">
-                {useIframePreview ? (
-                  <iframe
-                    src="https://drive.google.com/file/d/1uUjhPnxnqhI7YuYlgUBECX0D4Umzd-X_/preview"
+                {previewVideo ? (
+                  <VideoPlayer 
+                    video={previewVideo}
                     className="w-full h-full"
-                    allow="autoplay; encrypted-media"
-                    allowFullScreen
-                    title="Video anteprima"
-                    style={{ backgroundColor: '#000' }}
                   />
                 ) : (
-                  <video 
-                    controls 
-                    preload="metadata"
-                    className="w-full h-full"
-                    style={{ backgroundColor: '#000' }}
-                    onLoadStart={() => console.log('Video: Load started')}
-                    onCanPlay={() => console.log('Video: Can play')}
-                    onError={(e) => { console.error('Video error:', e); setUseIframePreview(true); }}
-                    onLoadedMetadata={() => console.log('Video: Metadata loaded')}
-                  >
-                    <source src="/video-anteprima.mp4" type="video/mp4" />
-                    Il tuo browser non supporta il tag video.
-                  </video>
+                  <div className="w-full h-full bg-gray-900 flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
+                  </div>
                 )}
               </div>
               
-              <Card className="bg-card/50 backdrop-blur-sm border-white/10 p-8">
-                <div className="space-y-6">
+              <Card id="video-form" className="bg-card/50 backdrop-blur-sm border-white/10 p-6 sm:p-8">
+                <div className="space-y-4 sm:space-y-6">
                   <div className="text-center">
-                    <h3 className="font-playfair text-2xl font-bold mb-4">ACCEDI AL VIDEO GRATUITO</h3>
-                    <p className="text-muted-foreground">Compila il form e ricevi subito il link</p>
+                    <h3 className="font-playfair text-xl sm:text-2xl font-bold mb-3 sm:mb-4">SCARICA IL VIDEO GRATUITO</h3>
+                    <p className="text-muted-foreground text-sm sm:text-base">Compila il form e ricevi subito il link per scaricare il video completo</p>
                   </div>
                   
                   <form onSubmit={handleSubmit} className="space-y-4">
@@ -163,14 +253,39 @@ const LandingPage = () => {
                     ...formData,
                     email: e.target.value
                   })} className="bg-background/50 border-white/20" />
-                    <Button 
-                      type="submit" 
-                      disabled={isSubmitting}
-                      className="w-full bg-white hover:bg-gray-200 text-black font-medium"
-                    >
-                      {isSubmitting ? "INVIO IN CORSO..." : "RICEVI IL VIDEO GRATUITO"}
-                    </Button>
+                    {isSubmitting ? (
+                      <Button 
+                        type="submit" 
+                        disabled
+                        className="w-full bg-white hover:bg-gray-200 text-black font-medium text-sm sm:text-base py-3"
+                      >
+                        INVIO IN CORSO...
+                      </Button>
+                    ) : (
+                      <AnimatedButton
+                        type="submit"
+                        IconLeft={Download}
+                        IconRight={ChevronDown}
+                        className="text-sm sm:text-base py-3"
+                        fullWidth
+                      >
+                        SCARICA IL MINI CORSO GRATUITO
+                      </AnimatedButton>
+                    )}
                   </form>
+                  
+                  {/* Success message */}
+                  <div className="mt-4 p-3 bg-white/10 border border-white/20 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <div className="text-white/80 mt-0.5">✅</div>
+                      <p className="text-white/90 text-xs sm:text-sm">
+                        Riceverai immediatamente un'email con il link per scaricare il video completo. Controlla anche la cartella spam!
+                      </p>
+                    </div>
+                  </div>
+                  <p className="text-xs text-white/60 text-center">
+                    ✓ Nessun pagamento richiesto • Download immediato • Guarda quando vuoi
+                  </p>
                 </div>
               </Card>
             </div>
@@ -179,45 +294,45 @@ const LandingPage = () => {
       </AuroraBackground>
 
       {/* What You'll Learn */}
-      <section id="video" className="relative z-10 px-4 py-16">
+      <section id="video" className="relative z-10 px-6 sm:px-4 py-12 sm:py-16">
         <div className="container mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="font-playfair text-3xl lg:text-4xl font-bold mb-4">
+          <div className="text-center mb-8 sm:mb-12">
+            <h2 className="font-playfair text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4">
               COSA IMPARERAI NEL VIDEO
             </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
+            <p className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
               Ti mostro, passo dopo passo, tutto quello che serve per creare un listino strategico e professionale
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            <GlowCard glowColor="orange" customSize className="w-full p-8 text-center aspect-auto h-auto">
-              <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Check className="w-8 h-8 text-white" />
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 items-stretch">
+            <GlowCard glowColor="orange" customSize className="w-full p-6 sm:p-8 text-center min-h-[280px] sm:h-[320px] flex flex-col items-center">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 shrink-0">
+                <Check className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
               </div>
-              <h3 className="font-playfair text-xl font-bold mb-4 text-white">CALCOLO DEL COSTO ORARIO</h3>
-              <p className="text-muted-foreground">
+              <h3 className="font-playfair text-lg sm:text-xl font-bold text-white text-center leading-tight mb-2 min-h-[48px] sm:min-h-[56px] flex items-center justify-center">CALCOLO DEL<br />COSTO ORARIO</h3>
+              <p className="text-muted-foreground text-center leading-relaxed text-xs sm:text-sm max-w-[32ch] sm:max-w-[34ch] mx-auto min-h-[60px] sm:min-h-[72px] flex items-center justify-center">
                 Come organizzare il tuo listino in modo strategico (anche se non sei brava con i numeri o il marketing)
               </p>
             </GlowCard>
 
-            <GlowCard glowColor="blue" customSize className="w-full p-8 text-center aspect-auto h-auto">
-              <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Check className="w-8 h-8 text-white" />
+            <GlowCard glowColor="blue" customSize className="w-full p-6 sm:p-8 text-center min-h-[280px] sm:h-[320px] flex flex-col items-center">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 shrink-0">
+                <Check className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
               </div>
-              <h3 className="font-playfair text-xl font-bold mb-4 text-white">CALCOLO DEL<br />PRODOTTO</h3>
-              <p className="text-muted-foreground">
+              <h3 className="font-playfair text-lg sm:text-xl font-bold text-white text-center leading-tight mb-2 min-h-[48px] sm:min-h-[56px] flex items-center justify-center">CALCOLO DEL<br />PRODOTTO</h3>
+              <p className="text-muted-foreground text-center leading-relaxed text-xs sm:text-sm max-w-[32ch] sm:max-w-[34ch] mx-auto min-h-[60px] sm:min-h-[72px] flex items-center justify-center">
                 Cosa scrivere per trasmettere professionalità e farti scegliere dai tuoi clienti
               </p>
             </GlowCard>
 
-            <GlowCard glowColor="green" customSize className="w-full p-8 text-center aspect-auto h-auto">
-              <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6">
-                <Check className="w-8 h-8 text-white" />
+            <GlowCard glowColor="green" customSize className="w-full p-6 sm:p-8 text-center min-h-[280px] sm:h-[320px] flex flex-col items-center sm:col-span-2 lg:col-span-1">
+              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 shrink-0">
+                <Check className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
               </div>
-              <h3 className="font-playfair text-xl font-bold mb-4 text-white">CREA IL LISTINO PREZZI EFFICACE</h3>
-              <p className="text-muted-foreground">
-                Come creare un listino grafico accattivante e facile da aggiornare, direttamente con Canva
+              <h3 className="font-playfair text-lg sm:text-xl font-bold text-white text-center leading-tight mb-2 min-h-[48px] sm:min-h-[56px] flex items-center justify-center">CALCOLO DEL<br />MARGINE OPERATIVO</h3>
+              <p className="text-muted-foreground text-center leading-relaxed text-xs sm:text-sm max-w-[32ch] sm:max-w-[34ch] mx-auto min-h-[60px] sm:min-h-[72px] flex items-center justify-center">
+                La Formula Per Valutare Il Prezzo Giusto
               </p>
             </GlowCard>
           </div>
@@ -270,9 +385,13 @@ const LandingPage = () => {
                   <p className="text-sm text-muted-foreground">
                     📩 Riceverai immediatamente il link per guardarlo quando vuoi, dove vuoi.
                   </p>
-                  <Button className="bg-white hover:bg-gray-200 text-black px-8 font-medium">
-                    ACCEDI SUBITO AL VIDEO
-                  </Button>
+                  <AnimatedButton
+                    IconLeft={Download}
+                    IconRight={ChevronDown}
+                    onClick={() => document.getElementById('video-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+                  >
+                    SCARICA SUBITO IL VIDEO
+                  </AnimatedButton>
                 </div>
               </Card>
             </div>
@@ -539,10 +658,122 @@ const LandingPage = () => {
                 <strong className="text-white">Davide</strong> – Fondatore di 4 Elementi Italia
               </p>
             </div>
-            <Button size="lg" className="bg-white hover:bg-gray-200 text-black px-12 py-6 text-lg font-medium">
-              <Play className="w-6 h-6 mr-3" />
-              ACCEDI AL VIDEO GRATUITO
-            </Button>
+            <div>
+              <AnimatedButton
+                IconLeft={Download}
+                IconRight={ChevronDown}
+                className="px-12 py-6 text-lg"
+                onClick={() => document.getElementById('video-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+              >
+                SCARICA IL VIDEO GRATUITO
+              </AnimatedButton>
+              <p className="text-sm text-white/70 mt-4 text-center">
+                ✓ Nessun pagamento richiesto • Download immediato • Guarda quando vuoi
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Newsletter Section */}
+      <section className="py-20 px-4 relative overflow-hidden bg-gradient-to-br from-gray-900 to-gray-800">
+        <Glow variant="center" />
+        
+        <div className="container mx-auto relative z-10">
+          <div className="max-w-6xl mx-auto">
+            <div className="grid md:grid-cols-2 gap-12 items-center">
+              {/* Left Column - Benefits */}
+              <div className="space-y-8">
+                <div>
+                  <h2 className="font-playfair text-3xl md:text-4xl font-bold text-white mb-6 leading-tight">
+                    Sta per arrivare qualcosa di grande.
+                  </h2>
+                  <p className="text-muted-foreground text-lg mb-8">
+                    Iscriviti ora per non perderti il lancio ufficiale della piattaforma e accedere in anteprima alla community riservata ai professionisti del settore.
+                  </p>
+                </div>
+                
+                <div className="space-y-4">
+                  {[
+                    "Tips settimanali esclusivi per far crescere il tuo business",
+                    "Strategie pratiche e strumenti pronti all'uso",
+                    "Accesso anticipato a corsi, risorse e novità"
+                  ].map((benefit, index) => (
+                    <div key={index} className="flex items-center space-x-3">
+                      <div className="w-6 h-6 bg-[#6AA8B3] rounded-full flex items-center justify-center shrink-0">
+                        <Check className="w-4 h-4 text-white" />
+                      </div>
+                      <span className="text-white font-medium">{benefit}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Right Column - Newsletter Form */}
+              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8">
+                <div className="text-center mb-8">
+                  <div className="w-16 h-16 bg-[#6AA8B3]/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <User className="w-8 h-8 text-[#6AA8B3]" />
+                  </div>
+                  <h3 className="font-playfair text-2xl font-bold text-white mb-2">
+                    👉 Iscriviti oggi. Sii tra i primi a entrare.
+                  </h3>
+                </div>
+
+                <form onSubmit={handleNewsletterSubmit} className="space-y-6">
+                  <div>
+                    <Label htmlFor="newsletter-name" className="text-white mb-2 block">
+                      Nome *
+                    </Label>
+                    <Input
+                      id="newsletter-name"
+                      type="text"
+                      value={newsletterData.name}
+                      onChange={(e) => setNewsletterData(prev => ({ ...prev, name: e.target.value }))}
+                      placeholder="Il tuo nome"
+                      required
+                      disabled={isSubmittingNewsletter}
+                      className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:bg-white/20 transition-all duration-200"
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="newsletter-email" className="text-white mb-2 block">
+                      Email *
+                    </Label>
+                    <Input
+                      id="newsletter-email"
+                      type="email"
+                      value={newsletterData.email}
+                      onChange={(e) => setNewsletterData(prev => ({ ...prev, email: e.target.value }))}
+                      placeholder="la.tua.email@esempio.com"
+                      required
+                      disabled={isSubmittingNewsletter}
+                      className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:bg-white/20 transition-all duration-200"
+                    />
+                  </div>
+
+                  <Button 
+                    type="submit" 
+                    disabled={isSubmittingNewsletter}
+                    className="w-full bg-gradient-to-r from-[#6AA8B3] to-[#E46A39] hover:from-[#5a97a2] hover:to-[#d45f32] text-white font-semibold py-3 transition-all duration-300 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {isSubmittingNewsletter ? (
+                      <div className="flex items-center justify-center space-x-2">
+                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        <span>Iscrizione in corso...</span>
+                      </div>
+                    ) : (
+                      'ISCRIVITI ALLA NEWSLETTER'
+                    )}
+                  </Button>
+                </form>
+
+                <p className="text-xs text-gray-400 text-center mt-4">
+                  Rispettiamo la tua privacy. Nessuno spam, solo contenuti di valore.
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -552,11 +783,41 @@ const LandingPage = () => {
         <div className="container mx-auto text-center">
           <div className="flex items-center justify-center space-x-3 mb-4">
             <img src="/4-elementi-logo.png" alt="4 Elementi Italia Logo" className="h-10 w-auto" />
-            
           </div>
-          <p className="text-muted-foreground">
+          <p className="text-muted-foreground mb-2">
             © 2024 4 Elementi Italia. Tutti i diritti riservati.
           </p>
+          <p className="text-muted-foreground text-sm">
+            Hai perso l'email di accesso?{' '}
+            <Button 
+              variant="link" 
+              onClick={() => navigate('/recupera-accesso')}
+              className="p-0 h-auto text-[#6AA8B3] hover:text-[#6AA8B3]/80 text-sm"
+            >
+              Recupera qui
+            </Button>
+          </p>
+          <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm">
+            <a 
+              href="https://www.iubenda.com/privacy-policy/19385152" 
+              className="iubenda-white iubenda-noiframe iubenda-embed hover:underline" 
+              title="Privacy Policy"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Privacy Policy
+            </a>
+            <span className="text-muted-foreground">•</span>
+            <a 
+              href="https://www.iubenda.com/privacy-policy/19385152/cookie-policy" 
+              className="iubenda-white iubenda-noiframe iubenda-embed hover:underline" 
+              title="Cookie Policy"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Cookie Policy
+            </a>
+          </div>
         </div>
       </footer>
     </div>;

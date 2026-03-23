@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { 
   Card,
@@ -18,78 +17,55 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import {
-  ChevronDown, 
-  ChevronUp, 
-  Search,
-  ArrowUpDown
-} from "lucide-react";
+import { Search, Loader2 } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { supabase } from "@/integrations/supabase/client";
+import { format } from "date-fns";
+import { it } from "date-fns/locale";
 
-// Dati di esempio
-const dummyClients = [
-  { 
-    id: "1", 
-    name: "Maria Rossi", 
-    businessName: "Beauty Spa Milano", 
-    email: "maria@beautyspa.it",
-    phone: "+39 333 1234567",
-    signupDate: "15/05/2023",
-    status: "active",
-    revenue: 4850,
-    performance: "high"
-  },
-  { 
-    id: "2", 
-    name: "Giulia Bianchi", 
-    businessName: "Estetica Giulia", 
-    email: "giulia@esteticagiulia.it",
-    phone: "+39 333 7654321",
-    signupDate: "22/06/2023",
-    status: "active",
-    revenue: 3200,
-    performance: "medium"
-  },
-  { 
-    id: "3", 
-    name: "Alessandro Verdi", 
-    businessName: "Barber Shop Roma", 
-    email: "alessandro@barbershop.it",
-    phone: "+39 333 9876543",
-    signupDate: "10/03/2023",
-    status: "inactive",
-    revenue: 1250,
-    performance: "low"
-  },
-  { 
-    id: "4", 
-    name: "Francesca Neri", 
-    businessName: "Beauty Center Napoli", 
-    email: "francesca@beautycenter.it",
-    phone: "+39 333 5678901",
-    signupDate: "05/07/2023",
-    status: "active",
-    revenue: 5670,
-    performance: "high"
-  },
-  { 
-    id: "5", 
-    name: "Roberto Russo", 
-    businessName: "Hair Studio Firenze", 
-    email: "roberto@hairstudio.it",
-    phone: "+39 333 1122334",
-    signupDate: "18/04/2023",
-    status: "active",
-    revenue: 2980,
-    performance: "medium"
-  }
-];
+interface Client {
+  id: string;
+  user_id: string;
+  display_name: string;
+  business_name: string | null;
+  city: string | null;
+  phone_number: string | null;
+  user_type: string | null;
+  onboarding_completed: boolean | null;
+  created_at: string;
+  email?: string;
+}
 
 const ClientsList = () => {
-  const [clients, setClients] = useState(dummyClients);
+  const [clients, setClients] = useState<Client[]>([]);
+  const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [filterStatus, setFilterStatus] = useState("all");
-  const [filterPerformance, setFilterPerformance] = useState("all");
+  const [filterUserType, setFilterUserType] = useState("all");
+  const [filterOnboarding, setFilterOnboarding] = useState("all");
+  
+  useEffect(() => {
+    fetchClients();
+  }, []);
+
+  const fetchClients = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching clients:', error);
+        return;
+      }
+
+      setClients(data || []);
+    } catch (err) {
+      console.error('Error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
   
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -97,124 +73,133 @@ const ClientsList = () => {
   
   const filteredClients = clients.filter(client => {
     const matchesSearch = 
-      client.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.businessName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.email.toLowerCase().includes(searchTerm.toLowerCase());
+      client.display_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.business_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.city?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesStatus = filterStatus === "all" || client.status === filterStatus;
-    const matchesPerformance = filterPerformance === "all" || client.performance === filterPerformance;
+    const matchesUserType = filterUserType === "all" || client.user_type === filterUserType;
+    const matchesOnboarding = filterOnboarding === "all" || 
+      (filterOnboarding === "completed" && client.onboarding_completed) ||
+      (filterOnboarding === "pending" && !client.onboarding_completed);
     
-    return matchesSearch && matchesStatus && matchesPerformance;
+    return matchesSearch && matchesUserType && matchesOnboarding;
   });
   
-  const getStatusBadge = (status: string) => {
-    switch(status) {
-      case "active":
-        return <Badge className="bg-green-500">Attivo</Badge>;
-      case "inactive":
-        return <Badge variant="outline" className="bg-gray-100 text-gray-800">Inattivo</Badge>;
-      default:
-        return <Badge variant="outline">Sconosciuto</Badge>;
-    }
-  };
-  
-  const getPerformanceBadge = (performance: string) => {
-    switch(performance) {
-      case "high":
-        return <Badge className="bg-brand-fire">Alta</Badge>;
-      case "medium":
-        return <Badge className="bg-brand-water">Media</Badge>;
-      case "low":
-        return <Badge variant="outline" className="bg-gray-100 text-gray-800">Bassa</Badge>;
+  const getUserTypeBadge = (userType: string | null) => {
+    switch(userType) {
+      case "professional":
+        return <Badge className="bg-brand-fire">Professionista</Badge>;
+      case "user":
+        return <Badge variant="outline" className="bg-muted text-muted-foreground">Utente</Badge>;
       default:
         return <Badge variant="outline">N/D</Badge>;
     }
   };
+  
+  const getOnboardingBadge = (completed: boolean | null) => {
+    if (completed) {
+      return <Badge className="bg-green-500">Completato</Badge>;
+    }
+    return <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300">In attesa</Badge>;
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
-      <Card>
+      <Card className="bg-neutral-900 border-neutral-800">
         <CardHeader>
-          <CardTitle className="text-xl">Lista Clienti</CardTitle>
+          <CardTitle className="text-xl text-foreground">Lista Clienti ({clients.length})</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col md:flex-row gap-4 mb-6">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground" size={18} />
               <Input
-                placeholder="Cerca per nome, business o email..."
-                className="pl-10"
+                placeholder="Cerca per nome, business o città..."
+                className="pl-10 bg-neutral-800 border-neutral-700"
                 value={searchTerm}
                 onChange={handleSearch}
               />
             </div>
             <div className="flex space-x-2">
               <div className="w-40">
-                <Select value={filterStatus} onValueChange={setFilterStatus}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Stato" />
+                <Select value={filterUserType} onValueChange={setFilterUserType}>
+                  <SelectTrigger className="bg-neutral-800 border-neutral-700">
+                    <SelectValue placeholder="Tipo utente" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Tutti gli stati</SelectItem>
-                    <SelectItem value="active">Attivo</SelectItem>
-                    <SelectItem value="inactive">Inattivo</SelectItem>
+                    <SelectItem value="all">Tutti i tipi</SelectItem>
+                    <SelectItem value="professional">Professionista</SelectItem>
+                    <SelectItem value="user">Utente</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="w-40">
-                <Select value={filterPerformance} onValueChange={setFilterPerformance}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Performance" />
+                <Select value={filterOnboarding} onValueChange={setFilterOnboarding}>
+                  <SelectTrigger className="bg-neutral-800 border-neutral-700">
+                    <SelectValue placeholder="Onboarding" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Tutte</SelectItem>
-                    <SelectItem value="high">Alta</SelectItem>
-                    <SelectItem value="medium">Media</SelectItem>
-                    <SelectItem value="low">Bassa</SelectItem>
+                    <SelectItem value="all">Tutti</SelectItem>
+                    <SelectItem value="completed">Completato</SelectItem>
+                    <SelectItem value="pending">In attesa</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
             </div>
           </div>
           
-          <div className="border rounded-md overflow-hidden">
+          <div className="border border-neutral-800 rounded-md overflow-hidden">
             <Table>
               <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[250px]">Nome / Business</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Registrazione</TableHead>
-                  <TableHead>Stato</TableHead>
-                  <TableHead>Ricavi</TableHead>
-                  <TableHead>Performance</TableHead>
-                  <TableHead className="text-right">Azioni</TableHead>
+                <TableRow className="border-neutral-800 hover:bg-neutral-800/50">
+                  <TableHead className="w-[250px] text-muted-foreground">Nome / Business</TableHead>
+                  <TableHead className="text-muted-foreground">Città</TableHead>
+                  <TableHead className="text-muted-foreground">Telefono</TableHead>
+                  <TableHead className="text-muted-foreground">Tipo</TableHead>
+                  <TableHead className="text-muted-foreground">Onboarding</TableHead>
+                  <TableHead className="text-muted-foreground">Registrazione</TableHead>
+                  <TableHead className="text-right text-muted-foreground">Azioni</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredClients.length > 0 ? (
                   filteredClients.map((client) => (
-                    <TableRow key={client.id}>
+                    <TableRow key={client.id} className="border-neutral-800 hover:bg-neutral-800/50">
                       <TableCell>
                         <div>
-                          <div className="font-medium">{client.name}</div>
-                          <div className="text-sm text-gray-500">{client.businessName}</div>
+                          <div className="font-medium text-foreground">{client.display_name}</div>
+                          {client.business_name && (
+                            <div className="text-sm text-muted-foreground">{client.business_name}</div>
+                          )}
                         </div>
                       </TableCell>
-                      <TableCell>{client.email}</TableCell>
-                      <TableCell>{client.signupDate}</TableCell>
-                      <TableCell>{getStatusBadge(client.status)}</TableCell>
-                      <TableCell>€{client.revenue.toLocaleString()}</TableCell>
-                      <TableCell>{getPerformanceBadge(client.performance)}</TableCell>
+                      <TableCell className="text-muted-foreground">{client.city || '-'}</TableCell>
+                      <TableCell className="text-muted-foreground">{client.phone_number || '-'}</TableCell>
+                      <TableCell>{getUserTypeBadge(client.user_type)}</TableCell>
+                      <TableCell>{getOnboardingBadge(client.onboarding_completed)}</TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {format(new Date(client.created_at), 'dd/MM/yyyy', { locale: it })}
+                      </TableCell>
                       <TableCell className="text-right">
-                        <Link to={`/admin/clients/${client.id}`}>
-                          <Button variant="outline" size="sm">Dettagli</Button>
+                        <Link to={`/admin/clients/${client.user_id}`}>
+                          <Button variant="outline" size="sm" className="border-neutral-700 hover:bg-neutral-800">
+                            Dettagli
+                          </Button>
                         </Link>
                       </TableCell>
                     </TableRow>
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="h-24 text-center">
+                    <TableCell colSpan={7} className="h-24 text-center text-muted-foreground">
                       Nessun cliente trovato
                     </TableCell>
                   </TableRow>

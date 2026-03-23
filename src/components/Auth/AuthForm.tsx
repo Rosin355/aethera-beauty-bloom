@@ -47,7 +47,7 @@ const AuthForm = ({ type }: AuthFormProps) => {
           return;
         }
         toast.success("Account creato! Controlla la tua email per confermare l'account.");
-        navigate("/dashboard");
+        navigate("/onboarding");
       }
     } catch (error) {
       toast.error("Si è verificato un errore imprevisto");
@@ -178,7 +178,7 @@ const AuthForm = ({ type }: AuthFormProps) => {
         </Button>
       </form>
 
-      <div className="mt-8 text-center">
+      <div className="mt-8 text-center space-y-3">
         <p className="text-muted-foreground">
           {type === "login" ? "Non hai un account?" : "Hai già un account?"}
           <Link
@@ -188,6 +188,17 @@ const AuthForm = ({ type }: AuthFormProps) => {
             {type === "login" ? "Registrati" : "Accedi"}
           </Link>
         </p>
+        {type === "login" && (
+          <p className="text-muted-foreground text-sm">
+            Hai perso l'email di accesso?{' '}
+            <Link
+              to="/recupera-accesso"
+              className="text-[#6AA8B3] hover:text-[#6AA8B3]/80 hover:underline font-medium"
+            >
+              Recupera qui
+            </Link>
+          </p>
+        )}
       </div>
 
       <div className="mt-8 pt-6 border-t border-border">
