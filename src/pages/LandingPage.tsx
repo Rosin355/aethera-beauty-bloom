@@ -274,15 +274,6 @@ const LandingPage = () => {
                     )}
                   </form>
                   
-                  {/* Success message */}
-                  <div className="mt-4 p-3 bg-white/10 border border-white/20 rounded-lg">
-                    <div className="flex items-start gap-2">
-                      <div className="text-white/80 mt-0.5">✅</div>
-                      <p className="text-white/90 text-xs sm:text-sm">
-                        Riceverai immediatamente un'email con il link per scaricare il video completo. Controlla anche la cartella spam!
-                      </p>
-                    </div>
-                  </div>
                   <p className="text-xs text-white/60 text-center">
                     ✓ Nessun pagamento richiesto • Download immediato • Guarda quando vuoi
                   </p>
