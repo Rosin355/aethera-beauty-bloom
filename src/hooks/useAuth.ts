@@ -18,6 +18,9 @@ const defaultRoleFlags: RoleFlags = {
   isCollaborator: false,
 };
 
+const ROLE_CHECK_TIMEOUT_MS = 4000;
+const ROLE_CHECK_TIMEOUT = Symbol("role-check-timeout");
+
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -25,9 +28,30 @@ export const useAuth = () => {
   const [roleFlags, setRoleFlags] = useState<RoleFlags>(defaultRoleFlags);
 
   const checkUserRoles = useCallback(async (userId: string) => {
-    const nextFlags = await fetchUserRoleFlags(userId);
-    setRoleFlags(nextFlags);
-    return nextFlags;
+    try {
+      const rolePromise = fetchUserRoleFlags(userId);
+      const timeoutPromise = new Promise<typeof ROLE_CHECK_TIMEOUT>((resolve) => {
+        setTimeout(() => resolve(ROLE_CHECK_TIMEOUT), ROLE_CHECK_TIMEOUT_MS);
+      });
+
+      const result = await Promise.race([rolePromise, timeoutPromise]);
+      if (result === ROLE_CHECK_TIMEOUT) {
+        if (import.meta.env.DEV) {
+          console.warn("[useAuth] role check timeout, defaulting to non-admin/non-collaborator");
+        }
+        setRoleFlags(defaultRoleFlags);
+        return defaultRoleFlags;
+      }
+
+      setRoleFlags(result);
+      return result;
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.warn("[useAuth] role check error, defaulting to non-admin/non-collaborator", error);
+      }
+      setRoleFlags(defaultRoleFlags);
+      return defaultRoleFlags;
+    }
   }, []);
 
   const syncSessionState = useCallback(
@@ -48,25 +72,61 @@ export const useAuth = () => {
 
   useEffect(() => {
     let mounted = true;
+    if (import.meta.env.DEV) {
+      console.debug("[useAuth] hydration start");
+    }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, currentSession) => {
         if (!mounted) return;
-        await syncSessionState(currentSession);
-        if (mounted) {
-          setLoading(false);
+        try {
+          if (import.meta.env.DEV) {
+            console.debug("[useAuth] onAuthStateChange", { hasSession: !!currentSession });
+          }
+          await syncSessionState(currentSession);
+        } catch (error) {
+          if (import.meta.env.DEV) {
+            console.warn("[useAuth] onAuthStateChange hydrate error", error);
+          }
+        } finally {
+          if (mounted) {
+            setLoading(false);
+          }
         }
       }
     );
 
-    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
-      if (!mounted) return;
-      await syncSessionState(currentSession);
-      if (mounted) {
-        setLoading(false);
-      }
-    });
-
+    supabase.auth.getSession()
+      .then(async ({ data: { session: currentSession } }) => {
+        if (!mounted) return;
+        try {
+          if (import.meta.env.DEV) {
+            console.debug("[useAuth] getSession resolved", { hasSession: !!currentSession });
+          }
+          await syncSessionState(currentSession);
+        } catch (error) {
+          if (import.meta.env.DEV) {
+            console.warn("[useAuth] getSession hydrate error", error);
+          }
+        } finally {
+          if (mounted) {
+            setLoading(false);
+            if (import.meta.env.DEV) {
+              console.debug("[useAuth] hydration end");
+            }
+          }
+        }
+      })
+      .catch((error) => {
+        if (import.meta.env.DEV) {
+          console.warn("[useAuth] getSession failed", error);
+        }
+        if (mounted) {
+          setRoleFlags(defaultRoleFlags);
+          setLoading(false);
+        }
+      });
+    
     return () => {
       mounted = false;
       subscription.unsubscribe();
@@ -77,48 +137,52 @@ export const useAuth = () => {
     setLoading(true);
     
     const redirectUrl = getAuthRedirectUrl("/dashboard");
-    
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-        data: {
-          display_name: displayName || email
-        }
-      }
-    });
 
-    setLoading(false);
-    return { error };
+    try {
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          emailRedirectTo: redirectUrl,
+          data: {
+            display_name: displayName || email
+          }
+        }
+      });
+      return { error };
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signIn = async (email: string, password: string) => {
     setLoading(true);
-    
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password
-    });
-
-    setLoading(false);
-    return { error };
+    try {
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+      return { error };
+    } finally {
+      setLoading(false);
+    }
   };
 
   const signOut = async () => {
     setLoading(true);
-    
-    const { error } = await supabase.auth.signOut();
-    
-    if (!error) {
-      setUser(null);
-      setSession(null);
-      setRoleFlags(defaultRoleFlags);
-      toast.success("Disconnesso con successo");
+    try {
+      const { error } = await supabase.auth.signOut();
+      
+      if (!error) {
+        setUser(null);
+        setSession(null);
+        setRoleFlags(defaultRoleFlags);
+        toast.success("Disconnesso con successo");
+      }
+      return { error };
+    } finally {
+      setLoading(false);
     }
-    
-    setLoading(false);
-    return { error };
   };
 
   const resetPassword = async (email: string) => {

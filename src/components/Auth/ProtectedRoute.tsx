@@ -9,6 +9,9 @@ interface ProtectedRouteProps {
   requireCollaborator?: boolean;
 }
 
+const ONBOARDING_CHECK_TIMEOUT_MS = 4000;
+const ONBOARDING_TIMEOUT = Symbol("onboarding-timeout");
+
 const ProtectedRoute = ({ 
   children, 
   requireAdmin = false, 
@@ -22,43 +25,102 @@ const ProtectedRoute = ({
 
   // Check onboarding status
   useEffect(() => {
+    let cancelled = false;
+
     const checkOnboardingStatus = async () => {
-      if (!user) return;
+      if (!user) {
+        if (!cancelled) {
+          setOnboardingCompleted(true);
+          setOnboardingChecked(true);
+        }
+        return;
+      }
       
       // Skip onboarding check if already on onboarding page
       if (location.pathname === '/onboarding') {
-        setOnboardingChecked(true);
+        if (!cancelled) {
+          setOnboardingCompleted(true);
+          setOnboardingChecked(true);
+        }
         return;
       }
 
       try {
-        const { data, error } = await supabase
+        if (import.meta.env.DEV) {
+          console.debug("[ProtectedRoute] onboarding check start", { path: location.pathname, userId: user.id });
+        }
+
+        const queryPromise = supabase
           .from('profiles')
           .select('onboarding_completed')
           .eq('user_id', user.id)
           .maybeSingle();
 
+        const timeoutPromise = new Promise<typeof ONBOARDING_TIMEOUT>((resolve) => {
+          setTimeout(() => resolve(ONBOARDING_TIMEOUT), ONBOARDING_CHECK_TIMEOUT_MS);
+        });
+
+        const result = await Promise.race([queryPromise, timeoutPromise]);
+
+        if (result === ONBOARDING_TIMEOUT) {
+          if (import.meta.env.DEV) {
+            console.warn("[ProtectedRoute] onboarding check timeout, default allow");
+          }
+          if (!cancelled) {
+            setOnboardingCompleted(true);
+          }
+          return;
+        }
+
+        const { data, error } = result;
+
         if (error) {
-          console.error('Error checking onboarding status:', error);
-          setOnboardingChecked(true);
+          if (import.meta.env.DEV) {
+            console.warn('[ProtectedRoute] onboarding check error, default allow', error);
+          }
+          if (!cancelled) {
+            setOnboardingCompleted(true);
+          }
           return;
         }
 
         if (data && data.onboarding_completed === false) {
-          setOnboardingCompleted(false);
+          if (!cancelled) {
+            setOnboardingCompleted(false);
+          }
         } else {
-          setOnboardingCompleted(true);
+          if (!cancelled) {
+            setOnboardingCompleted(true);
+          }
+          if (import.meta.env.DEV && !data) {
+            console.debug("[ProtectedRoute] no profile row for onboarding, default allow");
+          }
         }
       } catch (err) {
-        console.error('Error in onboarding check:', err);
+        if (import.meta.env.DEV) {
+          console.warn('[ProtectedRoute] onboarding check exception, default allow', err);
+        }
+        if (!cancelled) {
+          setOnboardingCompleted(true);
+        }
+      } finally {
+        if (!cancelled) {
+          setOnboardingChecked(true);
+          if (import.meta.env.DEV) {
+            console.debug("[ProtectedRoute] onboarding check end");
+          }
+        }
       }
-      
-      setOnboardingChecked(true);
     };
 
-    if (user && !loading) {
+    if (!loading) {
+      setOnboardingChecked(false);
       checkOnboardingStatus();
     }
+
+    return () => {
+      cancelled = true;
+    };
   }, [user, loading, location.pathname]);
 
   // Check roles and handle navigation
