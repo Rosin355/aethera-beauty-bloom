@@ -146,7 +146,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in newsletter-subscribe function:", error);
     return new Response(
       JSON.stringify({ error: "Errore interno del server" }),

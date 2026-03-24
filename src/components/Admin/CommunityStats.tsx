@@ -33,6 +33,21 @@ interface RecentModeration {
   timestamp: string;
 }
 
+interface TopPostQuery {
+  id: string;
+  title: string;
+  likes_count: number | null;
+  replies_count: number | null;
+  created_at: string;
+  profiles?: { display_name?: string | null } | null;
+}
+
+interface RecentPostQuery {
+  id: string;
+  title: string;
+  updated_at: string;
+}
+
 export function CommunityStats() {
   const [stats, setStats] = useState<Stats>({
     totalPosts: 0,
@@ -123,7 +138,7 @@ export function CommunityStats() {
         .limit(5);
 
       setTopPosts(
-        (topPostsData || []).map((post: any) => ({
+        ((topPostsData || []) as TopPostQuery[]).map((post) => ({
           id: post.id,
           title: post.title,
           author_name: post.profiles?.display_name || 'Anonimo',
@@ -146,7 +161,7 @@ export function CommunityStats() {
         .limit(10);
 
       setRecentModerations(
-        (recentPosts || []).map((post: any) => ({
+        ((recentPosts || []) as RecentPostQuery[]).map((post) => ({
           id: post.id,
           title: post.title,
           type: 'post' as const,

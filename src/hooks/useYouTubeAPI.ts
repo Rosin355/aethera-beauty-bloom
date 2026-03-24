@@ -2,9 +2,17 @@ import { useState, useEffect } from 'react';
 
 // Dichiarazione globale per TypeScript
 declare global {
+  interface YouTubePlayerInstance {
+    destroy?: () => void;
+  }
+
+  interface YouTubePlayerConfig {
+    [key: string]: unknown;
+  }
+
   interface Window {
     YT: {
-      Player: new (element: string | HTMLElement, config: any) => any;
+      Player: new (element: string | HTMLElement, config: YouTubePlayerConfig) => YouTubePlayerInstance;
       PlayerState: {
         UNSTARTED: number;
         ENDED: number;

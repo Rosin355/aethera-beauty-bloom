@@ -76,7 +76,7 @@ export function PostMediaUploader({ media, onMediaChange, maxImages = 5 }: PostM
   const extractVideoId = (url: string): { platform: string; id: string } | null => {
     // YouTube
     const youtubeMatch = url.match(
-      /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/
+      /(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/
     );
     if (youtubeMatch) {
       return { platform: "youtube", id: youtubeMatch[1] };

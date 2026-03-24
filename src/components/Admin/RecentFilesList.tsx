@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { FileSpreadsheet, FileJson, FileText, Database, Loader2, Trash2, RefreshCw, Zap, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { getEdgeFunctionUrl } from "@/lib/supabaseConfig";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { toast } from "sonner";
@@ -19,7 +20,7 @@ interface TrainingData {
   processed: boolean;
   is_active: boolean;
   created_at: string;
-  embedding: any | null;
+  embedding: unknown | null;
 }
 
 interface RecentFilesListProps {
@@ -70,7 +71,7 @@ const RecentFilesList = ({ refreshTrigger }: RecentFilesListProps) => {
       const token = sessionData?.session?.access_token;
 
       const response = await fetch(
-        `https://jybewogjncaoscrnlqum.supabase.co/functions/v1/generate-embedding`,
+        getEdgeFunctionUrl("generate-embedding"),
         {
           method: 'POST',
           headers: {
@@ -115,7 +116,7 @@ const RecentFilesList = ({ refreshTrigger }: RecentFilesListProps) => {
     for (const item of missingEmbeddings) {
       try {
         const response = await fetch(
-          `https://jybewogjncaoscrnlqum.supabase.co/functions/v1/generate-embedding`,
+          getEdgeFunctionUrl("generate-embedding"),
           {
             method: 'POST',
             headers: {

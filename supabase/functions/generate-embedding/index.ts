@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { HttpError, requireAdminUser, toErrorResponse } from "../_shared/auth.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -6,26 +7,20 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  console.log('=== Generate Embedding Edge Function Invoked ===');
-  console.log('Method:', req.method);
-  console.log('Timestamp:', new Date().toISOString());
-
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
+    const { supabase } = await requireAdminUser(req);
     const { text, documentId } = await req.json();
-    console.log('Request received for document:', documentId);
-    console.log('Text length:', text?.length || 0);
 
     if (!text || text.trim().length === 0) {
-      throw new Error('Testo vuoto o mancante');
+      throw new HttpError(400, 'Testo vuoto o mancante');
     }
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
-      console.error('ERROR: LOVABLE_API_KEY not configured');
       throw new Error('LOVABLE_API_KEY non configurata');
     }
 
@@ -33,8 +28,6 @@ serve(async (req) => {
     // We'll use a chat completion to generate a summary, then use that for semantic matching
     // For true embeddings, we'd need a dedicated embedding model endpoint
     // Alternative: Use the text directly for embedding via text-embedding model
-    
-    console.log('Generating embedding via Lovable AI Gateway...');
     
     // Create a condensed representation of the text for embedding
     // Truncate very long texts to avoid token limits
@@ -47,15 +40,8 @@ serve(async (req) => {
     // This is a simplified embedding approach using character/word frequency
     const embedding = generateSimpleEmbedding(truncatedText);
     
-    console.log('Embedding generated, dimension:', embedding.length);
-
     // Update the document in database with embedding
     if (documentId) {
-      const { createClient } = await import('https://esm.sh/@supabase/supabase-js@2');
-      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-      const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-      const supabase = createClient(supabaseUrl, supabaseKey);
-
       // Format embedding as PostgreSQL vector
       const embeddingStr = `[${embedding.join(',')}]`;
       
@@ -65,11 +51,8 @@ serve(async (req) => {
         .eq('id', documentId);
 
       if (updateError) {
-        console.error('Error updating document:', updateError);
         throw new Error(`Errore aggiornamento documento: ${updateError.message}`);
       }
-
-      console.log('Document updated with embedding successfully');
     }
 
     return new Response(
@@ -77,13 +60,10 @@ serve(async (req) => {
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   } catch (error) {
-    console.error('=== ERROR in generate-embedding ===');
-    console.error('Error:', error instanceof Error ? error.message : 'Unknown error');
-    
-    return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : 'Errore sconosciuto' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    if (!(error instanceof HttpError)) {
+      console.error('Error in generate-embedding');
+    }
+    return toErrorResponse(error, corsHeaders);
   }
 });
 

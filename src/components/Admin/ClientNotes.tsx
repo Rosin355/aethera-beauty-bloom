@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { 
   Card, 
   CardContent, 
@@ -32,43 +32,16 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-
-interface Note {
-  id: string;
-  text: string;
-  date: Date;
-  createdBy: string;
-  category: string;
-}
+import { createClientNote, fetchClientNotes, type ClientNoteView } from "@/lib/api/adminManagement";
+import { toast } from "sonner";
 
 interface ClientNotesProps {
   clientId: string | undefined;
 }
 
 const ClientNotes = ({ clientId }: ClientNotesProps) => {
-  const [notes, setNotes] = useState<Note[]>([
-    {
-      id: "1",
-      text: "Cliente interessato ad ampliare l'offerta con trattamenti viso anti-age. Pianificare un incontro per presentare la linea di prodotti premium.",
-      date: new Date(2023, 8, 15),
-      createdBy: "Marco Rossi",
-      category: "opportunità"
-    },
-    {
-      id: "2",
-      text: "Ha riscontrato difficoltà nell'utilizzo del calendario appuntamenti. È stato offerto un supporto remoto per aiutarlo a configurare correttamente il sistema.",
-      date: new Date(2023, 8, 10),
-      createdBy: "Laura Bianchi",
-      category: "supporto"
-    },
-    {
-      id: "3",
-      text: "Durante l'ultima chiamata il cliente ha menzionato problemi di liquidità. Valutare la possibilità di offrire condizioni di pagamento più flessibili.",
-      date: new Date(2023, 7, 28),
-      createdBy: "Marco Rossi",
-      category: "attenzione"
-    }
-  ]);
+  const [notes, setNotes] = useState<ClientNoteView[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   
   const [isAddingNote, setIsAddingNote] = useState(false);
   const [newNote, setNewNote] = useState({
@@ -100,25 +73,47 @@ const ClientNotes = ({ clientId }: ClientNotesProps) => {
     }
   };
   
-  const handleAddNote = () => {
+  const handleAddNote = async () => {
     if (!newNote.text.trim()) return;
-    
-    const note: Note = {
-      id: Math.random().toString(36).substring(7),
-      text: newNote.text,
-      date: newNote.date,
-      createdBy: "Admin",
-      category: newNote.category
-    };
-    
-    setNotes([note, ...notes]);
-    setIsAddingNote(false);
-    setNewNote({
-      text: "",
-      date: new Date(),
-      category: "generale"
-    });
+
+    if (!clientId) return;
+    try {
+      const saved = await createClientNote({
+        client_user_id: clientId,
+        note_text: newNote.text,
+        note_date: newNote.date.toISOString().slice(0, 10),
+        category: newNote.category,
+      });
+      setNotes((prev) => [saved, ...prev]);
+      setIsAddingNote(false);
+      setNewNote({
+        text: "",
+        date: new Date(),
+        category: "generale"
+      });
+      toast.success("Nota salvata");
+    } catch (error) {
+      console.error("Error adding note:", error);
+      toast.error("Impossibile salvare la nota");
+    }
   };
+
+  useEffect(() => {
+    const loadNotes = async () => {
+      if (!clientId) return;
+      try {
+        setIsLoading(true);
+        const data = await fetchClientNotes(clientId);
+        setNotes(data);
+      } catch (error) {
+        console.error("Error loading client notes:", error);
+        toast.error("Errore nel caricamento note");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadNotes();
+  }, [clientId]);
 
   return (
     <div className="space-y-6">
@@ -204,27 +199,29 @@ const ClientNotes = ({ clientId }: ClientNotesProps) => {
           </Dialog>
         </CardHeader>
         <CardContent>
-          {notes.length > 0 ? (
+          {!isLoading && notes.length > 0 ? (
             <div className="space-y-6">
               {notes.map((note) => (
                 <div key={note.id} className="border rounded-lg p-4">
                   <div className="flex justify-between items-start mb-3">
                     <div className="flex items-center">
                       <span className="font-medium text-sm">
-                        {format(new Date(note.date), "dd MMM yyyy", { locale: it })}
+                        {format(new Date(note.note_date), "dd MMM yyyy", { locale: it })}
                       </span>
                       <span className="mx-2 text-gray-400">•</span>
-                      <span className="text-sm text-gray-600">{note.createdBy}</span>
+                      <span className="text-sm text-gray-600">{note.created_by_name || "Admin"}</span>
                     </div>
                     {getCategoryBadge(note.category)}
                   </div>
-                  <p className="text-gray-800">{note.text}</p>
+                  <p className="text-gray-800">{note.note_text}</p>
                 </div>
               ))}
             </div>
           ) : (
             <div className="text-center py-8">
-              <p className="text-gray-500">Nessuna nota trovata per questo cliente.</p>
+              <p className="text-gray-500">
+                {isLoading ? "Caricamento note..." : "Nessuna nota trovata per questo cliente."}
+              </p>
             </div>
           )}
         </CardContent>

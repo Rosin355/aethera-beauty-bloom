@@ -10,6 +10,15 @@ interface TestEmailRequest {
   testType?: 'custom' | 'default' | 'both';
 }
 
+interface EmailTestResult {
+  type: 'custom_domain' | 'resend_domain';
+  from: string;
+  success: boolean;
+  status?: number;
+  response?: unknown;
+  error?: string;
+}
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -41,7 +50,7 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const results: any[] = [];
+    const results: EmailTestResult[] = [];
 
     // Test con dominio personalizzato
     if (testType === 'custom' || testType === 'both') {
@@ -185,10 +194,10 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("🚨 Error in resend-test-email function:", error);
     return new Response(
-      JSON.stringify({ error: "Errore interno del server", details: error.message }),
+      JSON.stringify({ error: "Errore interno del server", details: error instanceof Error ? error.message : "unknown error" }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },

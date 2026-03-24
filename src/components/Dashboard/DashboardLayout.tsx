@@ -82,7 +82,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: "Gestione", path: "/dashboard/management", icon: Calendar },
     { name: "Community", path: "/dashboard/community", icon: Users },
     { name: "Assistente AI", path: "/dashboard/ai-assistant", icon: MessageSquare },
-    { name: "Impostazioni", path: "/dashboard/settings", icon: Settings },
+    { name: "Impostazioni", path: "/dashboard/personalized", icon: Settings },
   ];
 
   const isActive = (path: string) => {
@@ -248,7 +248,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                     </>
                   )}
                   <DropdownMenuItem asChild>
-                    <Link to="/dashboard/settings" className="flex items-center cursor-pointer">
+                    <Link to="/dashboard/personalized" className="flex items-center cursor-pointer">
                       <Settings className="mr-2 h-4 w-4" />
                       <span>Impostazioni</span>
                     </Link>

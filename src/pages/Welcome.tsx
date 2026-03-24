@@ -11,13 +11,19 @@ import { getVideoUrl } from '@/lib/videoStorage';
 import { getSiteVideo, SiteVideo, getYouTubeEmbedUrl } from '@/lib/siteVideos';
 import VideoPlayer from '@/components/ui/VideoPlayer';
 
+interface MailingListData {
+  id?: string;
+  name?: string;
+  email?: string;
+}
+
 const Welcome = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [isValidToken, setIsValidToken] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
-  const [mailingListData, setMailingListData] = useState<any>(null);
+  const [mailingListData, setMailingListData] = useState<MailingListData | null>(null);
   const [newsletterForm, setNewsletterForm] = useState({
     email: "",
     name: ""
@@ -44,7 +50,7 @@ const Welcome = () => {
         const { data: validationResult, error } = await supabase
           .rpc('validate_access_token', { token_to_validate: token });
 
-        const result = validationResult as { valid: boolean; data: { name: string; email: string } | null };
+        const result = validationResult as { valid: boolean; data: MailingListData | null };
 
         if (error || !result || !result.valid) {
           toast({

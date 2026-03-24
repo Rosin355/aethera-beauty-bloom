@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { DOMParser } from "https://deno.land/x/deno_dom@v0.1.38/deno-dom-wasm.ts";
 import { JSZip } from "https://deno.land/x/jszip@0.11.0/mod.ts";
+import { HttpError, requireAdminUser, toErrorResponse } from "../_shared/auth.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,6 +14,8 @@ serve(async (req) => {
   }
 
   try {
+    await requireAdminUser(req);
+
     const formData = await req.formData();
     const file = formData.get('file') as File;
     
@@ -52,14 +55,10 @@ serve(async (req) => {
     );
 
   } catch (error) {
-    console.error('Error parsing document:', error);
-    return new Response(
-      JSON.stringify({ 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Errore sconosciuto' 
-      }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    if (!(error instanceof HttpError)) {
+      console.error('Error parsing document');
+    }
+    return toErrorResponse(error, corsHeaders);
   }
 });
 
@@ -158,7 +157,16 @@ async function extractDOCBasic(arrayBuffer: ArrayBuffer): Promise<string> {
     const text = new TextDecoder('latin1').decode(bytes);
     
     // DOC files have text scattered, try to extract readable portions
-    const readable = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F-\x9F]/g, ' ');
+    const readable = Array.from(text, (char) => {
+      const code = char.charCodeAt(0);
+      const isControl =
+        (code >= 0 && code <= 8) ||
+        code === 11 ||
+        code === 12 ||
+        (code >= 14 && code <= 31) ||
+        (code >= 127 && code <= 159);
+      return isControl ? " " : char;
+    }).join("");
     const words = readable.match(/[a-zA-ZÀ-ÿ0-9]{2,}/g) || [];
     
     if (words.length < 10) {

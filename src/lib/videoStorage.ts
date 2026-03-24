@@ -1,4 +1,5 @@
 import { supabase } from "@/integrations/supabase/client";
+import { getEdgeFunctionUrl, getSupabasePublishableKey } from "@/lib/supabaseConfig";
 import * as tus from "tus-js-client";
 
 export const getVideoUrl = (fileName: string): string => {
@@ -47,10 +48,13 @@ export const uploadVideo = async (
       throw new Error('Devi essere autenticato per caricare video');
     }
 
+    const uploadEndpoint = getEdgeFunctionUrl("video-upload", { mode: "subdomain" });
+    const apiKey = getSupabasePublishableKey();
+
     // Use TUS for chunked resumable upload
     return new Promise((resolve, reject) => {
       const upload = new tus.Upload(file, {
-        endpoint: `https://jybewogjncaoscrnlqum.functions.supabase.co/video-upload`,
+        endpoint: uploadEndpoint,
         retryDelays: [0, 3000, 5000, 10000, 20000],
         chunkSize: 5 * 1024 * 1024, // 5MB chunks
         metadata: {
@@ -59,7 +63,7 @@ export const uploadVideo = async (
         },
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
-          'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5YmV3b2dqbmNhb3Njcm5scXVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ2MDYyOTEsImV4cCI6MjA3MDE4MjI5MX0.a47M0UR_QBAHoBGV5iIxwoGB4JgkhWPLew0hsjfOZdI',
+          'apikey': apiKey,
         },
         onError: (error: Error) => {
           console.error('TUS Upload error:', error);
@@ -81,12 +85,12 @@ export const uploadVideo = async (
           try {
             // Finalize the upload
             const finalizeResponse = await fetch(
-              `https://jybewogjncaoscrnlqum.functions.supabase.co/video-upload?finalize=true&id=${upload.url?.split('/').pop()}&filename=${fileName}`,
+              `${uploadEndpoint}?finalize=true&id=${upload.url?.split('/').pop()}&filename=${encodeURIComponent(fileName)}`,
               {
                 method: 'PUT',
                 headers: {
                   'Authorization': `Bearer ${session.access_token}`,
-                  'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp5YmV3b2dqbmNhb3Njcm5scXVtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTQ2MDYyOTEsImV4cCI6MjA3MDE4MjI5MX0.a47M0UR_QBAHoBGV5iIxwoGB4JgkhWPLew0hsjfOZdI',
+                  'apikey': apiKey,
                 }
               }
             );
@@ -109,9 +113,9 @@ export const uploadVideo = async (
       upload.start();
     });
 
-  } catch (error: any) {
+  } catch (error) {
     console.error('Error uploading video:', error);
-    throw error;
+    throw error instanceof Error ? error : new Error("Errore sconosciuto durante il caricamento video");
   }
 };
 

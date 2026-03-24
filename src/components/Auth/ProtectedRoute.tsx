@@ -14,10 +14,9 @@ const ProtectedRoute = ({
   requireAdmin = false, 
   requireCollaborator = false 
 }: ProtectedRouteProps) => {
-  const { user, loading, isAdmin, isCollaborator, checkUserRoles } = useAuth();
+  const { user, loading, isAdmin, isCollaborator } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const [rolesChecked, setRolesChecked] = useState(false);
   const [onboardingChecked, setOnboardingChecked] = useState(false);
   const [onboardingCompleted, setOnboardingCompleted] = useState(true);
 
@@ -80,12 +79,6 @@ const ProtectedRoute = ({
       return;
     }
 
-    // For admin/collaborator routes, ensure roles are checked
-    if (!rolesChecked && (requireAdmin || requireCollaborator)) {
-      checkUserRoles(user.id).finally(() => setRolesChecked(true));
-      return;
-    }
-
     if (requireAdmin && !isAdmin) {
       navigate('/dashboard');
     } else if (requireCollaborator && !isCollaborator) {
@@ -99,14 +92,12 @@ const ProtectedRoute = ({
     navigate,
     requireAdmin,
     requireCollaborator,
-    rolesChecked,
-    checkUserRoles,
     onboardingChecked,
     onboardingCompleted,
     location.pathname,
   ]);
 
-  if (loading || !onboardingChecked || ((requireAdmin || requireCollaborator) && !rolesChecked)) {
+  if (loading || !onboardingChecked) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary"></div>

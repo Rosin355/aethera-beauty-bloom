@@ -14,6 +14,58 @@ import { useToast } from "@/hooks/use-toast";
 import { getSiteVideo, SiteVideo, getYouTubeEmbedUrl } from "@/lib/siteVideos";
 import { getVideoUrl } from "@/lib/videoStorage";
 import VideoPlayer from "@/components/ui/VideoPlayer";
+import {
+  getLegalLinks,
+  getSiteSections,
+  readSectionExtraArray,
+  readSectionExtraObject,
+  type LegalLinkRow,
+  type SiteSectionRow,
+} from "@/lib/api/siteContent";
+
+type LandingNavLink = {
+  label: string;
+  href: string;
+};
+
+type LandingHeroExtra = {
+  paragraphs?: string[];
+  cta_note?: string;
+  form_title?: string;
+  form_subtitle?: string;
+  submit_loading_label?: string;
+  submit_label?: string;
+  success_note?: string;
+  form_disclaimer?: string;
+};
+
+type LandingFinalCtaExtra = {
+  closing_title?: string;
+  closing_subtitle?: string;
+  cta_note?: string;
+};
+
+type LandingNewsletterExtra = {
+  benefits?: string[];
+  form_title?: string;
+  name_label?: string;
+  name_placeholder?: string;
+  email_label?: string;
+  email_placeholder?: string;
+  loading_label?: string;
+  privacy_note?: string;
+};
+
+type LandingFooterExtra = {
+  recovery_text?: string;
+  recovery_cta?: string;
+};
+
+const getSectionByKey = (
+  sections: Record<string, SiteSectionRow>,
+  key: string,
+): SiteSectionRow | null => sections[key] ?? null;
+
 const LandingPage = () => {
   const [formData, setFormData] = useState({
     name: "",
@@ -28,6 +80,31 @@ const LandingPage = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [previewVideo, setPreviewVideo] = useState<SiteVideo | null>(null);
+  const [landingSections, setLandingSections] = useState<Record<string, SiteSectionRow>>({});
+  const [landingLegalLinks, setLandingLegalLinks] = useState<LegalLinkRow[]>([
+    {
+      id: "landing-privacy-fallback",
+      link_key: "privacy",
+      label: "Privacy Policy",
+      url: "https://www.iubenda.com/privacy-policy/19385152",
+      location: "landing_footer",
+      is_active: true,
+      sort_order: 10,
+      created_at: "",
+      updated_at: "",
+    },
+    {
+      id: "landing-cookie-fallback",
+      link_key: "cookie",
+      label: "Cookie Policy",
+      url: "https://www.iubenda.com/privacy-policy/19385152/cookie-policy",
+      location: "landing_footer",
+      is_active: true,
+      sort_order: 20,
+      created_at: "",
+      updated_at: "",
+    },
+  ]);
 
   useEffect(() => {
     const loadVideo = async () => {
@@ -39,6 +116,62 @@ const LandingPage = () => {
     
     loadVideo();
   }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadCmsContent = async () => {
+      const [sections, legalLinks] = await Promise.all([
+        getSiteSections([
+          "landing_header",
+          "landing_hero",
+          "landing_final_cta",
+          "landing_newsletter",
+          "landing_footer",
+        ]),
+        getLegalLinks("landing_footer"),
+      ]);
+
+      if (!mounted) return;
+
+      setLandingSections(sections);
+      if (legalLinks.length > 0) {
+        setLandingLegalLinks(legalLinks);
+      }
+    };
+
+    loadCmsContent();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const landingHeader = getSectionByKey(landingSections, "landing_header");
+  const landingHero = getSectionByKey(landingSections, "landing_hero");
+  const landingFinalCta = getSectionByKey(landingSections, "landing_final_cta");
+  const landingNewsletter = getSectionByKey(landingSections, "landing_newsletter");
+  const landingFooter = getSectionByKey(landingSections, "landing_footer");
+
+  const navLinks = readSectionExtraArray<LandingNavLink>(landingHeader, "nav_links", [
+    { label: "VIDEO GRATUITO", href: "#video" },
+    { label: "CHI SIAMO", href: "#about" },
+    { label: "SERVIZI", href: "#services" },
+    { label: "CONTATTI", href: "#contact" },
+  ]);
+
+  const heroExtra = readSectionExtraObject<LandingHeroExtra>(landingHero, {});
+  const heroParagraphs = heroExtra.paragraphs ?? [
+    "Ciao! Se sei un'estetista professionista e ti stai chiedendo come strutturare un listino prezzi che sia chiaro, professionale e che valorizzi davvero i tuoi servizi... sei nel posto giusto.",
+    "Mi chiamo Davide e con 4 Elementi Italia aiutiamo estetiste e professionisti del benessere a diventare imprenditori consapevoli, strategici e autonomi – senza stress, senza perdere tempo in corsi complicati o contenuti poco chiari.",
+  ];
+  const finalCtaExtra = readSectionExtraObject<LandingFinalCtaExtra>(landingFinalCta, {});
+  const newsletterExtra = readSectionExtraObject<LandingNewsletterExtra>(landingNewsletter, {});
+  const newsletterBenefits = newsletterExtra.benefits ?? [
+    "Tips settimanali esclusivi per far crescere il tuo business",
+    "Strategie pratiche e strumenti pronti all'uso",
+    "Accesso anticipato a corsi, risorse e novità",
+  ];
+  const landingFooterExtra = readSectionExtraObject<LandingFooterExtra>(landingFooter, {});
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -148,10 +281,10 @@ const LandingPage = () => {
 
       setNewsletterData({ name: "", email: "" });
 
-    } catch (error: any) {
+    } catch (error) {
       console.error('Errore durante l\'iscrizione alla newsletter:', error);
       
-      const errorMessage = error.message?.includes('Email già iscritta') 
+      const errorMessage = error instanceof Error && error.message?.includes('Email già iscritta') 
         ? "Questa email è già iscritta alla newsletter"
         : "Si è verificato un errore. Riprova tra qualche minuto.";
         
@@ -175,10 +308,11 @@ const LandingPage = () => {
             
           </div>
           <nav className="hidden md:flex space-x-8">
-            <a href="#video" className="text-muted-foreground hover:text-foreground transition-colors">VIDEO GRATUITO</a>
-            <a href="#about" className="text-muted-foreground hover:text-foreground transition-colors">CHI SIAMO</a>
-            <a href="#services" className="text-muted-foreground hover:text-foreground transition-colors">SERVIZI</a>
-            <a href="#contact" className="text-muted-foreground hover:text-foreground transition-colors">CONTATTI</a>
+            {navLinks.map((navLink) => (
+              <a key={navLink.href} href={navLink.href} className="text-muted-foreground hover:text-foreground transition-colors">
+                {navLink.label}
+              </a>
+            ))}
           </nav>
         </div>
       </header>
@@ -190,20 +324,20 @@ const LandingPage = () => {
             <div className="space-y-4 sm:space-y-6 lg:space-y-8">
               <div className="space-y-2 sm:space-y-3 lg:space-y-4">
                 <h1 className="font-playfair text-2xl sm:text-3xl lg:text-5xl xl:text-6xl font-bold leading-tight text-white">
-                  SEI UN'ESTETISTA
-                  <span className="gradient-text"> PROFESSIONISTA?</span>
+                  {landingHero?.title ?? "SEI UN'ESTETISTA"}
+                  <span className="gradient-text"> {landingHero?.subtitle ?? "PROFESSIONISTA?"}</span>
                 </h1>
                 <p className="text-base sm:text-lg lg:text-xl text-gray-300 leading-relaxed">
-                  Ecco come strutturare il tuo listino in modo strategico (senza stress)
+                  {landingHero?.body ?? "Ecco come strutturare il tuo listino in modo strategico (senza stress)"}
                 </p>
               </div>
               
               <div className="space-y-4 sm:space-y-6">
                 <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
-                  Ciao! Se sei un'estetista professionista e ti stai chiedendo come strutturare un listino prezzi che sia chiaro, professionale e che valorizzi davvero i tuoi servizi... sei nel posto giusto.
+                  {heroParagraphs[0]}
                 </p>
                 <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
-                  Mi chiamo <strong className="text-white">Davide</strong> e con <strong className="text-white">4 Elementi Italia</strong> aiutiamo estetiste e professionisti del benessere a diventare imprenditori consapevoli, strategici e autonomi – senza stress, senza perdere tempo in corsi complicati o contenuti poco chiari.
+                  {heroParagraphs[1]}
                 </p>
               </div>
 
@@ -214,10 +348,10 @@ const LandingPage = () => {
                   className="w-full sm:w-auto text-sm sm:text-base lg:text-lg px-4 sm:px-6 lg:px-8"
                   onClick={() => document.getElementById('video-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
                 >
-                  SCARICA IL MINI CORSO GRATUITO
+                  {landingHero?.cta_label ?? "SCARICA IL MINI CORSO GRATUITO"}
                 </AnimatedButton>
                 <p className="text-xs sm:text-sm text-white/70 text-center sm:text-left mt-3">
-                  ✓ Nessun pagamento richiesto • Download immediato • Guarda quando vuoi
+                  {heroExtra.cta_note ?? "✓ Nessun pagamento richiesto • Download immediato • Guarda quando vuoi"}
                 </p>
               </div>
             </div>
@@ -240,8 +374,8 @@ const LandingPage = () => {
               <Card id="video-form" className="bg-card/50 backdrop-blur-sm border-white/10 p-6 sm:p-8">
                 <div className="space-y-4 sm:space-y-6">
                   <div className="text-center">
-                    <h3 className="font-playfair text-xl sm:text-2xl font-bold mb-3 sm:mb-4">SCARICA IL VIDEO GRATUITO</h3>
-                    <p className="text-muted-foreground text-sm sm:text-base">Compila il form e ricevi subito il link per scaricare il video completo</p>
+                    <h3 className="font-playfair text-xl sm:text-2xl font-bold mb-3 sm:mb-4">{heroExtra.form_title ?? "SCARICA IL VIDEO GRATUITO"}</h3>
+                    <p className="text-muted-foreground text-sm sm:text-base">{heroExtra.form_subtitle ?? "Compila il form e ricevi subito il link per scaricare il video completo"}</p>
                   </div>
                   
                   <form onSubmit={handleSubmit} className="space-y-4">
@@ -259,7 +393,7 @@ const LandingPage = () => {
                         disabled
                         className="w-full bg-white hover:bg-gray-200 text-black font-medium text-sm sm:text-base py-3"
                       >
-                        INVIO IN CORSO...
+                        {heroExtra.submit_loading_label ?? "INVIO IN CORSO..."}
                       </Button>
                     ) : (
                       <AnimatedButton
@@ -269,13 +403,22 @@ const LandingPage = () => {
                         className="text-sm sm:text-base py-3"
                         fullWidth
                       >
-                        SCARICA IL MINI CORSO GRATUITO
+                        {heroExtra.submit_label ?? "SCARICA IL MINI CORSO GRATUITO"}
                       </AnimatedButton>
                     )}
                   </form>
                   
+                  {/* Success message */}
+                  <div className="mt-4 p-3 bg-white/10 border border-white/20 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <div className="text-white/80 mt-0.5">✅</div>
+                      <p className="text-white/90 text-xs sm:text-sm">
+                        {heroExtra.success_note ?? "Riceverai immediatamente un'email con il link per scaricare il video completo. Controlla anche la cartella spam!"}
+                      </p>
+                    </div>
+                  </div>
                   <p className="text-xs text-white/60 text-center">
-                    ✓ Nessun pagamento richiesto • Download immediato • Guarda quando vuoi
+                    {heroExtra.form_disclaimer ?? "✓ Nessun pagamento richiesto • Download immediato • Guarda quando vuoi"}
                   </p>
                 </div>
               </Card>
@@ -637,16 +780,16 @@ const LandingPage = () => {
         <div className="container mx-auto text-center">
           <div className="max-w-3xl mx-auto space-y-8">
             <h2 className="font-playfair text-3xl lg:text-4xl font-bold text-white">
-              TRASFORMA IL TUO CENTRO ESTETICO IN UNA 
-              <span className="gradient-text"> VERA IMPRESA</span>
+              {landingFinalCta?.title ?? "TRASFORMA IL TUO CENTRO ESTETICO IN UNA"} 
+              <span className="gradient-text"> {landingFinalCta?.subtitle ?? "VERA IMPRESA"}</span>
             </h2>
             <p className="text-xl text-muted-foreground">
-              Se vuoi trasformare il tuo centro estetico in una vera impresa, sei nel posto giusto. ✨
+              {landingFinalCta?.body ?? "Se vuoi trasformare il tuo centro estetico in una vera impresa, sei nel posto giusto. ✨"}
             </p>
             <div className="space-y-4">
-              <p className="text-lg font-semibold">Ti aspetto dall'altra parte!</p>
+              <p className="text-lg font-semibold">{finalCtaExtra.closing_title ?? "Ti aspetto dall'altra parte!"}</p>
               <p className="text-muted-foreground">
-                <strong className="text-white">Davide</strong> – Fondatore di 4 Elementi Italia
+                <strong className="text-white">{finalCtaExtra.closing_subtitle ?? "Davide – Fondatore di 4 Elementi Italia"}</strong>
               </p>
             </div>
             <div>
@@ -656,10 +799,10 @@ const LandingPage = () => {
                 className="px-12 py-6 text-lg"
                 onClick={() => document.getElementById('video-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
               >
-                SCARICA IL VIDEO GRATUITO
+                {landingFinalCta?.cta_label ?? "SCARICA IL VIDEO GRATUITO"}
               </AnimatedButton>
               <p className="text-sm text-white/70 mt-4 text-center">
-                ✓ Nessun pagamento richiesto • Download immediato • Guarda quando vuoi
+                {finalCtaExtra.cta_note ?? "✓ Nessun pagamento richiesto • Download immediato • Guarda quando vuoi"}
               </p>
             </div>
           </div>
@@ -677,19 +820,15 @@ const LandingPage = () => {
               <div className="space-y-8">
                 <div>
                   <h2 className="font-playfair text-3xl md:text-4xl font-bold text-white mb-6 leading-tight">
-                    Sta per arrivare qualcosa di grande.
+                    {landingNewsletter?.title ?? "Sta per arrivare qualcosa di grande."}
                   </h2>
                   <p className="text-muted-foreground text-lg mb-8">
-                    Iscriviti ora per non perderti il lancio ufficiale della piattaforma e accedere in anteprima alla community riservata ai professionisti del settore.
+                    {landingNewsletter?.body ?? "Iscriviti ora per non perderti il lancio ufficiale della piattaforma e accedere in anteprima alla community riservata ai professionisti del settore."}
                   </p>
                 </div>
                 
                 <div className="space-y-4">
-                  {[
-                    "Tips settimanali esclusivi per far crescere il tuo business",
-                    "Strategie pratiche e strumenti pronti all'uso",
-                    "Accesso anticipato a corsi, risorse e novità"
-                  ].map((benefit, index) => (
+                  {newsletterBenefits.map((benefit, index) => (
                     <div key={index} className="flex items-center space-x-3">
                       <div className="w-6 h-6 bg-[#6AA8B3] rounded-full flex items-center justify-center shrink-0">
                         <Check className="w-4 h-4 text-white" />
@@ -707,21 +846,21 @@ const LandingPage = () => {
                     <User className="w-8 h-8 text-[#6AA8B3]" />
                   </div>
                   <h3 className="font-playfair text-2xl font-bold text-white mb-2">
-                    👉 Iscriviti oggi. Sii tra i primi a entrare.
+                    {newsletterExtra.form_title ?? "👉 Iscriviti oggi. Sii tra i primi a entrare."}
                   </h3>
                 </div>
 
                 <form onSubmit={handleNewsletterSubmit} className="space-y-6">
                   <div>
                     <Label htmlFor="newsletter-name" className="text-white mb-2 block">
-                      Nome *
+                      {newsletterExtra.name_label ?? "Nome *"}
                     </Label>
                     <Input
                       id="newsletter-name"
                       type="text"
                       value={newsletterData.name}
                       onChange={(e) => setNewsletterData(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder="Il tuo nome"
+                      placeholder={newsletterExtra.name_placeholder ?? "Il tuo nome"}
                       required
                       disabled={isSubmittingNewsletter}
                       className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:bg-white/20 transition-all duration-200"
@@ -730,14 +869,14 @@ const LandingPage = () => {
 
                   <div>
                     <Label htmlFor="newsletter-email" className="text-white mb-2 block">
-                      Email *
+                      {newsletterExtra.email_label ?? "Email *"}
                     </Label>
                     <Input
                       id="newsletter-email"
                       type="email"
                       value={newsletterData.email}
                       onChange={(e) => setNewsletterData(prev => ({ ...prev, email: e.target.value }))}
-                      placeholder="la.tua.email@esempio.com"
+                      placeholder={newsletterExtra.email_placeholder ?? "la.tua.email@esempio.com"}
                       required
                       disabled={isSubmittingNewsletter}
                       className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:bg-white/20 transition-all duration-200"
@@ -752,16 +891,16 @@ const LandingPage = () => {
                     {isSubmittingNewsletter ? (
                       <div className="flex items-center justify-center space-x-2">
                         <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        <span>Iscrizione in corso...</span>
+                        <span>{newsletterExtra.loading_label ?? "Iscrizione in corso..."}</span>
                       </div>
                     ) : (
-                      'ISCRIVITI ALLA NEWSLETTER'
+                      landingNewsletter?.cta_label ?? 'ISCRIVITI ALLA NEWSLETTER'
                     )}
                   </Button>
                 </form>
 
                 <p className="text-xs text-gray-400 text-center mt-4">
-                  Rispettiamo la tua privacy. Nessuno spam, solo contenuti di valore.
+                  {newsletterExtra.privacy_note ?? "Rispettiamo la tua privacy. Nessuno spam, solo contenuti di valore."}
                 </p>
               </div>
             </div>
@@ -776,38 +915,33 @@ const LandingPage = () => {
             <img src="/4-elementi-logo.png" alt="4 Elementi Italia Logo" className="h-10 w-auto" />
           </div>
           <p className="text-muted-foreground mb-2">
-            © 2024 4 Elementi Italia. Tutti i diritti riservati.
+            {landingFooter?.body ?? "© 2024 4 Elementi Italia. Tutti i diritti riservati."}
           </p>
           <p className="text-muted-foreground text-sm">
-            Hai perso l'email di accesso?{' '}
+            {landingFooterExtra.recovery_text ?? "Hai perso l'email di accesso?"}{' '}
             <Button 
               variant="link" 
               onClick={() => navigate('/recupera-accesso')}
               className="p-0 h-auto text-[#6AA8B3] hover:text-[#6AA8B3]/80 text-sm"
             >
-              Recupera qui
+              {landingFooterExtra.recovery_cta ?? "Recupera qui"}
             </Button>
           </p>
           <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm">
-            <a 
-              href="https://www.iubenda.com/privacy-policy/19385152" 
-              className="iubenda-white iubenda-noiframe iubenda-embed hover:underline" 
-              title="Privacy Policy"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Privacy Policy
-            </a>
-            <span className="text-muted-foreground">•</span>
-            <a 
-              href="https://www.iubenda.com/privacy-policy/19385152/cookie-policy" 
-              className="iubenda-white iubenda-noiframe iubenda-embed hover:underline" 
-              title="Cookie Policy"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Cookie Policy
-            </a>
+            {landingLegalLinks.map((link, index) => (
+              <div key={`${link.location}-${link.link_key}`} className="flex items-center gap-2">
+                {index > 0 && <span className="text-muted-foreground">•</span>}
+                <a 
+                  href={link.url}
+                  className="iubenda-white iubenda-noiframe iubenda-embed hover:underline"
+                  title={link.label}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  {link.label}
+                </a>
+              </div>
+            ))}
           </div>
         </div>
       </footer>

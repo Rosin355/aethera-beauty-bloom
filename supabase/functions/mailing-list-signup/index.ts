@@ -19,6 +19,10 @@ interface EmailSendResult {
   attempt?: number;
 }
 
+const hasErrorCode = (value: unknown): value is { code: string } => {
+  return typeof value === "object" && value !== null && "code" in value && typeof (value as { code?: unknown }).code === "string";
+};
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -60,7 +64,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (error) {
       console.error('🚨 Database error:', error);
       
-      if ((error as any).code === '23505') {
+      if (hasErrorCode(error) && error.code === '23505') {
         // Email già presente: recupero access_token esistente e invio email di benvenuto
         const { data: existing, error: fetchErr } = await supabase
           .from('mailing_list')
@@ -129,7 +133,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
     );
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("🚨 Error in mailing-list-signup function:", error);
     return new Response(
       JSON.stringify({ error: "Errore interno del server" }),

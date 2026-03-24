@@ -24,6 +24,20 @@ interface Reply {
   };
 }
 
+interface ReplyQueryRow {
+  id: string;
+  content: string;
+  author_id: string;
+  post_id: string;
+  likes_count: number;
+  is_approved: boolean;
+  created_at: string;
+  profiles?: {
+    display_name: string;
+    avatar_url?: string;
+  } | null;
+}
+
 interface ForumRepliesProps {
   postId: string;
   repliesCount: number;
@@ -36,6 +50,10 @@ export function ForumReplies({ postId, repliesCount, onReplyAdded }: ForumReplie
   const [newReply, setNewReply] = useState("");
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  const getErrorMessage = (error: unknown): string => {
+    return error instanceof Error ? error.message : "Errore sconosciuto";
+  };
 
   useEffect(() => {
     if (showReplies) {
@@ -62,7 +80,7 @@ export function ForumReplies({ postId, repliesCount, onReplyAdded }: ForumReplie
       
       // Check user likes
       const repliesWithLikes = await Promise.all(
-        (data || []).map(async (reply) => {
+        (((data || []) as unknown) as ReplyQueryRow[]).map(async (reply) => {
           let userHasLiked = false;
           if (user) {
             const { data: likeData } = await supabase
@@ -77,10 +95,10 @@ export function ForumReplies({ postId, repliesCount, onReplyAdded }: ForumReplie
         })
       );
       
-      setReplies(repliesWithLikes as any);
-    } catch (error: any) {
+      setReplies(repliesWithLikes as Reply[]);
+    } catch (error: unknown) {
       toast.error("Errore nel caricamento delle risposte", {
-        description: error.message,
+        description: getErrorMessage(error),
       });
     } finally {
       setLoading(false);
@@ -117,9 +135,9 @@ export function ForumReplies({ postId, repliesCount, onReplyAdded }: ForumReplie
       setNewReply("");
       fetchReplies();
       onReplyAdded?.();
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast.error("Errore nell'invio della risposta", {
-        description: error.message,
+        description: getErrorMessage(error),
       });
     } finally {
       setSubmitting(false);
@@ -154,8 +172,8 @@ export function ForumReplies({ postId, repliesCount, onReplyAdded }: ForumReplie
       }
 
       fetchReplies();
-    } catch (error: any) {
-      toast.error("Errore nell'operazione", { description: error.message });
+    } catch (error: unknown) {
+      toast.error("Errore nell'operazione", { description: getErrorMessage(error) });
     }
   };
 

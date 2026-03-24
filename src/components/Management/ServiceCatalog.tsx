@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,77 +18,22 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Edit, Clock, Euro, List } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-interface Service {
-  id: string;
-  name: string;
-  category: string;
-  duration: number; // in minutes
-  price: number;
-  description: string;
-}
+import { createBusinessService, fetchBusinessServices, type BusinessService } from "@/lib/api/management";
+import { toast } from "sonner";
 
 const ServiceCatalog = () => {
   const [activeCategory, setActiveCategory] = useState("all");
   const [isAddingService, setIsAddingService] = useState(false);
-  const [newService, setNewService] = useState<Partial<Service>>({
+  const [isLoading, setIsLoading] = useState(true);
+  const [newService, setNewService] = useState({
     name: "",
     category: "",
-    duration: 60,
+    duration_minutes: 60,
     price: 0,
     description: ""
   });
   
-  const [services, setServices] = useState<Service[]>([
-    {
-      id: "1",
-      name: "Classic Facial",
-      category: "facial",
-      duration: 60,
-      price: 75,
-      description: "Deep cleansing facial treatment with steam, exfoliation, and hydration mask."
-    },
-    {
-      id: "2",
-      name: "Swedish Massage",
-      category: "massage",
-      duration: 60,
-      price: 85,
-      description: "Full-body massage using long strokes to promote relaxation and circulation."
-    },
-    {
-      id: "3",
-      name: "Haircut & Style",
-      category: "hair",
-      duration: 45,
-      price: 55,
-      description: "Precision haircut and professional styling with high-quality products."
-    },
-    {
-      id: "4",
-      name: "Manicure with Gel Polish",
-      category: "nails",
-      duration: 45,
-      price: 35,
-      description: "Nail shaping, cuticle care, hand massage, and application of gel polish."
-    },
-    {
-      id: "5",
-      name: "Anti-Aging Treatment",
-      category: "facial",
-      duration: 75,
-      price: 110,
-      description: "Advanced anti-aging facial with specialized serums and techniques."
-    },
-    {
-      id: "6",
-      name: "Hot Stone Massage",
-      category: "massage",
-      duration: 90,
-      price: 120,
-      description: "Therapeutic massage enhanced with smooth heated stones."
-    }
-  ]);
+  const [services, setServices] = useState<BusinessService[]>([]);
 
   const categories = [
     { value: "all", label: "All Services" },
@@ -109,33 +54,54 @@ const ServiceCatalog = () => {
     { value: "120", label: "2 hours" },
   ];
   
+  useEffect(() => {
+    const loadServices = async () => {
+      try {
+        setIsLoading(true);
+        const data = await fetchBusinessServices();
+        setServices(data);
+      } catch (error) {
+        console.error("Error loading services:", error);
+        toast.error("Errore nel caricamento dei servizi");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadServices();
+  }, []);
+
   const filteredServices = activeCategory === "all"
     ? services
     : services.filter(service => service.category === activeCategory);
 
-  const handleAddService = () => {
+  const handleAddService = async () => {
     if (!newService.name || !newService.category) {
       return;
     }
-    
-    const service = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: newService.name,
-      category: newService.category,
-      duration: newService.duration || 60,
-      price: newService.price || 0,
-      description: newService.description || ""
-    };
-    
-    setServices([...services, service]);
-    setIsAddingService(false);
-    setNewService({
-      name: "",
-      category: "",
-      duration: 60,
-      price: 0,
-      description: ""
-    });
+
+    try {
+      const created = await createBusinessService({
+        name: newService.name,
+        category: newService.category,
+        duration_minutes: newService.duration_minutes || 60,
+        price: newService.price || 0,
+        description: newService.description || "",
+      });
+      setServices((prev) => [created, ...prev]);
+      setIsAddingService(false);
+      setNewService({
+        name: "",
+        category: "",
+        duration_minutes: 60,
+        price: 0,
+        description: ""
+      });
+      toast.success("Servizio aggiunto con successo");
+    } catch (error) {
+      console.error("Error adding service:", error);
+      toast.error("Impossibile aggiungere il servizio");
+    }
   };
 
   return (
@@ -188,8 +154,8 @@ const ServiceCatalog = () => {
                   <div className="grid gap-2">
                     <Label htmlFor="duration">Duration</Label>
                     <Select
-                      value={newService.duration?.toString()}
-                      onValueChange={(value) => setNewService({ ...newService, duration: parseInt(value) })}
+                      value={newService.duration_minutes.toString()}
+                      onValueChange={(value) => setNewService({ ...newService, duration_minutes: parseInt(value) })}
                     >
                       <SelectTrigger>
                         <SelectValue placeholder="Select duration" />
@@ -264,18 +230,21 @@ const ServiceCatalog = () => {
                         <div className="flex items-center text-sm text-gray-500">
                           <Clock className="h-4 w-4 mr-1" />
                           <span>
-                            {service.duration} {service.duration === 60 ? "minute" : "minutes"}
+                            {service.duration_minutes} {service.duration_minutes === 60 ? "minute" : "minutes"}
                           </span>
                         </div>
                         <div className="flex items-center font-semibold">
                           <Euro className="h-4 w-4 mr-1" />
-                          <span>{service.price.toFixed(2)}</span>
+                          <span>{Number(service.price).toFixed(2)}</span>
                         </div>
                       </div>
                     </CardContent>
                   </Card>
                 ))}
               </div>
+              {isLoading && (
+                <div className="text-center py-8 text-sm text-gray-500">Caricamento servizi...</div>
+              )}
               
               {filteredServices.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-12 text-center">

@@ -16,6 +16,7 @@ import {
   FileText
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { getEdgeFunctionUrl } from "@/lib/supabaseConfig";
 import { toast } from "sonner";
 
 interface DataUploaderProps {
@@ -64,7 +65,7 @@ const DataUploader = ({
     const token = sessionData?.session?.access_token;
 
     const response = await fetch(
-      `https://jybewogjncaoscrnlqum.supabase.co/functions/v1/parse-document`,
+      getEdgeFunctionUrl("parse-document"),
       {
         method: 'POST',
         headers: {
@@ -156,7 +157,7 @@ const DataUploader = ({
         const token = sessionData?.session?.access_token;
 
         await fetch(
-          `https://jybewogjncaoscrnlqum.supabase.co/functions/v1/generate-embedding`,
+          getEdgeFunctionUrl("generate-embedding"),
           {
             method: 'POST',
             headers: {

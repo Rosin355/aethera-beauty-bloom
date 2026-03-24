@@ -45,6 +45,10 @@ export function ProfileSetup() {
   const [uploadingCV, setUploadingCV] = useState(false);
   const { toast } = useToast();
 
+  const getErrorMessage = (error: unknown): string => {
+    return error instanceof Error ? error.message : "Errore sconosciuto";
+  };
+
   useEffect(() => {
     fetchProfile();
   }, []);
@@ -239,10 +243,10 @@ export function ProfileSetup() {
         title: "Successo",
         description: "Avatar aggiornato con successo",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Errore",
-        description: error.message || "Impossibile caricare l'avatar",
+        description: getErrorMessage(error),
         variant: "destructive",
       });
     } finally {
@@ -312,10 +316,10 @@ export function ProfileSetup() {
         title: "Successo",
         description: "CV caricato con successo",
       });
-    } catch (error: any) {
+    } catch (error: unknown) {
       toast({
         title: "Errore",
-        description: error.message || "Impossibile caricare il CV",
+        description: getErrorMessage(error),
         variant: "destructive",
       });
     } finally {

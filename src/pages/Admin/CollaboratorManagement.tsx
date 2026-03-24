@@ -1,16 +1,13 @@
-import ProtectedRoute from '@/components/Auth/ProtectedRoute';
-import CollaboratorManagement from '@/components/Admin/CollaboratorManagement';
+import AdminLayout from "@/components/Admin/AdminLayout";
+import CollaboratorManagementComponent from "@/components/Admin/CollaboratorManagement";
 
-const CollaboratorManagementPage = () => {
+const CollaboratorManagement = () => {
   return (
-    <ProtectedRoute requireAdmin>
-      <div className="min-h-screen bg-background">
-        <div className="container mx-auto py-8">
-          <CollaboratorManagement />
-        </div>
-      </div>
-    </ProtectedRoute>
+    <AdminLayout>
+      <CollaboratorManagementComponent />
+    </AdminLayout>
   );
 };
 
-export default CollaboratorManagementPage;
+export default CollaboratorManagement;
+

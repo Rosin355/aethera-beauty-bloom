@@ -255,6 +255,10 @@ const VideoManagement = () => {
   const [uploadErrors, setUploadErrors] = useState<{ [key: string]: string }>({});
   const { toast } = useToast();
 
+  const getErrorMessage = (error: unknown): string => {
+    return error instanceof Error ? error.message : 'Errore sconosciuto';
+  };
+
   useEffect(() => {
     loadVideos();
   }, []);
@@ -301,9 +305,9 @@ const VideoManagement = () => {
       } else {
         throw new Error('Upload fallito');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Errore upload:', error);
-      const errorMessage = error.message || 'Errore durante il caricamento';
+      const errorMessage = getErrorMessage(error);
       setUploadErrors(prev => ({ ...prev, [videoKey]: errorMessage }));
       
       toast({
@@ -362,7 +366,7 @@ const VideoManagement = () => {
       });
 
       await loadVideos();
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Errore YouTube:', error);
       toast({
         variant: "destructive",
@@ -395,12 +399,12 @@ const VideoManagement = () => {
       } else {
         throw new Error('Eliminazione fallita');
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Errore eliminazione:', error);
       toast({
         variant: "destructive",
         title: "Errore",
-        description: `Errore durante l'eliminazione: ${error.message}`,
+        description: `Errore durante l'eliminazione: ${getErrorMessage(error)}`,
       });
     }
   };

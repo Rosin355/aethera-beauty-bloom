@@ -171,7 +171,10 @@ const CollaboratorManagement = () => {
               </div>
               <div>
                 <Label htmlFor="role">Ruolo</Label>
-                <Select value={inviteRole} onValueChange={(value: any) => setInviteRole(value)}>
+                <Select
+                  value={inviteRole}
+                  onValueChange={(value: 'user' | 'collaborator' | 'admin') => setInviteRole(value)}
+                >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

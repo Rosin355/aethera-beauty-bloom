@@ -1,7 +1,9 @@
-import { useState, useEffect } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { supabase } from '../integrations/supabase/client';
-import { toast } from 'sonner';
+import { useCallback, useEffect, useState } from "react";
+import { Session, User } from "@supabase/supabase-js";
+import { supabase } from "../integrations/supabase/client";
+import { getAuthRedirectUrl } from "@/lib/supabaseConfig";
+import { toast } from "sonner";
+import { fetchUserRoleFlags, type RoleFlags } from "@/lib/auth/authHelpers";
 
 export interface AuthState {
   user: User | null;
@@ -11,71 +13,70 @@ export interface AuthState {
   isCollaborator: boolean;
 }
 
+const defaultRoleFlags: RoleFlags = {
+  isAdmin: false,
+  isCollaborator: false,
+};
+
 export const useAuth = () => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [isCollaborator, setIsCollaborator] = useState(false);
+  const [roleFlags, setRoleFlags] = useState<RoleFlags>(defaultRoleFlags);
+
+  const checkUserRoles = useCallback(async (userId: string) => {
+    const nextFlags = await fetchUserRoleFlags(userId);
+    setRoleFlags(nextFlags);
+    return nextFlags;
+  }, []);
+
+  const syncSessionState = useCallback(
+    async (nextSession: Session | null) => {
+      setSession(nextSession);
+      const nextUser = nextSession?.user ?? null;
+      setUser(nextUser);
+
+      if (!nextUser) {
+        setRoleFlags(defaultRoleFlags);
+        return;
+      }
+
+      await checkUserRoles(nextUser.id);
+    },
+    [checkUserRoles]
+  );
 
   useEffect(() => {
-    // Set up auth state listener
+    let mounted = true;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
-        
-        if (session?.user) {
-          // Check user roles
-          setTimeout(async () => {
-            await checkUserRoles(session.user.id);
-          }, 0);
-        } else {
-          setIsAdmin(false);
-          setIsCollaborator(false);
+      async (_event, currentSession) => {
+        if (!mounted) return;
+        await syncSessionState(currentSession);
+        if (mounted) {
+          setLoading(false);
         }
-        
-        setLoading(false);
       }
     );
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      
-      if (session?.user) {
-        checkUserRoles(session.user.id);
+    supabase.auth.getSession().then(async ({ data: { session: currentSession } }) => {
+      if (!mounted) return;
+      await syncSessionState(currentSession);
+      if (mounted) {
+        setLoading(false);
       }
-      
-      setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
-  }, []);
-
-  const checkUserRoles = async (userId: string) => {
-    try {
-      const { data: roles } = await supabase
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', userId);
-
-      if (roles) {
-        const userRoles = roles.map(r => r.role);
-        setIsAdmin(userRoles.includes('admin'));
-        setIsCollaborator(userRoles.includes('collaborator') || userRoles.includes('admin'));
-      }
-    } catch (error) {
-      console.error('Error checking user roles:', error);
-    }
-  };
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
+  }, [syncSessionState]);
 
   const signUp = async (email: string, password: string, displayName?: string) => {
     setLoading(true);
     
-    // Use the correct sandbox URL instead of localhost
-    const redirectUrl = "https://3c37cda4-be73-48a8-a792-03ed1a7f45e8.sandbox.lovable.dev/dashboard";
+    const redirectUrl = getAuthRedirectUrl("/dashboard");
     
     const { error } = await supabase.auth.signUp({
       email,
@@ -112,9 +113,8 @@ export const useAuth = () => {
     if (!error) {
       setUser(null);
       setSession(null);
-      setIsAdmin(false);
-      setIsCollaborator(false);
-      toast.success('Disconnesso con successo');
+      setRoleFlags(defaultRoleFlags);
+      toast.success("Disconnesso con successo");
     }
     
     setLoading(false);
@@ -122,8 +122,7 @@ export const useAuth = () => {
   };
 
   const resetPassword = async (email: string) => {
-    // Use the exact current origin without additional parameters
-    const redirectUrl = `${window.location.origin}/reset-password`;
+    const redirectUrl = getAuthRedirectUrl("/reset-password");
     console.log('Reset password redirect URL:', redirectUrl);
     
     const { error } = await supabase.auth.resetPasswordForEmail(email, {
@@ -137,8 +136,8 @@ export const useAuth = () => {
     user,
     session,
     loading,
-    isAdmin,
-    isCollaborator,
+    isAdmin: roleFlags.isAdmin,
+    isCollaborator: roleFlags.isCollaborator,
     signUp,
     signIn,
     signOut,

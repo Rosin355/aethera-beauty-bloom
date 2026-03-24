@@ -66,6 +66,14 @@ interface ForumReply {
   } | null;
 }
 
+const getErrorMessage = (error: unknown): string => {
+  return error instanceof Error ? error.message : "Errore sconosciuto";
+};
+
+interface DatedItem {
+  created_at: string;
+}
+
 export function CommunityModeration() {
   const [posts, setPosts] = useState<ForumPost[]>([]);
   const [jobs, setJobs] = useState<JobPosting[]>([]);
@@ -101,7 +109,7 @@ export function CommunityModeration() {
         .order("created_at", { ascending: false });
 
       if (postsError) throw postsError;
-      setPosts((postsData || []) as any);
+      setPosts(((postsData || []) as unknown) as ForumPost[]);
 
       // Fetch job postings
       const { data: jobsData, error: jobsError } = await supabase
@@ -113,7 +121,7 @@ export function CommunityModeration() {
         .order("created_at", { ascending: false });
 
       if (jobsError) throw jobsError;
-      setJobs((jobsData || []) as any);
+      setJobs(((jobsData || []) as unknown) as JobPosting[]);
 
       // Fetch forum replies
       const { data: repliesData, error: repliesError } = await supabase
@@ -126,10 +134,10 @@ export function CommunityModeration() {
         .order("created_at", { ascending: false });
 
       if (repliesError) throw repliesError;
-      setReplies((repliesData || []) as any);
-    } catch (error: any) {
+      setReplies(((repliesData || []) as unknown) as ForumReply[]);
+    } catch (error: unknown) {
       toast.error("Errore nel caricamento dei contenuti", {
-        description: error.message,
+        description: getErrorMessage(error),
       });
     } finally {
       setLoading(false);
@@ -137,7 +145,7 @@ export function CommunityModeration() {
   };
 
   // Filter by date
-  const filterByDate = (items: any[]) => {
+  const filterByDate = <T extends DatedItem>(items: T[]) => {
     if (dateFilter === "all") return items;
     
     const now = new Date();
@@ -172,8 +180,8 @@ export function CommunityModeration() {
       toast.success(`${selectedPosts.size} post approvati con successo`);
       setSelectedPosts(new Set());
       fetchPendingContent();
-    } catch (error: any) {
-      toast.error("Errore nell'approvazione multipla", { description: error.message });
+    } catch (error: unknown) {
+      toast.error("Errore nell'approvazione multipla", { description: getErrorMessage(error) });
     }
   };
 
@@ -189,8 +197,8 @@ export function CommunityModeration() {
       toast.success(`${selectedPosts.size} post rifiutati`);
       setSelectedPosts(new Set());
       fetchPendingContent();
-    } catch (error: any) {
-      toast.error("Errore nel rifiuto multiplo", { description: error.message });
+    } catch (error: unknown) {
+      toast.error("Errore nel rifiuto multiplo", { description: getErrorMessage(error) });
     }
   };
 
@@ -206,8 +214,8 @@ export function CommunityModeration() {
       toast.success(`${selectedJobs.size} annunci approvati con successo`);
       setSelectedJobs(new Set());
       fetchPendingContent();
-    } catch (error: any) {
-      toast.error("Errore nell'approvazione multipla", { description: error.message });
+    } catch (error: unknown) {
+      toast.error("Errore nell'approvazione multipla", { description: getErrorMessage(error) });
     }
   };
 
@@ -223,8 +231,8 @@ export function CommunityModeration() {
       toast.success(`${selectedJobs.size} annunci rifiutati`);
       setSelectedJobs(new Set());
       fetchPendingContent();
-    } catch (error: any) {
-      toast.error("Errore nel rifiuto multiplo", { description: error.message });
+    } catch (error: unknown) {
+      toast.error("Errore nel rifiuto multiplo", { description: getErrorMessage(error) });
     }
   };
 
@@ -240,8 +248,8 @@ export function CommunityModeration() {
       toast.success(`${selectedReplies.size} risposte approvate con successo`);
       setSelectedReplies(new Set());
       fetchPendingContent();
-    } catch (error: any) {
-      toast.error("Errore nell'approvazione multipla", { description: error.message });
+    } catch (error: unknown) {
+      toast.error("Errore nell'approvazione multipla", { description: getErrorMessage(error) });
     }
   };
 
@@ -257,8 +265,8 @@ export function CommunityModeration() {
       toast.success(`${selectedReplies.size} risposte rifiutate`);
       setSelectedReplies(new Set());
       fetchPendingContent();
-    } catch (error: any) {
-      toast.error("Errore nel rifiuto multiplo", { description: error.message });
+    } catch (error: unknown) {
+      toast.error("Errore nel rifiuto multiplo", { description: getErrorMessage(error) });
     }
   };
 
@@ -272,8 +280,8 @@ export function CommunityModeration() {
       if (error) throw error;
       toast.success("Post approvato con successo");
       fetchPendingContent();
-    } catch (error: any) {
-      toast.error("Errore nell'approvazione", { description: error.message });
+    } catch (error: unknown) {
+      toast.error("Errore nell'approvazione", { description: getErrorMessage(error) });
     }
   };
 
@@ -287,8 +295,8 @@ export function CommunityModeration() {
       if (error) throw error;
       toast.success("Post rifiutato");
       fetchPendingContent();
-    } catch (error: any) {
-      toast.error("Errore nel rifiuto", { description: error.message });
+    } catch (error: unknown) {
+      toast.error("Errore nel rifiuto", { description: getErrorMessage(error) });
     }
   };
 
@@ -302,8 +310,8 @@ export function CommunityModeration() {
       if (error) throw error;
       toast.success(currentPinned ? "Post rimosso dai fissati" : "Post fissato in alto");
       fetchPendingContent();
-    } catch (error: any) {
-      toast.error("Errore nell'operazione", { description: error.message });
+    } catch (error: unknown) {
+      toast.error("Errore nell'operazione", { description: getErrorMessage(error) });
     }
   };
 
@@ -317,8 +325,8 @@ export function CommunityModeration() {
       if (error) throw error;
       toast.success("Annuncio approvato con successo");
       fetchPendingContent();
-    } catch (error: any) {
-      toast.error("Errore nell'approvazione", { description: error.message });
+    } catch (error: unknown) {
+      toast.error("Errore nell'approvazione", { description: getErrorMessage(error) });
     }
   };
 
@@ -332,8 +340,8 @@ export function CommunityModeration() {
       if (error) throw error;
       toast.success("Annuncio rifiutato");
       fetchPendingContent();
-    } catch (error: any) {
-      toast.error("Errore nel rifiuto", { description: error.message });
+    } catch (error: unknown) {
+      toast.error("Errore nel rifiuto", { description: getErrorMessage(error) });
     }
   };
 
@@ -347,8 +355,8 @@ export function CommunityModeration() {
       if (error) throw error;
       toast.success("Risposta approvata con successo");
       fetchPendingContent();
-    } catch (error: any) {
-      toast.error("Errore nell'approvazione", { description: error.message });
+    } catch (error: unknown) {
+      toast.error("Errore nell'approvazione", { description: getErrorMessage(error) });
     }
   };
 
@@ -362,8 +370,8 @@ export function CommunityModeration() {
       if (error) throw error;
       toast.success("Risposta rifiutata");
       fetchPendingContent();
-    } catch (error: any) {
-      toast.error("Errore nel rifiuto", { description: error.message });
+    } catch (error: unknown) {
+      toast.error("Errore nel rifiuto", { description: getErrorMessage(error) });
     }
   };
 

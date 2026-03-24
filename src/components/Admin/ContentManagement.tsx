@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { 
   Card,
   CardContent,
@@ -45,59 +45,14 @@ import {
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-
-const dummyContent = [
-  {
-    id: "1",
-    title: "Tecniche Avanzate di Massaggio",
-    type: "video",
-    category: "Massaggio",
-    visibility: "all",
-    uploadDate: "10/06/2023",
-    duration: "45:30"
-  },
-  {
-    id: "2",
-    title: "Trattamenti Viso Anti-Age",
-    type: "course",
-    category: "Skincare",
-    visibility: "premium",
-    uploadDate: "22/07/2023",
-    duration: "3:15:00"
-  },
-  {
-    id: "3",
-    title: "Guida alla Gestione del Cliente",
-    type: "document",
-    category: "Business",
-    visibility: "all",
-    uploadDate: "15/05/2023",
-    duration: "N/A"
-  },
-  {
-    id: "4",
-    title: "Webinar: Nuovi Trend Beauty 2024",
-    type: "webinar",
-    category: "Trends",
-    visibility: "premium",
-    uploadDate: "05/09/2023",
-    duration: "1:20:45"
-  },
-  {
-    id: "5",
-    title: "Tecniche di Marketing sui Social",
-    type: "course",
-    category: "Marketing",
-    visibility: "all",
-    uploadDate: "18/08/2023",
-    duration: "2:30:00"
-  }
-];
+import { createAdminContentItem, deleteAdminContentItem, fetchAdminContentItems, type AdminContentView } from "@/lib/api/adminManagement";
+import { toast } from "sonner";
 
 const ContentManagement = () => {
-  const [content, setContent] = useState(dummyContent);
+  const [content, setContent] = useState<AdminContentView[]>([]);
   const [activeTab, setActiveTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
   const [isAddingContent, setIsAddingContent] = useState(false);
   const [newContent, setNewContent] = useState({
     title: "",
@@ -105,6 +60,22 @@ const ContentManagement = () => {
     category: "",
     visibility: "all"
   });
+
+  useEffect(() => {
+    const loadContent = async () => {
+      try {
+        setIsLoading(true);
+        const items = await fetchAdminContentItems();
+        setContent(items);
+      } catch (error) {
+        console.error("Error loading content items:", error);
+        toast.error("Errore nel caricamento contenuti");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadContent();
+  }, []);
 
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value);
@@ -115,7 +86,7 @@ const ContentManagement = () => {
       item.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
       item.category.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesTab = activeTab === "all" || item.type === activeTab;
+    const matchesTab = activeTab === "all" || item.content_type === activeTab;
     
     return matchesSearch && matchesTab;
   });
@@ -148,29 +119,43 @@ const ContentManagement = () => {
     }
   };
 
-  const handleAddContent = () => {
+  const handleAddContent = async () => {
     if (!newContent.title || !newContent.category) {
       return;
     }
-    
-    const content = {
-      id: Math.random().toString(36).substring(7),
-      title: newContent.title,
-      type: newContent.type,
-      category: newContent.category,
-      visibility: newContent.visibility,
-      uploadDate: new Date().toLocaleDateString('it-IT'),
-      duration: newContent.type === "document" ? "N/A" : "00:00"
-    };
-    
-    setContent(prev => [...prev, content]);
-    setIsAddingContent(false);
-    setNewContent({
-      title: "",
-      type: "video",
-      category: "",
-      visibility: "all"
-    });
+
+    try {
+      const created = await createAdminContentItem({
+        title: newContent.title,
+        content_type: newContent.type,
+        category: newContent.category,
+        visibility: newContent.visibility,
+        duration: newContent.type === "document" ? "N/A" : "00:00",
+      });
+      setContent((prev) => [created, ...prev]);
+      setIsAddingContent(false);
+      setNewContent({
+        title: "",
+        type: "video",
+        category: "",
+        visibility: "all"
+      });
+      toast.success("Contenuto aggiunto");
+    } catch (error) {
+      console.error("Error adding content:", error);
+      toast.error("Impossibile aggiungere il contenuto");
+    }
+  };
+
+  const handleDeleteContent = async (id: string) => {
+    try {
+      await deleteAdminContentItem(id);
+      setContent((prev) => prev.filter((item) => item.id !== id));
+      toast.success("Contenuto eliminato");
+    } catch (error) {
+      console.error("Error deleting content:", error);
+      toast.error("Impossibile eliminare il contenuto");
+    }
   };
 
   return (
@@ -311,25 +296,30 @@ const ContentManagement = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredContent.length > 0 ? (
+                    {!isLoading && filteredContent.length > 0 ? (
                       filteredContent.map((item) => (
                         <TableRow key={item.id}>
                           <TableCell className="font-medium">{item.title}</TableCell>
                           <TableCell>
                             <div className="flex items-center">
-                              {getTypeIcon(item.type)}
-                              <span className="ml-2 capitalize">{item.type}</span>
+                              {getTypeIcon(item.content_type)}
+                              <span className="ml-2 capitalize">{item.content_type}</span>
                             </div>
                           </TableCell>
                           <TableCell>{item.category}</TableCell>
                           <TableCell>{getVisibilityBadge(item.visibility)}</TableCell>
-                          <TableCell>{item.uploadDate}</TableCell>
-                          <TableCell>{item.duration}</TableCell>
+                          <TableCell>{new Date(item.created_at).toLocaleDateString('it-IT')}</TableCell>
+                          <TableCell>{item.duration || "N/A"}</TableCell>
                           <TableCell className="text-right space-x-2">
                             <Button variant="ghost" size="icon" className="h-8 w-8">
                               <Edit className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:bg-red-50">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8 text-red-500 hover:bg-red-50"
+                              onClick={() => handleDeleteContent(item.id)}
+                            >
                               <Trash className="h-4 w-4" />
                             </Button>
                           </TableCell>
@@ -338,7 +328,7 @@ const ContentManagement = () => {
                     ) : (
                       <TableRow>
                         <TableCell colSpan={7} className="h-24 text-center">
-                          Nessun contenuto trovato
+                          {isLoading ? "Caricamento contenuti..." : "Nessun contenuto trovato"}
                         </TableCell>
                       </TableRow>
                     )}

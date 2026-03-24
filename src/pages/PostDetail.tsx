@@ -39,6 +39,40 @@ interface Reply {
   user_has_liked: boolean;
 }
 
+interface PostCategory {
+  name?: string | null;
+  color?: string | null;
+}
+
+interface PostAuthorProfile {
+  display_name?: string | null;
+  avatar_url?: string | null;
+}
+
+interface PostQueryRow {
+  id: string;
+  title: string;
+  content: string;
+  author_id: string;
+  created_at: string;
+  likes_count: number | null;
+  replies_count: number | null;
+  is_pinned: boolean | null;
+  is_approved: boolean | null;
+  forum_categories?: PostCategory | null;
+  profiles?: PostAuthorProfile | null;
+}
+
+interface ReplyQueryRow {
+  id: string;
+  content: string;
+  author_id: string;
+  created_at: string;
+  likes_count: number | null;
+  is_approved: boolean | null;
+  profiles?: PostAuthorProfile | null;
+}
+
 export default function PostDetail() {
   const { postId } = useParams<{ postId: string }>();
   const navigate = useNavigate();
@@ -100,20 +134,22 @@ export default function PostDetail() {
       userHasLiked = !!likeData;
     }
 
+    const postRow = data as unknown as PostQueryRow;
+
     setPost({
-      id: data.id,
-      title: data.title,
-      content: data.content,
-      author_id: data.author_id,
-      author_display_name: (data.profiles as any)?.display_name || "Utente Anonimo",
-      author_avatar_url: (data.profiles as any)?.avatar_url,
-      category_name: (data.forum_categories as any)?.name || "Generale",
-      category_color: (data.forum_categories as any)?.color || "#6AA8B3",
-      created_at: data.created_at,
-      likes_count: data.likes_count || 0,
-      replies_count: data.replies_count || 0,
-      is_pinned: data.is_pinned || false,
-      is_approved: data.is_approved || false,
+      id: postRow.id,
+      title: postRow.title,
+      content: postRow.content,
+      author_id: postRow.author_id,
+      author_display_name: postRow.profiles?.display_name || "Utente Anonimo",
+      author_avatar_url: postRow.profiles?.avatar_url || undefined,
+      category_name: postRow.forum_categories?.name || "Generale",
+      category_color: postRow.forum_categories?.color || "#6AA8B3",
+      created_at: postRow.created_at,
+      likes_count: postRow.likes_count || 0,
+      replies_count: postRow.replies_count || 0,
+      is_pinned: postRow.is_pinned || false,
+      is_approved: postRow.is_approved || false,
       user_has_liked: userHasLiked,
     });
     setLoading(false);
@@ -150,7 +186,7 @@ export default function PostDetail() {
 
     // Check user likes for each reply
     const repliesWithLikes = await Promise.all(
-      (data || []).map(async (reply) => {
+      (((data || []) as unknown) as ReplyQueryRow[]).map(async (reply) => {
         let userHasLiked = false;
         if (user) {
           const { data: likeData } = await supabase
@@ -166,8 +202,8 @@ export default function PostDetail() {
           id: reply.id,
           content: reply.content,
           author_id: reply.author_id,
-          author_display_name: (reply.profiles as any)?.display_name || "Utente Anonimo",
-          author_avatar_url: (reply.profiles as any)?.avatar_url,
+          author_display_name: reply.profiles?.display_name || "Utente Anonimo",
+          author_avatar_url: reply.profiles?.avatar_url || undefined,
           created_at: reply.created_at,
           likes_count: reply.likes_count || 0,
           is_approved: reply.is_approved || false,
@@ -294,7 +330,7 @@ export default function PostDetail() {
   const moderatePost = async (action: 'approve' | 'reject' | 'pin' | 'unpin') => {
     if (!isAdmin || !post) return;
 
-    const updates: any = {};
+    const updates: Record<string, boolean> = {};
     if (action === 'approve') updates.is_approved = true;
     if (action === 'reject') updates.is_approved = false;
     if (action === 'pin') updates.is_pinned = true;

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { supabase } from "@/integrations/supabase/client";
+import { getEdgeFunctionUrl } from "@/lib/supabaseConfig";
 import { toast } from "sonner";
 import { Loader2 } from "lucide-react";
 
@@ -50,7 +51,7 @@ const ManualDataInput = ({ onSaveComplete }: ManualDataInputProps) => {
         const token = sessionData?.session?.access_token;
 
         await fetch(
-          `https://jybewogjncaoscrnlqum.supabase.co/functions/v1/generate-embedding`,
+          getEdgeFunctionUrl("generate-embedding"),
           {
             method: 'POST',
             headers: {

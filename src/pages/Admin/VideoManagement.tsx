@@ -1,13 +1,13 @@
-import React from 'react';
-import AdminLayout from '@/components/Admin/AdminLayout';
-import VideoManagement from '@/components/Admin/VideoManagement';
+import AdminLayout from "@/components/Admin/AdminLayout";
+import VideoManagementComponent from "@/components/Admin/VideoManagement";
 
 const VideoManagementPage = () => {
   return (
     <AdminLayout>
-      <VideoManagement />
+      <VideoManagementComponent />
     </AdminLayout>
   );
 };
 
 export default VideoManagementPage;
+

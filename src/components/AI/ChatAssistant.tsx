@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { getEdgeFunctionUrl } from "@/lib/supabaseConfig";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
@@ -271,20 +272,26 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
         },
       ]);
     }
-  }, [isOpen, embedded]);
+  }, [isOpen, embedded, messages.length]);
 
   const streamChat = async (userMessage: Message) => {
-    const CHAT_URL = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-assistant`;
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      throw new Error("Sessione non valida. Effettua nuovamente il login.");
+    }
+
+    const chatUrl = getEdgeFunctionUrl("ai-assistant");
     
-    const resp = await fetch(CHAT_URL, {
+    const resp = await fetch(chatUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        'Authorization': `Bearer ${session.access_token}`,
       },
       body: JSON.stringify({ 
         messages: [...messages, userMessage],
-        userId,
         conversationId: currentConversationId,
       }),
     });
@@ -400,10 +407,12 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
       // Save conversation after successful response
       const finalMessages = [...newMessages, { role: 'assistant' as const, content: assistantContent }];
       saveConversation(finalMessages);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Error sending message:', error);
       
-      const errorMessage = error.message || 'Errore nella comunicazione con l\'assistente';
+      const errorMessage = error instanceof Error
+        ? error.message
+        : 'Errore nella comunicazione con l\'assistente';
       toast.error(errorMessage, {
         description: 'Se il problema persiste, ricarica la pagina.',
         duration: 5000,

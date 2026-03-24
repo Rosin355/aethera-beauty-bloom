@@ -1,4 +1,9 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import {
+  HttpError,
+  requireAdminUser,
+  toErrorResponse,
+} from '../_shared/auth.ts'
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -15,10 +20,12 @@ Deno.serve(async (req) => {
 
   try {
     const url = new URL(req.url)
+    await requireAdminUser(req)
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     )
+    const projectRef = new URL(Deno.env.get('SUPABASE_URL') ?? '').hostname.split('.')[0]
 
     // TUS Protocol Implementation
     const method = req.method
@@ -48,10 +55,10 @@ Deno.serve(async (req) => {
       }
 
       const uploadId = crypto.randomUUID()
-      // Force HTTPS for the location header to prevent TUS client issues
-      const uploadUrl = `https://jybewogjncaoscrnlqum.functions.supabase.co/video-upload/${uploadId}`
-
-      console.log(`Created upload session: ${uploadId}`)
+      if (!projectRef) {
+        throw new HttpError(500, 'Configurazione progetto non valida')
+      }
+      const uploadUrl = `https://${projectRef}.functions.supabase.co/video-upload/${uploadId}`
 
       return new Response(null, {
         status: 201,
@@ -70,8 +77,6 @@ Deno.serve(async (req) => {
       const uploadOffset = parseInt(req.headers.get('upload-offset') || '0')
       const chunk = new Uint8Array(await req.arrayBuffer())
 
-      console.log(`Uploading chunk for ${uploadId}: offset ${uploadOffset}, size ${chunk.length}`)
-
       // Store chunk in temporary storage (using Supabase storage as temp)
       const tempPath = `temp/${uploadId}/${uploadOffset}`
       const { error } = await supabase.storage
@@ -83,7 +88,7 @@ Deno.serve(async (req) => {
         })
 
       if (error) {
-        console.error(`Error uploading chunk: ${error.message}`)
+        console.error(`Error uploading chunk`)
         return new Response(JSON.stringify({ error: error.message }), {
           status: 500,
           headers: { ...corsHeaders, 'content-type': 'application/json' }
@@ -119,7 +124,7 @@ Deno.serve(async (req) => {
         .list(`temp/${uploadId}`, { sortBy: { column: 'name', order: 'asc' } })
 
       if (listError) {
-        console.error(`Error listing chunks: ${listError.message}`)
+        console.error(`Error listing chunks`)
         return new Response(null, {
           status: 200,
           headers: {
@@ -217,9 +222,9 @@ Deno.serve(async (req) => {
               .remove([`temp/${uploadId}/${file.name}`])
           }
 
-          console.log(`Successfully assembled and uploaded: ${filename}`)
+          console.log(`Successfully assembled and uploaded video`)
         } catch (error) {
-          console.error('Error assembling upload:', error)
+          console.error('Error assembling upload')
         }
       }
 
@@ -245,16 +250,9 @@ Deno.serve(async (req) => {
     })
 
   } catch (error) {
-    console.error('Upload error:', error)
-    return new Response(JSON.stringify({ 
-      error: 'Internal server error',
-      details: error.message 
-    }), {
-      status: 500,
-      headers: { 
-        ...corsHeaders,
-        'content-type': 'application/json' 
-      }
-    })
+    if (!(error instanceof HttpError)) {
+      console.error('Upload error')
+    }
+    return toErrorResponse(error, corsHeaders)
   }
 })

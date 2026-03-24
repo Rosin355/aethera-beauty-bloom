@@ -85,7 +85,7 @@ export function JobBoard() {
         variant: "destructive",
       });
     } else {
-      setJobs((data as any) || []);
+      setJobs(((data || []) as unknown) as JobPosting[]);
     }
     setLoading(false);
   };

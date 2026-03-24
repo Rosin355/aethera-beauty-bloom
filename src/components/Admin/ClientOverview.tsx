@@ -1,4 +1,5 @@
 
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   LineChart,
@@ -12,33 +13,62 @@ import {
   Legend,
   ResponsiveContainer
 } from "recharts";
-
-// Dati di esempio per i grafici
-const revenueData = [
-  { month: "Gen", revenue: 1200 },
-  { month: "Feb", revenue: 1500 },
-  { month: "Mar", revenue: 1100 },
-  { month: "Apr", revenue: 1700 },
-  { month: "Mag", revenue: 1400 },
-  { month: "Giu", revenue: 2100 },
-  { month: "Lug", revenue: 1900 },
-  { month: "Ago", revenue: 2300 },
-  { month: "Set", revenue: 1800 }
-];
-
-const serviceData = [
-  { name: "Trattamenti Viso", value: 35 },
-  { name: "Massaggi", value: 25 },
-  { name: "Manicure", value: 20 },
-  { name: "Trattamenti Corpo", value: 15 },
-  { name: "Altri", value: 5 }
-];
+import { buildClientOverviewData, fetchClientMetricsHistory } from "@/lib/api/adminManagement";
+import { toast } from "sonner";
 
 interface ClientOverviewProps {
   clientId: string | undefined;
 }
 
 const ClientOverview = ({ clientId }: ClientOverviewProps) => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [revenueData, setRevenueData] = useState<Array<{ month: string; revenue: number }>>([]);
+  const [serviceData, setServiceData] = useState<Array<{ name: string; value: number }>>([]);
+  const [details, setDetails] = useState({
+    healthScore: 0,
+    healthLabel: "N/D",
+    healthDelta: "Nessuna variazione disponibile",
+    sessionsCount: 0,
+    lastAccess: "N/D",
+    resources: [] as Array<{ name: string; value: number }>,
+  });
+
+  useEffect(() => {
+    const loadOverview = async () => {
+      if (!clientId) return;
+      try {
+        setIsLoading(true);
+        const metrics = await fetchClientMetricsHistory(clientId);
+        const normalized = buildClientOverviewData(metrics);
+        setRevenueData(normalized.revenueTrend.map((row) => ({ month: row.month, revenue: row.revenue })));
+        setServiceData(normalized.serviceDistribution);
+
+        const latest = normalized.latest;
+        const avgResourceValue = normalized.trainingProgress.length > 0
+          ? normalized.trainingProgress.reduce((sum, r) => sum + Number(r.value || 0), 0) / normalized.trainingProgress.length
+          : 0;
+        setDetails({
+          healthScore: latest?.business_health_score ?? 0,
+          healthLabel: (latest?.business_health_score ?? 0) >= 70 ? "Buono" : (latest?.business_health_score ?? 0) > 0 ? "Da migliorare" : "N/D",
+          healthDelta: "Calcolato da metriche reali",
+          sessionsCount: latest?.sessions_count ?? 0,
+          lastAccess: latest?.metric_date
+            ? new Date(latest.metric_date).toLocaleDateString("it-IT")
+            : "N/D",
+          resources: normalized.trainingProgress,
+        });
+      } catch (error) {
+        console.error("Error loading client overview:", error);
+        toast.error("Errore nel caricamento panoramica cliente");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadOverview();
+  }, [clientId]);
+
+  const hasData = revenueData.length > 0 || serviceData.length > 0;
+
   return (
     <div className="space-y-6">
       <Card>
@@ -47,33 +77,39 @@ const ClientOverview = ({ clientId }: ClientOverviewProps) => {
         </CardHeader>
         <CardContent>
           <div className="h-80">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={revenueData}
-                margin={{
-                  top: 5,
-                  right: 30,
-                  left: 20,
-                  bottom: 5,
-                }}
-              >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip 
-                  formatter={(value) => [`€${value}`, "Ricavi"]} 
-                  labelFormatter={(label) => `Mese: ${label}`}
-                />
-                <Legend />
-                <Line
-                  type="monotone"
-                  dataKey="revenue"
-                  stroke="#E46A39"
-                  activeDot={{ r: 8 }}
-                  name="Ricavi"
-                />
-              </LineChart>
-            </ResponsiveContainer>
+            {revenueData.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart
+                  data={revenueData}
+                  margin={{
+                    top: 5,
+                    right: 30,
+                    left: 20,
+                    bottom: 5,
+                  }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="month" />
+                  <YAxis />
+                  <Tooltip 
+                    formatter={(value) => [`€${value}`, "Ricavi"]} 
+                    labelFormatter={(label) => `Mese: ${label}`}
+                  />
+                  <Legend />
+                  <Line
+                    type="monotone"
+                    dataKey="revenue"
+                    stroke="#E46A39"
+                    activeDot={{ r: 8 }}
+                    name="Ricavi"
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-full flex items-center justify-center text-sm text-gray-500">
+                Nessun dato ricavi disponibile
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -85,26 +121,32 @@ const ClientOverview = ({ clientId }: ClientOverviewProps) => {
           </CardHeader>
           <CardContent>
             <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart
-                  data={serviceData}
-                  margin={{
-                    top: 5,
-                    right: 30,
-                    left: 20,
-                    bottom: 5,
-                  }}
-                >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip 
-                    formatter={(value) => [`${value}%`, "Percentuale"]} 
-                  />
-                  <Legend />
-                  <Bar dataKey="value" name="Percentuale" fill="#6AA8B3" />
-                </BarChart>
-              </ResponsiveContainer>
+              {serviceData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={serviceData}
+                    margin={{
+                      top: 5,
+                      right: 30,
+                      left: 20,
+                      bottom: 5,
+                    }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip 
+                      formatter={(value) => [`${value}%`, "Percentuale"]} 
+                    />
+                    <Legend />
+                    <Bar dataKey="value" name="Percentuale" fill="#6AA8B3" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-sm text-gray-500">
+                  Nessun servizio disponibile
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -120,42 +162,46 @@ const ClientOverview = ({ clientId }: ClientOverviewProps) => {
                   <h4 className="text-sm font-medium text-gray-500">Business Health Score</h4>
                   <div className="mt-1 flex items-center">
                     <div className="w-16 h-16 rounded-full bg-brand-water text-white flex items-center justify-center text-xl font-bold">
-                      72
+                      {details.healthScore}
                     </div>
                     <div className="ml-4">
-                      <span className="text-sm font-medium">Buono</span>
-                      <p className="text-xs text-gray-500">+5 punti nell'ultimo mese</p>
+                      <span className="text-sm font-medium">{details.healthLabel}</span>
+                      <p className="text-xs text-gray-500">{details.healthDelta}</p>
                     </div>
                   </div>
                 </div>
                 <div>
                   <h4 className="text-sm font-medium text-gray-500">Numero di Sessioni</h4>
-                  <p className="text-2xl font-semibold mt-1">48</p>
-                  <p className="text-xs text-gray-500">Ultimo accesso: 2 giorni fa</p>
+                  <p className="text-2xl font-semibold mt-1">{details.sessionsCount}</p>
+                  <p className="text-xs text-gray-500">Ultimo accesso: {details.lastAccess}</p>
                 </div>
               </div>
               
               <div className="border-t pt-4">
                 <h4 className="text-sm font-medium text-gray-500 mb-2">Risorse Completate</h4>
                 <div className="space-y-2">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Video Tutorial</span>
-                    <span className="font-medium">8/12</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Corsi</span>
-                    <span className="font-medium">2/5</span>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Webinar</span>
-                    <span className="font-medium">3/4</span>
-                  </div>
+                  {details.resources.length > 0 ? (
+                    details.resources.map((resource, index) => (
+                      <div key={`${resource.name}-${index}`} className="flex justify-between items-center">
+                        <span className="text-sm">{resource.name}</span>
+                        <span className="font-medium">{Number(resource.value || 0)}%</span>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-sm text-gray-500">Nessun progresso formazione disponibile</div>
+                  )}
                 </div>
               </div>
             </div>
           </CardContent>
         </Card>
       </div>
+
+      {!isLoading && !hasData && (
+        <div className="text-center text-sm text-gray-500">
+          Nessuna metrica disponibile per questo cliente.
+        </div>
+      )}
     </div>
   );
 };

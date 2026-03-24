@@ -130,13 +130,23 @@ const AuthForm = ({ type }: AuthFormProps) => {
               className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
             >
               Accetto i{" "}
-              <Link to="/terms" className="text-accent hover:underline">
+              <a
+                href="https://www.iubenda.com/termini-e-condizioni/19385152"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent hover:underline"
+              >
                 Termini di Servizio
-              </Link>{" "}
+              </a>{" "}
               e la{" "}
-              <Link to="/privacy" className="text-accent hover:underline">
+              <a
+                href="https://www.iubenda.com/privacy-policy/19385152"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-accent hover:underline"
+              >
                 Privacy Policy
-              </Link>
+              </a>
             </label>
           </div>
         )}

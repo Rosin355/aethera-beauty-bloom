@@ -36,6 +36,8 @@ const GlowCard: React.FC<GlowCardProps> = ({
   const cardRef = useRef<HTMLDivElement>(null);
   const innerRef = useRef<HTMLDivElement>(null);
 
+  type GlowInlineStyles = React.CSSProperties & Record<string, string | number | undefined>;
+
   useEffect(() => {
     const syncPointer = (e: PointerEvent) => {
       const { clientX: x, clientY: y } = e;
@@ -62,8 +64,8 @@ const GlowCard: React.FC<GlowCardProps> = ({
     return sizeMap[size];
   };
 
-  const getInlineStyles = (): React.CSSProperties & Record<string, any> => {
-    const baseStyles: React.CSSProperties & Record<string, any> = {
+  const getInlineStyles = (): GlowInlineStyles => {
+    const baseStyles: GlowInlineStyles = {
       '--base': base,
       '--spread': spread,
       '--radius': '14',

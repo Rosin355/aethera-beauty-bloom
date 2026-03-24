@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,20 +24,14 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Archive, Edit, Trash } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-
-interface Product {
-  id: string;
-  name: string;
-  category: string;
-  quantity: number;
-  supplier: string;
-  price: number;
-}
+import { createInventoryItem, deleteInventoryItem, fetchInventoryItems, type InventoryItem } from "@/lib/api/management";
+import { toast } from "sonner";
 
 const InventoryManager = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [isAddingProduct, setIsAddingProduct] = useState(false);
-  const [newProduct, setNewProduct] = useState<Partial<Product>>({
+  const [isLoading, setIsLoading] = useState(true);
+  const [newProduct, setNewProduct] = useState({
     name: "",
     category: "",
     quantity: 0,
@@ -45,51 +39,26 @@ const InventoryManager = () => {
     price: 0
   });
   
-  const [products, setProducts] = useState<Product[]>([
-    {
-      id: "1",
-      name: "Hydrating Face Serum",
-      category: "Skincare",
-      quantity: 15,
-      supplier: "BeautySupply Co.",
-      price: 29.99
-    },
-    {
-      id: "2",
-      name: "Professional Hair Dryer",
-      category: "Equipment",
-      quantity: 3,
-      supplier: "ProTools Inc.",
-      price: 129.99
-    },
-    {
-      id: "3",
-      name: "Nourishing Shampoo",
-      category: "Haircare",
-      quantity: 8,
-      supplier: "HairEssentials Ltd.",
-      price: 14.99
-    },
-    {
-      id: "4",
-      name: "Massage Oil - Lavender",
-      category: "Massage",
-      quantity: 5,
-      supplier: "EssentialOils Co.",
-      price: 18.50
-    },
-    {
-      id: "5",
-      name: "Nail Polish - Rose Gold",
-      category: "Nails",
-      quantity: 2,
-      supplier: "GlamNails Inc.",
-      price: 9.99
-    }
-  ]);
+  const [products, setProducts] = useState<InventoryItem[]>([]);
 
   const categories = ["Skincare", "Haircare", "Makeup", "Equipment", "Nails", "Massage", "Other"];
   
+  useEffect(() => {
+    const loadInventory = async () => {
+      try {
+        setIsLoading(true);
+        const data = await fetchInventoryItems();
+        setProducts(data);
+      } catch (error) {
+        console.error("Error loading inventory:", error);
+        toast.error("Errore nel caricamento inventario");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadInventory();
+  }, []);
+
   const filteredProducts = products.filter(
     (product) =>
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -97,33 +66,44 @@ const InventoryManager = () => {
       product.supplier.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const handleAddProduct = () => {
+  const handleAddProduct = async () => {
     if (!newProduct.name || !newProduct.category || !newProduct.supplier) {
       return;
     }
-    
-    const product = {
-      id: Math.random().toString(36).substr(2, 9),
-      name: newProduct.name,
-      category: newProduct.category,
-      quantity: newProduct.quantity || 0,
-      supplier: newProduct.supplier,
-      price: newProduct.price || 0
-    };
-    
-    setProducts([...products, product]);
-    setIsAddingProduct(false);
-    setNewProduct({
-      name: "",
-      category: "",
-      quantity: 0,
-      supplier: "",
-      price: 0
-    });
+
+    try {
+      const created = await createInventoryItem({
+        name: newProduct.name,
+        category: newProduct.category,
+        quantity: newProduct.quantity || 0,
+        supplier: newProduct.supplier,
+        price: newProduct.price || 0,
+      });
+      setProducts((prev) => [created, ...prev]);
+      setIsAddingProduct(false);
+      setNewProduct({
+        name: "",
+        category: "",
+        quantity: 0,
+        supplier: "",
+        price: 0
+      });
+      toast.success("Prodotto aggiunto");
+    } catch (error) {
+      console.error("Error adding inventory item:", error);
+      toast.error("Impossibile aggiungere il prodotto");
+    }
   };
 
-  const handleDeleteProduct = (id: string) => {
-    setProducts(products.filter(product => product.id !== id));
+  const handleDeleteProduct = async (id: string) => {
+    try {
+      await deleteInventoryItem(id);
+      setProducts(products.filter(product => product.id !== id));
+      toast.success("Prodotto eliminato");
+    } catch (error) {
+      console.error("Error deleting inventory item:", error);
+      toast.error("Impossibile eliminare il prodotto");
+    }
   };
 
   return (
@@ -238,7 +218,7 @@ const InventoryManager = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredProducts.length > 0 ? (
+                {!isLoading && filteredProducts.length > 0 ? (
                   filteredProducts.map((product) => (
                     <TableRow key={product.id}>
                       <TableCell className="font-medium">{product.name}</TableCell>
@@ -275,7 +255,7 @@ const InventoryManager = () => {
                 ) : (
                   <TableRow>
                     <TableCell colSpan={6} className="h-24 text-center">
-                      No products found
+                      {isLoading ? "Caricamento inventario..." : "No products found"}
                     </TableCell>
                   </TableRow>
                 )}

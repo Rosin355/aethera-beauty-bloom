@@ -60,6 +60,21 @@ interface ForumCategory {
   description?: string;
 }
 
+interface ForumPostQueryRow {
+  id: string;
+  title: string;
+  content: string;
+  author_id: string;
+  created_at: string;
+  likes_count: number | null;
+  replies_count: number | null;
+  is_pinned: boolean | null;
+  is_approved: boolean | null;
+  category_id: string;
+  forum_categories?: { name?: string | null; color?: string | null; description?: string | null } | null;
+  profiles?: { display_name?: string | null; avatar_url?: string | null; user_type?: string | null } | null;
+}
+
 export function CommunityForum() {
   const [posts, setPosts] = useState<ForumPost[]>([]);
   const [categories, setCategories] = useState<ForumCategory[]>([]);
@@ -169,7 +184,7 @@ export function CommunityForum() {
 
     // Check user likes
     const postsWithLikes = await Promise.all(
-      (data as any[]).map(async (post) => {
+      (((data || []) as unknown) as ForumPostQueryRow[]).map(async (post) => {
         let userHasLiked = false;
         if (user) {
           const { data: likeData } = await supabase
@@ -332,7 +347,7 @@ export function CommunityForum() {
   const moderatePost = async (postId: string, action: 'approve' | 'reject' | 'pin' | 'unpin') => {
     if (!isAdmin) return;
 
-    const updates: any = {};
+    const updates: Record<string, boolean> = {};
     if (action === 'approve') updates.is_approved = true;
     if (action === 'reject') updates.is_approved = false;
     if (action === 'pin') updates.is_pinned = true;
