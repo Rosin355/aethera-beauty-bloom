@@ -67,7 +67,3 @@ export function UserTypeBadge({ userType, showLabel = true, size = "sm" }: UserT
     </TooltipProvider>
   );
 }
-
-export function getUserTypeLabel(userType?: string | null): string {
-  return userTypeConfig[userType || "user"]?.label || "Utente";
-}

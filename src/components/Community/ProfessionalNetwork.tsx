@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -46,11 +46,7 @@ export function ProfessionalNetwork() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchProfiles();
-  }, []);
-
-  const fetchProfiles = async () => {
+  const fetchProfiles = useCallback(async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('profiles')
@@ -68,7 +64,11 @@ export function ProfessionalNetwork() {
       setProfiles(data || []);
     }
     setLoading(false);
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchProfiles();
+  }, [fetchProfiles]);
 
   const filteredProfiles = profiles.filter(profile => {
     const matchesSearch = 

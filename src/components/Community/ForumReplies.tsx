@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -55,13 +55,7 @@ export function ForumReplies({ postId, repliesCount, onReplyAdded }: ForumReplie
     return error instanceof Error ? error.message : "Errore sconosciuto";
   };
 
-  useEffect(() => {
-    if (showReplies) {
-      fetchReplies();
-    }
-  }, [showReplies, postId]);
-
-  const fetchReplies = async () => {
+  const fetchReplies = useCallback(async () => {
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -103,7 +97,13 @@ export function ForumReplies({ postId, repliesCount, onReplyAdded }: ForumReplie
     } finally {
       setLoading(false);
     }
-  };
+  }, [postId]);
+
+  useEffect(() => {
+    if (showReplies) {
+      fetchReplies();
+    }
+  }, [showReplies, fetchReplies]);
 
   const handleSubmitReply = async () => {
     if (!newReply.trim()) {

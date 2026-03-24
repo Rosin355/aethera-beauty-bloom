@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -49,11 +49,7 @@ export function ProfileSetup() {
     return error instanceof Error ? error.message : "Errore sconosciuto";
   };
 
-  useEffect(() => {
-    fetchProfile();
-  }, []);
-
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     setLoading(true);
     const { data: { user } } = await supabase.auth.getUser();
     
@@ -95,7 +91,11 @@ export function ProfileSetup() {
       setIsEditing(true);
     }
     setLoading(false);
-  };
+  }, [toast]);
+
+  useEffect(() => {
+    fetchProfile();
+  }, [fetchProfile]);
 
   const saveProfile = async () => {
     setSaving(true);

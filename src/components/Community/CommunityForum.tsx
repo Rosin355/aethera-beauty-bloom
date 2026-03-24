@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -13,7 +13,8 @@ import { useToast } from "@/components/ui/use-toast";
 import { Plus, MessageSquare, Heart, Pin, ThumbsUp, ThumbsDown, Info, Loader2 } from "lucide-react";
 import { ForumReplies } from "./ForumReplies";
 import { UserTypeBadge } from "./UserTypeBadge";
-import { PostMediaUploader, uploadPostMedia } from "./PostMediaUploader";
+import { PostMediaUploader } from "./PostMediaUploader";
+import { uploadPostMedia } from "./postMediaUpload";
 import { PostMediaDisplay } from "./PostMediaDisplay";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
@@ -88,39 +89,7 @@ export function CommunityForum() {
   const { user, isAdmin } = useAuth();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchCategories();
-    fetchPosts();
-  }, [selectedCategory, user]);
-
-  // Real-time updates
-  useEffect(() => {
-    if (!user) return;
-
-    const channel = supabase
-      .channel('forum-changes')
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'forum_posts' 
-      }, () => {
-        fetchPosts();
-      })
-      .on('postgres_changes', { 
-        event: '*', 
-        schema: 'public', 
-        table: 'forum_likes'
-      }, () => {
-        fetchPosts();
-      })
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [selectedCategory, user]);
-
-  const fetchCategories = async () => {
+  const fetchCategories = useCallback(async () => {
     const { data, error } = await supabase
       .from("forum_categories")
       .select("id, name, color, description")
@@ -132,9 +101,9 @@ export function CommunityForum() {
     }
 
     setCategories(data || []);
-  };
+  }, []);
 
-  const fetchPosts = async () => {
+  const fetchPosts = useCallback(async () => {
     setLoading(true);
     
     let query = supabase
@@ -228,7 +197,39 @@ export function CommunityForum() {
 
     setPosts(postsWithLikes);
     setLoading(false);
-  };
+  }, [selectedCategory, isAdmin, user, toast]);
+
+  useEffect(() => {
+    fetchCategories();
+    fetchPosts();
+  }, [fetchCategories, fetchPosts]);
+
+  // Real-time updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabase
+      .channel('forum-changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'forum_posts' 
+      }, () => {
+        fetchPosts();
+      })
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'forum_likes'
+      }, () => {
+        fetchPosts();
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, fetchPosts]);
 
   const createPost = async () => {
     if (!user) {

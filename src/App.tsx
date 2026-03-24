@@ -1,4 +1,5 @@
 
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,27 +8,28 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Helmet } from "react-helmet";
 import CookieBanner from "@/components/ui/CookieBanner";
 import ProtectedRoute from "@/components/Auth/ProtectedRoute";
-import Home from "./pages/Home";
-import NotFound from "./pages/NotFound";
-import Login from "./pages/Login";
-import SignUp from "./pages/SignUp";
-import ForgotPassword from "./pages/ForgotPassword";
-import ResetPassword from "./pages/ResetPassword";
-import Dashboard from "./pages/Dashboard";
-import PersonalizedDashboard from "./pages/PersonalizedDashboard";
-import ManagementTools from "./pages/ManagementTools";
-import Community from "./pages/Community";
-import PostDetail from "./pages/PostDetail";
-import Training from "./pages/Training";
-import Onboarding from "./pages/Onboarding";
-import AdminDashboard from "./pages/Admin/Dashboard";
-import ClientDetail from "./pages/Admin/ClientDetail";
-import CollaboratorManagement from "./pages/Admin/CollaboratorManagement";
-import VideoManagementPage from "./pages/Admin/VideoManagement";
-import LandingPage from "./pages/LandingPage";
-import Welcome from "./pages/Welcome";
-import RecuperaAccesso from "./pages/RecuperaAccesso";
-import AIAssistant from "./pages/AIAssistant";
+
+const Home = lazy(() => import("./pages/Home"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+const Login = lazy(() => import("./pages/Login"));
+const SignUp = lazy(() => import("./pages/SignUp"));
+const ForgotPassword = lazy(() => import("./pages/ForgotPassword"));
+const ResetPassword = lazy(() => import("./pages/ResetPassword"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const PersonalizedDashboard = lazy(() => import("./pages/PersonalizedDashboard"));
+const ManagementTools = lazy(() => import("./pages/ManagementTools"));
+const Community = lazy(() => import("./pages/Community"));
+const PostDetail = lazy(() => import("./pages/PostDetail"));
+const Training = lazy(() => import("./pages/Training"));
+const Onboarding = lazy(() => import("./pages/Onboarding"));
+const AdminDashboard = lazy(() => import("./pages/Admin/Dashboard"));
+const ClientDetail = lazy(() => import("./pages/Admin/ClientDetail"));
+const CollaboratorManagement = lazy(() => import("./pages/Admin/CollaboratorManagement"));
+const VideoManagementPage = lazy(() => import("./pages/Admin/VideoManagement"));
+const LandingPage = lazy(() => import("./pages/LandingPage"));
+const Welcome = lazy(() => import("./pages/Welcome"));
+const RecuperaAccesso = lazy(() => import("./pages/RecuperaAccesso"));
+const AIAssistant = lazy(() => import("./pages/AIAssistant"));
 
 const queryClient = new QueryClient();
 
@@ -39,85 +41,87 @@ const App = () => (
       <Sonner />
       <CookieBanner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<LandingPage />} />
-          <Route path="/home" element={<Home />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/signup" element={<SignUp />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password" element={<ResetPassword />} />
-          
-          {/* Protected user routes */}
-          <Route path="/dashboard" element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/dashboard/personalized" element={
-            <ProtectedRoute>
-              <PersonalizedDashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/dashboard/management" element={
-            <ProtectedRoute>
-              <ManagementTools />
-            </ProtectedRoute>
-          } />
-          <Route path="/dashboard/community" element={
-            <ProtectedRoute>
-              <Community />
-            </ProtectedRoute>
-          } />
-          <Route path="/dashboard/community/post/:postId" element={
-            <ProtectedRoute>
-              <PostDetail />
-            </ProtectedRoute>
-          } />
-          <Route path="/dashboard/training" element={
-            <ProtectedRoute>
-              <Training />
-            </ProtectedRoute>
-          } />
-          <Route path="/dashboard/ai-assistant" element={
-            <ProtectedRoute>
-              <AIAssistant />
-            </ProtectedRoute>
-          } />
-          <Route path="/onboarding" element={
-            <ProtectedRoute>
-              <Onboarding />
-            </ProtectedRoute>
-          } />
-          
-          {/* Landing page isolata */}
-          <Route path="/landing" element={<LandingPage />} />
-          <Route path="/welcome" element={<Welcome />} />
-          <Route path="/recupera-accesso" element={<RecuperaAccesso />} />
-          
-          {/* Admin routes */}
-          <Route path="/admin/dashboard" element={
-            <ProtectedRoute requireAdmin>
-              <AdminDashboard />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/clients/:id" element={
-            <ProtectedRoute requireAdmin>
-              <ClientDetail />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/collaboratori" element={
-            <ProtectedRoute requireAdmin>
-              <CollaboratorManagement />
-            </ProtectedRoute>
-          } />
-          <Route path="/admin/video-management" element={
-            <ProtectedRoute requireAdmin>
-              <VideoManagementPage />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <Suspense fallback={<div className="min-h-screen bg-background" />}>
+          <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/home" element={<Home />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/signup" element={<SignUp />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
+            
+            {/* Protected user routes */}
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/personalized" element={
+              <ProtectedRoute>
+                <PersonalizedDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/management" element={
+              <ProtectedRoute>
+                <ManagementTools />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/community" element={
+              <ProtectedRoute>
+                <Community />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/community/post/:postId" element={
+              <ProtectedRoute>
+                <PostDetail />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/training" element={
+              <ProtectedRoute>
+                <Training />
+              </ProtectedRoute>
+            } />
+            <Route path="/dashboard/ai-assistant" element={
+              <ProtectedRoute>
+                <AIAssistant />
+              </ProtectedRoute>
+            } />
+            <Route path="/onboarding" element={
+              <ProtectedRoute>
+                <Onboarding />
+              </ProtectedRoute>
+            } />
+            
+            {/* Landing page isolata */}
+            <Route path="/landing" element={<LandingPage />} />
+            <Route path="/welcome" element={<Welcome />} />
+            <Route path="/recupera-accesso" element={<RecuperaAccesso />} />
+            
+            {/* Admin routes */}
+            <Route path="/admin/dashboard" element={
+              <ProtectedRoute requireAdmin>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/clients/:id" element={
+              <ProtectedRoute requireAdmin>
+                <ClientDetail />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/collaboratori" element={
+              <ProtectedRoute requireAdmin>
+                <CollaboratorManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/video-management" element={
+              <ProtectedRoute requireAdmin>
+                <VideoManagementPage />
+              </ProtectedRoute>
+            } />
+            
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

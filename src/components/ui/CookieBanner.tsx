@@ -13,15 +13,19 @@ type CookieBannerExtra = {
   reject_label?: string;
 };
 
+const DEFAULT_COOKIE_TITLE = "Utilizziamo i cookie";
+const DEFAULT_COOKIE_DESCRIPTION =
+  "Utilizziamo cookie per migliorare la tua esperienza di navigazione e per fornire servizi personalizzati. Continuando a navigare accetti il loro utilizzo.";
+const DEFAULT_ACCEPT_LABEL = "Accetta tutti";
+const DEFAULT_REJECT_LABEL = "Solo necessari";
+
 export const CookieBanner = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [title, setTitle] = useState("Utilizziamo i cookie");
-  const [description, setDescription] = useState(
-    "Utilizziamo cookie per migliorare la tua esperienza di navigazione e per fornire servizi personalizzati. Continuando a navigare accetti il loro utilizzo.",
-  );
-  const [acceptLabel, setAcceptLabel] = useState("Accetta tutti");
-  const [rejectLabel, setRejectLabel] = useState("Solo necessari");
+  const [title, setTitle] = useState(DEFAULT_COOKIE_TITLE);
+  const [description, setDescription] = useState(DEFAULT_COOKIE_DESCRIPTION);
+  const [acceptLabel, setAcceptLabel] = useState(DEFAULT_ACCEPT_LABEL);
+  const [rejectLabel, setRejectLabel] = useState(DEFAULT_REJECT_LABEL);
   const [legalLinks, setLegalLinks] = useState<LegalLinkRow[]>([
     {
       id: "cookie-fallback-privacy",
@@ -72,10 +76,10 @@ export const CookieBanner = () => {
 
       if (section) {
         const extra = readSectionExtraObject<CookieBannerExtra>(section, {});
-        setTitle(section.title ?? title);
-        setDescription(section.body ?? description);
-        setAcceptLabel(section.cta_label ?? acceptLabel);
-        setRejectLabel(extra.reject_label ?? rejectLabel);
+        setTitle(section.title ?? DEFAULT_COOKIE_TITLE);
+        setDescription(section.body ?? DEFAULT_COOKIE_DESCRIPTION);
+        setAcceptLabel(section.cta_label ?? DEFAULT_ACCEPT_LABEL);
+        setRejectLabel(extra.reject_label ?? DEFAULT_REJECT_LABEL);
       }
 
       if (links.length > 0) {

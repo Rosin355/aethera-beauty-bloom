@@ -28,24 +28,27 @@ type FooterExtra = {
   copyright_text?: string;
 };
 
+const DEFAULT_BRAND_DESCRIPTION =
+  "Potenziamo i professionisti della bellezza con strumenti e risorse per la crescita e il successo professionale.";
+const DEFAULT_FEATURE_LINKS: FooterLink[] = [
+  { label: "Formazione Online", path: "/dashboard/training", type: "internal" },
+  { label: "Strumenti di Gestione", path: "/dashboard/management", type: "internal" },
+  { label: "Comunità Professionale", path: "/dashboard/community", type: "internal" },
+  { label: "Supporto Personalizzato", path: "mailto:support@4elementitalia.com", type: "external" },
+];
+const DEFAULT_COMPANY_LINKS: FooterLink[] = [
+  { label: "Chi Siamo", disabled: true, title: "Prossimamente disponibile" },
+  { label: "Blog", disabled: true, title: "Prossimamente disponibile" },
+  { label: "Carriere", disabled: true, title: "Prossimamente disponibile" },
+];
+
 const Footer = () => {
-  const [brandDescription, setBrandDescription] = useState(
-    "Potenziamo i professionisti della bellezza con strumenti e risorse per la crescita e il successo professionale.",
-  );
+  const [brandDescription, setBrandDescription] = useState(DEFAULT_BRAND_DESCRIPTION);
   const [supportEmail, setSupportEmail] = useState("support@4elementitalia.com");
   const [addressLine1, setAddressLine1] = useState("Via Example 123, 00100");
   const [addressLine2, setAddressLine2] = useState("Roma, Italia");
-  const [featureLinks, setFeatureLinks] = useState<FooterLink[]>([
-    { label: "Formazione Online", path: "/dashboard/training", type: "internal" },
-    { label: "Strumenti di Gestione", path: "/dashboard/management", type: "internal" },
-    { label: "Comunità Professionale", path: "/dashboard/community", type: "internal" },
-    { label: "Supporto Personalizzato", path: "mailto:support@4elementitalia.com", type: "external" },
-  ]);
-  const [companyLinks, setCompanyLinks] = useState<FooterLink[]>([
-    { label: "Chi Siamo", disabled: true, title: "Prossimamente disponibile" },
-    { label: "Blog", disabled: true, title: "Prossimamente disponibile" },
-    { label: "Carriere", disabled: true, title: "Prossimamente disponibile" },
-  ]);
+  const [featureLinks, setFeatureLinks] = useState<FooterLink[]>(DEFAULT_FEATURE_LINKS);
+  const [companyLinks, setCompanyLinks] = useState<FooterLink[]>(DEFAULT_COMPANY_LINKS);
   const [legalLinks, setLegalLinks] = useState<LegalLinkRow[]>([
     {
       id: "fallback-privacy",
@@ -101,10 +104,10 @@ const Footer = () => {
       if (!mounted) return;
 
       if (footerSection) {
-        setBrandDescription(footerSection.body ?? brandDescription);
+        setBrandDescription(footerSection.body ?? DEFAULT_BRAND_DESCRIPTION);
         const extraObject = readSectionExtraObject<FooterExtra>(footerSection, {});
-        const extraFeatureLinks = readSectionExtraArray<FooterLink>(footerSection, "feature_links", featureLinks);
-        const extraCompanyLinks = readSectionExtraArray<FooterLink>(footerSection, "company_links", companyLinks);
+        const extraFeatureLinks = readSectionExtraArray<FooterLink>(footerSection, "feature_links", DEFAULT_FEATURE_LINKS);
+        const extraCompanyLinks = readSectionExtraArray<FooterLink>(footerSection, "company_links", DEFAULT_COMPANY_LINKS);
 
         setHeadings((prev) => ({
           features: extraObject.features_heading ?? prev.features,

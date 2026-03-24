@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -56,11 +56,7 @@ export function JobBoard() {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
-  useEffect(() => {
-    fetchJobs();
-  }, [selectedJobType]);
-
-  const fetchJobs = async () => {
+  const fetchJobs = useCallback(async () => {
     setLoading(true);
     let query = supabase
       .from('job_postings')
@@ -88,7 +84,11 @@ export function JobBoard() {
       setJobs(((data || []) as unknown) as JobPosting[]);
     }
     setLoading(false);
-  };
+  }, [selectedJobType, toast]);
+
+  useEffect(() => {
+    fetchJobs();
+  }, [fetchJobs]);
 
   const createJob = async () => {
     if (!newJob.title || !newJob.description || !newJob.company_name || !newJob.job_type) {

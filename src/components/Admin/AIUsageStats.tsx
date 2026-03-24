@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -40,11 +40,7 @@ export function AIUsageStats() {
   const [totalConversations, setTotalConversations] = useState(0);
   const [activeUsers, setActiveUsers] = useState(0);
 
-  useEffect(() => {
-    fetchStats();
-  }, [period]);
-
-  const fetchStats = async () => {
+  const fetchStats = useCallback(async () => {
     setIsLoading(true);
     try {
       const daysAgo = parseInt(period);
@@ -82,7 +78,11 @@ export function AIUsageStats() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [period]);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
 
   // Calculate daily stats
   const dailyStats: DailyStats[] = (() => {

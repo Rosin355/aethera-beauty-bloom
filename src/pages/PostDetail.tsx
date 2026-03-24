@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -84,14 +84,7 @@ export default function PostDetail() {
   const [newReply, setNewReply] = useState("");
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    if (postId) {
-      fetchPost();
-      fetchReplies();
-    }
-  }, [postId, user]);
-
-  const fetchPost = async () => {
+  const fetchPost = useCallback(async () => {
     if (!postId) return;
 
     const { data, error } = await supabase
@@ -153,9 +146,9 @@ export default function PostDetail() {
       user_has_liked: userHasLiked,
     });
     setLoading(false);
-  };
+  }, [postId, user, toast]);
 
-  const fetchReplies = async () => {
+  const fetchReplies = useCallback(async () => {
     if (!postId) return;
 
     let query = supabase
@@ -213,7 +206,14 @@ export default function PostDetail() {
     );
 
     setReplies(repliesWithLikes);
-  };
+  }, [postId, isAdmin, user]);
+
+  useEffect(() => {
+    if (postId) {
+      fetchPost();
+      fetchReplies();
+    }
+  }, [postId, fetchPost, fetchReplies]);
 
   const togglePostLike = async () => {
     if (!user || !post) {

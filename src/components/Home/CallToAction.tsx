@@ -11,6 +11,12 @@ type CallToActionExtra = {
   card_body?: string;
 };
 
+const DEFAULT_BENEFITS = [
+  "Prova gratuita di 14 giorni",
+  "Nessuna carta di credito richiesta",
+  "Cancella in qualsiasi momento",
+];
+
 const CallToAction = () => {
   const [content, setContent] = useState({
     title: "Pronta a",
@@ -21,7 +27,7 @@ const CallToAction = () => {
     ctaLink: "/signup",
     cardTitle: "Inizia Oggi",
     cardBody: "Crea il tuo account ora e inizia ad esplorare tutte le funzionalità che 4 elementi Italia ha da offrire.",
-    benefits: ['Prova gratuita di 14 giorni', 'Nessuna carta di credito richiesta', 'Cancella in qualsiasi momento'],
+    benefits: DEFAULT_BENEFITS,
   });
 
   useEffect(() => {
@@ -32,7 +38,7 @@ const CallToAction = () => {
       if (!mounted || !section) return;
 
       const extraObject = readSectionExtraObject<CallToActionExtra>(section, {});
-      const benefits = readSectionExtraArray<string>(section, "benefits", content.benefits);
+      const benefits = readSectionExtraArray<string>(section, "benefits", DEFAULT_BENEFITS);
 
       setContent((prev) => ({
         ...prev,

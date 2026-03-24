@@ -7,7 +7,8 @@ import { ProfessionalNetwork } from "@/components/Community/ProfessionalNetwork"
 import { JobBoard } from "@/components/Community/JobBoard";
 import { ProfileSetup } from "@/components/Community/ProfileSetup";
 import { SectionGuide } from "@/components/Community/SectionGuide";
-import { GuidedTour, useCommunityTour } from "@/components/Community/GuidedTour";
+import { GuidedTour } from "@/components/Community/GuidedTour";
+import { useCommunityTour } from "@/components/Community/useCommunityTour";
 import { Users, MessageSquare, Briefcase, User } from "lucide-react";
 
 const sectionDescriptions = {
