@@ -24,8 +24,14 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				'playfair': ['Playfair Display', 'serif'],
+				display: ['"Bricolage Grotesque"', 'sans-serif'],
+				sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+				// Legacy aliases kept for existing components, remapped to the new type system
+				'playfair': ['"Bricolage Grotesque"', 'sans-serif'],
 				'inter': ['Inter', 'sans-serif'],
+			},
+			letterSpacing: {
+				tightest: '-0.04em',
 			},
 			colors: {
 				border: 'hsl(var(--border))',
@@ -44,6 +50,9 @@ export default {
 				destructive: {
 					DEFAULT: 'hsl(var(--destructive))',
 					foreground: 'hsl(var(--destructive-foreground))'
+				},
+				success: {
+					DEFAULT: 'hsl(var(--success))'
 				},
 				muted: {
 					DEFAULT: 'hsl(var(--muted))',
@@ -87,7 +96,8 @@ export default {
 			borderRadius: {
 				lg: 'var(--radius)',
 				md: 'calc(var(--radius) - 2px)',
-				sm: 'calc(var(--radius) - 4px)'
+				sm: 'calc(var(--radius) - 4px)',
+				pill: '9999px'
 			},
 			keyframes: {
 				'accordion-down': {
