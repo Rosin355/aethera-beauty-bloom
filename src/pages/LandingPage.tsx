@@ -3,24 +3,30 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
-import { GlowCard } from "@/components/ui/spotlight-card";
-import { AuroraBackground } from "@/components/ui/aurora-background";
-import { Check, Play, Users, Award, BookOpen, Headphones, User, Download, ChevronDown, ArrowRight } from "lucide-react";
-import { AnimatedButton } from "@/components/ui/animated-button";
-import { Glow } from "@/components/ui/glow";
+import { Badge } from "@/components/ui/badge";
+import {
+  Check,
+  Play,
+  ChevronDown,
+  ArrowRight,
+  Star,
+  Sparkles,
+  Download,
+  BadgeCheck,
+} from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { getSiteVideo, SiteVideo, getYouTubeEmbedUrl } from "@/lib/siteVideos";
-import { getVideoUrl } from "@/lib/videoStorage";
+import { getSiteVideo, SiteVideo } from "@/lib/siteVideos";
 import VideoPlayer from "@/components/ui/VideoPlayer";
 import {
   getLegalLinks,
   getSiteSections,
+  getTestimonials,
   readSectionExtraArray,
   readSectionExtraObject,
   type LegalLinkRow,
   type SiteSectionRow,
+  type TestimonialRow,
 } from "@/lib/api/siteContent";
 
 type LandingNavLink = {
@@ -66,6 +72,126 @@ const getSectionByKey = (
   key: string,
 ): SiteSectionRow | null => sections[key] ?? null;
 
+const HERO_IMAGE =
+  "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=2000&q=80";
+
+const MOSAIC_IMAGES = [
+  "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=600&q=80",
+  "https://images.unsplash.com/photo-1596178065887-1198b6148b2b?auto=format&fit=crop&w=600&q=80",
+  "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80",
+];
+
+const STEP_IMAGES: Array<[string, string]> = [
+  [
+    "https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1519415943484-9fa1873496d4?auto=format&fit=crop&w=600&q=80",
+  ],
+  [
+    "https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1596178065887-1198b6148b2b?auto=format&fit=crop&w=600&q=80",
+  ],
+  [
+    "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80",
+  ],
+];
+
+const HERO_STATS: Array<[string, string]> = [
+  ["10+", "Anni di esperienza"],
+  ["4", "Elementi del metodo"],
+  ["+40%", "Crescita media clientela"],
+];
+
+const SERVICES = [
+  {
+    name: "Fuoco",
+    tag: "Consulenza",
+    description: "Piattaforma 4 Elementi Italia e consulenza strategica personalizzata.",
+  },
+  {
+    name: "Terra",
+    tag: "Restyling",
+    description:
+      "Riqualificazione del centro estetico, restyling dell'arredamento e sistema operativo.",
+  },
+  {
+    name: "Aria",
+    tag: "Marketing",
+    description: "Marketing specifico per il settore beauty.",
+  },
+  {
+    name: "Acqua",
+    tag: "Partnership",
+    description: "Partnership con Tokio, Nee Make Up Milano ed Everlinespa.",
+  },
+];
+
+const METHOD_STEPS = [
+  {
+    index: "01",
+    title: "Calcolo del costo orario",
+    subtitle:
+      "Organizza il tuo listino in modo strategico, anche se non sei brava con i numeri o il marketing.",
+    checks: [
+      "Analisi dei costi fissi e variabili del centro",
+      "Definizione del costo orario reale della cabina",
+      "Una base solida su cui costruire ogni prezzo",
+    ],
+  },
+  {
+    index: "02",
+    title: "Calcolo del prodotto",
+    subtitle: "Trasmetti professionalità e fatti scegliere dai tuoi clienti.",
+    checks: [
+      "Incidenza del prodotto per ogni trattamento",
+      "Un listino chiaro che comunica il tuo valore",
+      "Prezzi che non devi più giustificare",
+    ],
+  },
+  {
+    index: "03",
+    title: "Calcolo del margine operativo",
+    subtitle: "La formula per valutare il prezzo giusto.",
+    checks: [
+      "Margine corretto su ogni servizio",
+      "Vendere meglio, senza svenderti",
+      "Crescita sostenibile del tuo centro",
+    ],
+  },
+];
+
+const fallbackTestimonials: Array<{
+  quote: string;
+  name: string;
+  title: string;
+  image: string;
+}> = [
+  {
+    quote:
+      "4 elementi Italia ha completamente trasformato il modo in cui gestisco il mio centro estetico. Gli strumenti di gestione mi fanno risparmiare ore ogni settimana.",
+    name: "Sofia Loren",
+    title: "Titolare di Centro Estetico",
+    image:
+      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?ixlib=rb-1.2.1&auto=format&fit=crop&w=256&q=80",
+  },
+  {
+    quote:
+      "L'assistente AI offre consigli personalizzati che mi hanno aiutato a ottimizzare le operazioni del mio business. Le risorse di formazione sono di prima qualità.",
+    name: "Marco Rossi",
+    title: "Specialista Skincare",
+    image:
+      "https://images.unsplash.com/photo-1566492031773-4f4e44671857?ixlib=rb-1.2.1&auto=format&fit=crop&w=256&q=80",
+  },
+  {
+    quote:
+      "Ho aumentato la mia clientela del 40% da quando uso gli strumenti analitici di 4 elementi Italia. Le intuizioni mi hanno aiutato a personalizzare i miei servizi.",
+    name: "Elena Chen",
+    title: "Estetista Freelance",
+    image:
+      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?ixlib=rb-1.2.1&auto=format&fit=crop&w=256&q=80",
+  },
+];
+
 const LandingPage = () => {
   const [formData, setFormData] = useState({
     name: "",
@@ -81,6 +207,8 @@ const LandingPage = () => {
   const navigate = useNavigate();
   const [previewVideo, setPreviewVideo] = useState<SiteVideo | null>(null);
   const [landingSections, setLandingSections] = useState<Record<string, SiteSectionRow>>({});
+  const [testimonialRows, setTestimonialRows] = useState<TestimonialRow[]>([]);
+  const [activeTestimonial, setActiveTestimonial] = useState(0);
   const [landingLegalLinks, setLandingLegalLinks] = useState<LegalLinkRow[]>([
     {
       id: "landing-privacy-fallback",
@@ -113,7 +241,7 @@ const LandingPage = () => {
         setPreviewVideo(video);
       }
     };
-    
+
     loadVideo();
   }, []);
 
@@ -121,7 +249,7 @@ const LandingPage = () => {
     let mounted = true;
 
     const loadCmsContent = async () => {
-      const [sections, legalLinks] = await Promise.all([
+      const [sections, legalLinks, testimonials] = await Promise.all([
         getSiteSections([
           "landing_header",
           "landing_hero",
@@ -130,6 +258,7 @@ const LandingPage = () => {
           "landing_footer",
         ]),
         getLegalLinks("landing_footer"),
+        getTestimonials(),
       ]);
 
       if (!mounted) return;
@@ -138,6 +267,7 @@ const LandingPage = () => {
       if (legalLinks.length > 0) {
         setLandingLegalLinks(legalLinks);
       }
+      setTestimonialRows(testimonials);
     };
 
     loadCmsContent();
@@ -173,6 +303,22 @@ const LandingPage = () => {
   ];
   const landingFooterExtra = readSectionExtraObject<LandingFooterExtra>(landingFooter, {});
 
+  const testimonialItems =
+    testimonialRows.length > 0
+      ? testimonialRows.map((item) => ({
+          quote: item.quote,
+          name: item.name,
+          title: item.role,
+          image: item.image_url ?? fallbackTestimonials[0].image,
+        }))
+      : fallbackTestimonials;
+
+  const heroTestimonial = testimonialItems[activeTestimonial % testimonialItems.length];
+
+  const scrollToId = (id: string, block: ScrollLogicalPosition = "start") => {
+    document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block });
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name.trim() || !formData.email.trim()) {
@@ -205,13 +351,13 @@ const LandingPage = () => {
             .select('access_token')
             .eq('email', formData.email.trim())
             .single();
-          
+
           if (existingData?.access_token) {
             toast({
               title: "Accesso trovato!",
               description: "Ti stiamo reindirizzando alla tua area riservata. Email di promemoria inviata!",
             });
-            
+
             setTimeout(() => {
               window.location.href = `/welcome?token=${existingData.access_token}`;
             }, 1000);
@@ -226,12 +372,12 @@ const LandingPage = () => {
       if (data?.access_token) {
         // Mostra feedback basato sullo stato dell'email
         const emailStatus = data.email_sent ? "Email di benvenuto inviata!" : "Registrazione completata (email in sospeso)";
-        
+
         toast({
           title: "Perfetto! 🎉",
           description: emailStatus + " Ti stiamo reindirizzando...",
         });
-        
+
         setTimeout(() => {
           window.location.href = `/welcome?token=${data.access_token}`;
         }, 1500);
@@ -283,11 +429,11 @@ const LandingPage = () => {
 
     } catch (error) {
       console.error('Errore durante l\'iscrizione alla newsletter:', error);
-      
-      const errorMessage = error instanceof Error && error.message?.includes('Email già iscritta') 
+
+      const errorMessage = error instanceof Error && error.message?.includes('Email già iscritta')
         ? "Questa email è già iscritta alla newsletter"
         : "Si è verificato un errore. Riprova tra qualche minuto.";
-        
+
       toast({
         title: "Errore",
         description: errorMessage,
@@ -297,654 +443,616 @@ const LandingPage = () => {
       setIsSubmittingNewsletter(false);
     }
   };
-  return <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
-      <Glow variant="top" className="opacity-30" />
-      
-      {/* Header */}
-      <header className="relative z-10 px-6 py-4 sm:px-4 sm:py-6">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-3">
-            <img src="/4-elementi-logo.png" alt="4 Elementi Italia Logo" className="h-10 sm:h-12 w-auto" />
-            
-          </div>
-          <nav className="hidden md:flex space-x-8">
+
+  return (
+    <div className="min-h-screen bg-background text-foreground">
+      {/* Navbar — sticky, translucent over the hero */}
+      <header className="sticky top-0 z-40 h-16 border-b border-border/40 bg-background/60 backdrop-blur-xl">
+        <div className="container mx-auto flex h-full items-center justify-between px-6">
+          <a href="/" className="flex items-center gap-3">
+            <img
+              src="/4-elementi-logo.png"
+              alt="4 Elementi Italia Logo"
+              className="h-9 w-auto"
+            />
+            <span className="hidden font-display text-lg font-semibold tracking-tight sm:block">
+              4 Elementi Italia
+            </span>
+          </a>
+
+          <nav className="hidden items-center gap-8 md:flex">
             {navLinks.map((navLink) => (
-              <a key={navLink.href} href={navLink.href} className="text-muted-foreground hover:text-foreground transition-colors">
+              <a
+                key={navLink.href}
+                href={navLink.href}
+                className="text-sm text-foreground/80 transition-colors hover:text-foreground"
+              >
                 {navLink.label}
               </a>
             ))}
           </nav>
+
+          <Button size="pill" className="h-9 px-5" onClick={() => navigate('/login')}>
+            Area riservata
+          </Button>
         </div>
       </header>
 
-      {/* Hero Section with Aurora Background */}
-      <AuroraBackground className="h-auto py-8 sm:py-12 lg:py-16">
-        <div className="container mx-auto relative z-10 px-6 sm:px-4">
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-            <div className="space-y-4 sm:space-y-6 lg:space-y-8">
-              <div className="space-y-2 sm:space-y-3 lg:space-y-4">
-                <h1 className="font-playfair text-2xl sm:text-3xl lg:text-5xl xl:text-6xl font-bold leading-tight text-white">
-                  {landingHero?.title ?? "SEI UN'ESTETISTA"}
-                  <span className="gradient-text"> {landingHero?.subtitle ?? "PROFESSIONISTA?"}</span>
-                </h1>
-                <p className="text-base sm:text-lg lg:text-xl text-gray-300 leading-relaxed">
-                  {landingHero?.body ?? "Ecco come strutturare il tuo listino in modo strategico (senza stress)"}
-                </p>
-              </div>
-              
-              <div className="space-y-4 sm:space-y-6">
-                <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
-                  {heroParagraphs[0]}
-                </p>
-                <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
-                  {heroParagraphs[1]}
-                </p>
-              </div>
+      {/* Hero — full-bleed image, dark overlay, centered display type */}
+      <section className="relative -mt-16 flex min-h-screen flex-col justify-center overflow-hidden">
+        <img
+          src={HERO_IMAGE}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 h-full w-full object-cover opacity-50 grayscale"
+        />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/60 to-background" />
 
-              <div className="w-full sm:w-auto">
-                <AnimatedButton
-                  IconLeft={Download}
-                  IconRight={ChevronDown}
-                  className="w-full sm:w-auto text-sm sm:text-base lg:text-lg px-4 sm:px-6 lg:px-8"
-                  onClick={() => document.getElementById('video-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
-                >
-                  {landingHero?.cta_label ?? "SCARICA IL MINI CORSO GRATUITO"}
-                </AnimatedButton>
-                <p className="text-xs sm:text-sm text-white/70 text-center sm:text-left mt-3">
-                  {heroExtra.cta_note ?? "✓ Nessun pagamento richiesto • Download immediato • Guarda quando vuoi"}
-                </p>
+        <div className="container relative z-10 mx-auto px-6 pb-32 pt-36 text-center lg:pb-40">
+          <p className="text-xs uppercase tracking-widest text-muted-foreground">
+            Il metodo 4 Elementi
+          </p>
+
+          <h1 className="mx-auto mt-6 max-w-4xl font-display text-5xl font-semibold leading-[1.05] tracking-tightest text-foreground sm:text-6xl lg:text-7xl">
+            {landingHero?.title ?? "SEI UN'ESTETISTA"}
+            <span className="block">{landingHero?.subtitle ?? "PROFESSIONISTA?"}</span>
+          </h1>
+
+          <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
+            {landingHero?.body ??
+              "Ecco come strutturare il tuo listino in modo strategico (senza stress)"}
+          </p>
+
+          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Button
+              size="pill"
+              onClick={() => scrollToId('video-form', 'center')}
+            >
+              <Download />
+              {landingHero?.cta_label ?? "SCARICA IL MINI CORSO GRATUITO"}
+            </Button>
+            <Button
+              size="pill"
+              variant="secondary"
+              onClick={() => scrollToId('video')}
+            >
+              <Play />
+              Guarda il video
+            </Button>
+          </div>
+
+          <p className="mt-4 text-xs text-muted-foreground">
+            {heroExtra.cta_note ??
+              "✓ Nessun pagamento richiesto • Download immediato • Guarda quando vuoi"}
+          </p>
+
+          <p className="mt-10 text-xs uppercase tracking-widest text-muted-foreground">
+            Formazione — Community — Strumenti gestionali
+          </p>
+
+          {/* Stats row */}
+          <div className="mx-auto mt-6 flex max-w-2xl items-center justify-center divide-x divide-border">
+            {HERO_STATS.map(([value, label]) => (
+              <div key={label} className="px-6 sm:px-10">
+                <p className="font-display text-3xl font-semibold sm:text-4xl">{value}</p>
+                <p className="mt-1 text-xs text-muted-foreground">{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Floating testimonial card — bottom left */}
+        <div className="absolute bottom-10 left-8 z-10 hidden w-80 lg:block">
+          <div className="rounded-2xl border border-border bg-card/80 p-5 shadow-lg shadow-black/20 backdrop-blur-md">
+            <p className="text-sm leading-relaxed text-foreground/90">
+              “{heroTestimonial.quote.length > 140
+                ? `${heroTestimonial.quote.slice(0, 140)}…`
+                : heroTestimonial.quote}”
+            </p>
+            <div className="mt-4 flex items-center gap-3">
+              <img
+                src={heroTestimonial.image}
+                alt={heroTestimonial.name}
+                className="h-9 w-9 rounded-full border border-border object-cover grayscale"
+              />
+              <div>
+                <p className="text-sm font-medium">{heroTestimonial.name}</p>
+                <p className="text-xs text-muted-foreground">{heroTestimonial.title}</p>
               </div>
             </div>
+            <div className="mt-4 flex gap-1.5">
+              {testimonialItems.map((item, index) => (
+                <button
+                  key={item.name}
+                  type="button"
+                  aria-label={`Testimonianza ${index + 1}`}
+                  onClick={() => setActiveTestimonial(index)}
+                  className={`h-1.5 w-1.5 rounded-full transition-colors ${
+                    index === activeTestimonial % testimonialItems.length
+                      ? 'bg-foreground'
+                      : 'bg-foreground/25'
+                  }`}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
 
-            <div className="relative space-y-4 sm:space-y-6 mt-8 lg:mt-0">
-              {/* Video Anteprima */}
-              <div className="w-full aspect-video bg-card/30 backdrop-blur-sm border-white/10 border rounded-lg overflow-hidden">
-                {previewVideo ? (
-                  <VideoPlayer 
-                    video={previewVideo}
-                    className="w-full h-full"
+        {/* Floating highlight card — right */}
+        <div className="absolute right-8 top-1/2 z-10 hidden w-64 -translate-y-1/2 xl:block">
+          <div className="rounded-2xl border border-border bg-card/80 p-4 shadow-lg shadow-black/20 backdrop-blur-md">
+            <Badge>
+              <Sparkles className="h-3 w-3" />
+              PIÙ RICHIESTO
+            </Badge>
+            <img
+              src={MOSAIC_IMAGES[0]}
+              alt="Mini corso Il Listino Perfetto"
+              className="mt-3 h-28 w-full rounded-xl object-cover grayscale"
+            />
+            <p className="mt-3 font-display text-base font-semibold">Il Listino Perfetto</p>
+            <p className="text-xs text-muted-foreground">Mini corso gratuito in video</p>
+            <div className="mt-3 flex items-center justify-between">
+              <div className="flex -space-x-2">
+                {fallbackTestimonials.map((item) => (
+                  <img
+                    key={item.name}
+                    src={item.image}
+                    alt=""
+                    aria-hidden="true"
+                    className="h-6 w-6 rounded-full border border-border object-cover grayscale"
                   />
-                ) : (
-                  <div className="w-full h-full bg-gray-900 flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-                  </div>
-                )}
+                ))}
               </div>
-              
-              <Card id="video-form" className="bg-card/50 backdrop-blur-sm border-white/10 p-6 sm:p-8">
-                <div className="space-y-4 sm:space-y-6">
-                  <div className="text-center">
-                    <h3 className="font-playfair text-xl sm:text-2xl font-bold mb-3 sm:mb-4">{heroExtra.form_title ?? "SCARICA IL VIDEO GRATUITO"}</h3>
-                    <p className="text-muted-foreground text-sm sm:text-base">{heroExtra.form_subtitle ?? "Compila il form e ricevi subito il link per scaricare il video completo"}</p>
-                  </div>
-                  
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <Input placeholder="Il tuo nome" value={formData.name} onChange={e => setFormData({
-                    ...formData,
-                    name: e.target.value
-                  })} className="bg-background/50 border-white/20" />
-                    <Input type="email" placeholder="La tua email" value={formData.email} onChange={e => setFormData({
-                    ...formData,
-                    email: e.target.value
-                  })} className="bg-background/50 border-white/20" />
-                    {isSubmitting ? (
-                      <Button 
-                        type="submit" 
-                        disabled
-                        className="w-full bg-white hover:bg-gray-200 text-black font-medium text-sm sm:text-base py-3"
-                      >
-                        {heroExtra.submit_loading_label ?? "INVIO IN CORSO..."}
-                      </Button>
-                    ) : (
-                      <AnimatedButton
-                        type="submit"
-                        IconLeft={Download}
-                        IconRight={ChevronDown}
-                        className="text-sm sm:text-base py-3"
-                        fullWidth
-                      >
-                        {heroExtra.submit_label ?? "SCARICA IL MINI CORSO GRATUITO"}
-                      </AnimatedButton>
-                    )}
-                  </form>
-                  
-                  {/* Success message */}
-                  <div className="mt-4 p-3 bg-white/10 border border-white/20 rounded-lg">
-                    <div className="flex items-start gap-2">
-                      <div className="text-white/80 mt-0.5">✅</div>
-                      <p className="text-white/90 text-xs sm:text-sm">
-                        {heroExtra.success_note ?? "Riceverai immediatamente un'email con il link per scaricare il video completo. Controlla anche la cartella spam!"}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-white/60 text-center">
-                    {heroExtra.form_disclaimer ?? "✓ Nessun pagamento richiesto • Download immediato • Guarda quando vuoi"}
-                  </p>
-                </div>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </AuroraBackground>
-
-      {/* What You'll Learn */}
-      <section id="video" className="relative z-10 px-6 sm:px-4 py-12 sm:py-16">
-        <div className="container mx-auto">
-          <div className="text-center mb-8 sm:mb-12">
-            <h2 className="font-playfair text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4">
-              COSA IMPARERAI NEL VIDEO
-            </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
-              Ti mostro, passo dopo passo, tutto quello che serve per creare un listino strategico e professionale
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 items-stretch">
-            <GlowCard glowColor="orange" customSize className="w-full p-6 sm:p-8 text-center min-h-[280px] sm:h-[320px] flex flex-col items-center">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 shrink-0">
-                <Check className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-              </div>
-              <h3 className="font-playfair text-lg sm:text-xl font-bold text-white text-center leading-tight mb-2 min-h-[48px] sm:min-h-[56px] flex items-center justify-center">CALCOLO DEL<br />COSTO ORARIO</h3>
-              <p className="text-muted-foreground text-center leading-relaxed text-xs sm:text-sm max-w-[32ch] sm:max-w-[34ch] mx-auto min-h-[60px] sm:min-h-[72px] flex items-center justify-center">
-                Come organizzare il tuo listino in modo strategico (anche se non sei brava con i numeri o il marketing)
-              </p>
-            </GlowCard>
-
-            <GlowCard glowColor="blue" customSize className="w-full p-6 sm:p-8 text-center min-h-[280px] sm:h-[320px] flex flex-col items-center">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 shrink-0">
-                <Check className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-              </div>
-              <h3 className="font-playfair text-lg sm:text-xl font-bold text-white text-center leading-tight mb-2 min-h-[48px] sm:min-h-[56px] flex items-center justify-center">CALCOLO DEL<br />PRODOTTO</h3>
-              <p className="text-muted-foreground text-center leading-relaxed text-xs sm:text-sm max-w-[32ch] sm:max-w-[34ch] mx-auto min-h-[60px] sm:min-h-[72px] flex items-center justify-center">
-                Cosa scrivere per trasmettere professionalità e farti scegliere dai tuoi clienti
-              </p>
-            </GlowCard>
-
-            <GlowCard glowColor="green" customSize className="w-full p-6 sm:p-8 text-center min-h-[280px] sm:h-[320px] flex flex-col items-center sm:col-span-2 lg:col-span-1">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 shrink-0">
-                <Check className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-              </div>
-              <h3 className="font-playfair text-lg sm:text-xl font-bold text-white text-center leading-tight mb-2 min-h-[48px] sm:min-h-[56px] flex items-center justify-center">CALCOLO DEL<br />MARGINE OPERATIVO</h3>
-              <p className="text-muted-foreground text-center leading-relaxed text-xs sm:text-sm max-w-[32ch] sm:max-w-[34ch] mx-auto min-h-[60px] sm:min-h-[72px] flex items-center justify-center">
-                La Formula Per Valutare Il Prezzo Giusto
-              </p>
-            </GlowCard>
-          </div>
-        </div>
-      </section>
-
-      {/* Value Proposition */}
-      <section className="relative z-10 px-4 py-16 bg-card/20">
-        <div className="container mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="font-playfair text-3xl lg:text-4xl font-bold mb-6 text-white">
-                UN LISTINO BEN FATTO NON È SOLO UNA 
-                <span className="gradient-text"> TABELLA DI PREZZI</span>
-              </h2>
-              <p className="text-xl text-muted-foreground mb-8">
-                È uno strumento di marketing. Ti aiuta a:
-              </p>
-              
-              <div className="space-y-4">
-                <div className="flex items-start space-x-4">
-                  <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center mt-1">
-                    <Check className="w-4 h-4 text-black" />
-                  </div>
-                  <p className="text-muted-foreground">Farti percepire come una vera professionista</p>
-                </div>
-                <div className="flex items-start space-x-4">
-                  <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center mt-1">
-                    <Check className="w-4 h-4 text-black" />
-                  </div>
-                  <p className="text-muted-foreground">Comunicare il tuo valore senza doverlo giustificare</p>
-                </div>
-                <div className="flex items-start space-x-4">
-                  <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center mt-1">
-                    <Check className="w-4 h-4 text-black" />
-                  </div>
-                  <p className="text-muted-foreground">Vendere meglio, senza svenderti</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="relative">
-              <Card className="bg-white/5 backdrop-blur-sm border-white/10 p-8 text-center">
-                <div className="space-y-6">
-                  <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mx-auto">
-                    <Play className="w-10 h-10 text-white" />
-                  </div>
-                  <h3 className="font-playfair text-2xl font-bold text-white">È GRATUITO. È PRATICO.</h3>
-                  <p className="text-muted-foreground">È pensato per te.</p>
-                  <p className="text-sm text-muted-foreground">
-                    📩 Riceverai immediatamente il link per guardarlo quando vuoi, dove vuoi.
-                  </p>
-                  <AnimatedButton
-                    IconLeft={Download}
-                    IconRight={ChevronDown}
-                    onClick={() => document.getElementById('video-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
-                  >
-                    SCARICA SUBITO IL VIDEO
-                  </AnimatedButton>
-                </div>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* About Section */}
-      <section id="about" className="relative z-10 px-4 py-16">
-        <div className="container mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="font-playfair text-3xl lg:text-4xl font-bold mb-4 text-white">CHI SIAMO</h2>
-            <div className="w-24 h-1 bg-white mx-auto"></div>
-          </div>
-
-          <div className="max-w-4xl mx-auto">
-            <Card className="bg-card/30 backdrop-blur-sm border-white/10 p-8 lg:p-12">
-              <div className="space-y-6 text-center">
-                <p className="text-lg text-muted-foreground leading-relaxed">
-                  <strong className="text-white">4 Elementi Italia</strong> è una realtà nata per trasformare i centri estetici e i professionisti del beauty in vere imprese consapevoli. Con oltre <strong className="text-white">10 anni di esperienza</strong> nel settore, uniamo formazione, strategia e strumenti digitali per supportare estetiste e professionisti del benessere nel loro percorso di crescita.
-                </p>
-                <p className="text-lg text-muted-foreground leading-relaxed">
-                  Il nostro metodo è <strong className="text-white">personalizzato, pratico e accessibile</strong>. Crediamo che ogni centro debba avere una visione chiara, un'identità forte e una gestione organizzata.
-                </p>
-                <p className="text-lg text-muted-foreground leading-relaxed">
-                  Collaboriamo con brand d'eccellenza come <strong className="text-white">Tokio, Nee Make Up Milano ed Everlinespa</strong>, per garantire qualità, innovazione e prestigio.
-                </p>
-              </div>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Services */}
-      <section id="services" className="relative z-10 px-4 py-16 bg-card/20">
-        <style>
-          {`
-            .service-card-fuoco [data-glow] {
-              --base: 24 !important;
-              --saturation: 100 !important;
-              --lightness: 60 !important;
-            }
-            .service-card-fuoco [data-glow]:before {
-              background-image: radial-gradient(
-                calc(var(--spotlight-size) * 0.75) calc(var(--spotlight-size) * 0.75) at
-                calc(var(--x, 0) * 1px)
-                calc(var(--y, 0) * 1px),
-                hsl(24 100% 50% / 0.8), transparent 100%
-              ) !important;
-            }
-            .service-card-fuoco [data-glow]:after {
-              background-image: radial-gradient(
-                calc(var(--spotlight-size) * 0.5) calc(var(--spotlight-size) * 0.5) at
-                calc(var(--x, 0) * 1px)
-                calc(var(--y, 0) * 1px),
-                hsl(24 100% 70% / 1), transparent 100%
-              ) !important;
-            }
-            
-            .service-card-terra [data-glow] {
-              --base: 142 !important;
-              --saturation: 70 !important;
-              --lightness: 45 !important;
-            }
-            .service-card-terra [data-glow]:before {
-              background-image: radial-gradient(
-                calc(var(--spotlight-size) * 0.75) calc(var(--spotlight-size) * 0.75) at
-                calc(var(--x, 0) * 1px)
-                calc(var(--y, 0) * 1px),
-                hsl(142 70% 40% / 0.8), transparent 100%
-              ) !important;
-            }
-            .service-card-terra [data-glow]:after {
-              background-image: radial-gradient(
-                calc(var(--spotlight-size) * 0.5) calc(var(--spotlight-size) * 0.5) at
-                calc(var(--x, 0) * 1px)
-                calc(var(--y, 0) * 1px),
-                hsl(142 70% 60% / 1), transparent 100%
-              ) !important;
-            }
-            
-            .service-card-aria [data-glow] {
-              --base: 200 !important;
-              --saturation: 80 !important;
-              --lightness: 60 !important;
-            }
-            .service-card-aria [data-glow]:before {
-              background-image: radial-gradient(
-                calc(var(--spotlight-size) * 0.75) calc(var(--spotlight-size) * 0.75) at
-                calc(var(--x, 0) * 1px)
-                calc(var(--y, 0) * 1px),
-                hsl(200 80% 55% / 0.8), transparent 100%
-              ) !important;
-            }
-            .service-card-aria [data-glow]:after {
-              background-image: radial-gradient(
-                calc(var(--spotlight-size) * 0.5) calc(var(--spotlight-size) * 0.5) at
-                calc(var(--x, 0) * 1px)
-                calc(var(--y, 0) * 1px),
-                hsl(200 80% 75% / 1), transparent 100%
-              ) !important;
-            }
-            
-            .service-card-acqua [data-glow] {
-              --base: 220 !important;
-              --saturation: 90 !important;
-              --lightness: 55 !important;
-            }
-            .service-card-acqua [data-glow]:before {
-              background-image: radial-gradient(
-                calc(var(--spotlight-size) * 0.75) calc(var(--spotlight-size) * 0.75) at
-                calc(var(--x, 0) * 1px)
-                calc(var(--y, 0) * 1px),
-                hsl(220 90% 50% / 0.8), transparent 100%
-              ) !important;
-            }
-            .service-card-acqua [data-glow]:after {
-              background-image: radial-gradient(
-                calc(var(--spotlight-size) * 0.5) calc(var(--spotlight-size) * 0.5) at
-                calc(var(--x, 0) * 1px)
-                calc(var(--y, 0) * 1px),
-                hsl(220 90% 70% / 1), transparent 100%
-              ) !important;
-            }
-
-            /* Icon Circle Glow Effects */
-            .icon-circle-fuoco {
-              border: 2px solid hsl(24 100% 60% / 0.3);
-              box-shadow: 0 0 20px hsl(24 100% 60% / 0.4), inset 0 0 20px hsl(24 100% 60% / 0.1);
-              transition: all 0.3s ease;
-            }
-            .icon-circle-fuoco:hover {
-              border-color: hsl(24 100% 60% / 0.6);
-              box-shadow: 0 0 30px hsl(24 100% 60% / 0.6), inset 0 0 30px hsl(24 100% 60% / 0.2);
-            }
-
-            .icon-circle-terra {
-              border: 2px solid hsl(142 70% 45% / 0.3);
-              box-shadow: 0 0 20px hsl(142 70% 45% / 0.4), inset 0 0 20px hsl(142 70% 45% / 0.1);
-              transition: all 0.3s ease;
-            }
-            .icon-circle-terra:hover {
-              border-color: hsl(142 70% 45% / 0.6);
-              box-shadow: 0 0 30px hsl(142 70% 45% / 0.6), inset 0 0 30px hsl(142 70% 45% / 0.2);
-            }
-
-            .icon-circle-aria {
-              border: 2px solid hsl(200 80% 60% / 0.3);
-              box-shadow: 0 0 20px hsl(200 80% 60% / 0.4), inset 0 0 20px hsl(200 80% 60% / 0.1);
-              transition: all 0.3s ease;
-            }
-            .icon-circle-aria:hover {
-              border-color: hsl(200 80% 60% / 0.6);
-              box-shadow: 0 0 30px hsl(200 80% 60% / 0.6), inset 0 0 30px hsl(200 80% 60% / 0.2);
-            }
-
-            .icon-circle-acqua {
-              border: 2px solid hsl(220 90% 55% / 0.3);
-              box-shadow: 0 0 20px hsl(220 90% 55% / 0.4), inset 0 0 20px hsl(220 90% 55% / 0.1);
-              transition: all 0.3s ease;
-            }
-            .icon-circle-acqua:hover {
-              border-color: hsl(220 90% 55% / 0.6);
-              box-shadow: 0 0 30px hsl(220 90% 55% / 0.6), inset 0 0 30px hsl(220 90% 55% / 0.2);
-            }
-          `}
-        </style>
-        <div className="container mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="font-playfair text-3xl lg:text-4xl font-bold mb-4 text-white">I NOSTRI SERVIZI</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Tutto quello che serve per trasformare il tuo centro estetico in una vera impresa
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="service-card-fuoco">
-              <GlowCard customSize className="w-full p-8 text-center aspect-auto h-auto min-h-[320px] flex flex-col">
-                <div className="flex flex-col items-center flex-1">
-                  <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6 icon-circle-fuoco">
-                    <div className="text-white text-2xl font-bold">△</div>
-                  </div>
-                  <div className="h-16 flex items-center justify-center">
-                    <h3 className="font-playfair text-xl font-bold text-white text-center">FUOCO</h3>
-                  </div>
-                </div>
-                <div className="h-20 flex items-start justify-center mt-4">
-                  <p className="text-muted-foreground text-center text-sm leading-relaxed">Piattaforma 4 Elementi Italia Srl e consulenza.</p>
-                </div>
-              </GlowCard>
-            </div>
-
-            <div className="service-card-terra">
-              <GlowCard customSize className="w-full p-8 text-center aspect-auto h-auto min-h-[320px] flex flex-col">
-                <div className="flex flex-col items-center flex-1">
-                  <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6 icon-circle-terra">
-                    <div className="text-white text-xl font-bold relative">
-                      <div>▽</div>
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3 h-0.5 bg-white"></div>
-                    </div>
-                  </div>
-                  <div className="h-16 flex items-center justify-center">
-                    <h3 className="font-playfair text-xl font-bold text-white text-center">TERRA</h3>
-                  </div>
-                </div>
-                <div className="h-20 flex items-center justify-center mt-4">
-                  <p className="text-muted-foreground text-center text-sm leading-relaxed">Azienda riqualificazione centro estetico, restyling arredamento e sistema operativo.</p>
-                </div>
-              </GlowCard>
-            </div>
-
-            <div className="service-card-aria">
-              <GlowCard customSize className="w-full p-8 text-center aspect-auto h-auto min-h-[320px] flex flex-col">
-                <div className="flex flex-col items-center flex-1">
-                  <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6 icon-circle-aria">
-                    <div className="text-white text-xl font-bold relative">
-                      <div>△</div>
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3 h-0.5 bg-white"></div>
-                    </div>
-                  </div>
-                  <div className="h-16 flex items-center justify-center">
-                    <h3 className="font-playfair text-xl font-bold text-white text-center">ARIA</h3>
-                  </div>
-                </div>
-                <div className="h-20 flex items-start justify-center mt-4">
-                  <p className="text-muted-foreground text-center text-sm leading-relaxed">Marketing specifico per settore beauty.</p>
-                </div>
-              </GlowCard>
-            </div>
-
-            <div className="service-card-acqua">
-              <GlowCard customSize className="w-full p-8 text-center aspect-auto h-auto min-h-[320px] flex flex-col">
-                <div className="flex flex-col items-center flex-1">
-                  <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6 icon-circle-acqua">
-                    <div className="text-white text-2xl font-bold">▽</div>
-                  </div>
-                  <div className="h-16 flex items-center justify-center">
-                    <h3 className="font-playfair text-xl font-bold text-white text-center">ACQUA</h3>
-                  </div>
-                </div>
-                <div className="h-20 flex items-center justify-center mt-4">
-                  <p className="text-muted-foreground text-center text-sm leading-relaxed">Partnership con Tokyo Top Air, Nee Make Up Milano e EvertlinerSpa.</p>
-                </div>
-              </GlowCard>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Final CTA */}
-      <section id="contact" className="relative z-10 px-4 py-16">
-        <div className="container mx-auto text-center">
-          <div className="max-w-3xl mx-auto space-y-8">
-            <h2 className="font-playfair text-3xl lg:text-4xl font-bold text-white">
-              {landingFinalCta?.title ?? "TRASFORMA IL TUO CENTRO ESTETICO IN UNA"} 
-              <span className="gradient-text"> {landingFinalCta?.subtitle ?? "VERA IMPRESA"}</span>
-            </h2>
-            <p className="text-xl text-muted-foreground">
-              {landingFinalCta?.body ?? "Se vuoi trasformare il tuo centro estetico in una vera impresa, sei nel posto giusto. ✨"}
-            </p>
-            <div className="space-y-4">
-              <p className="text-lg font-semibold">{finalCtaExtra.closing_title ?? "Ti aspetto dall'altra parte!"}</p>
-              <p className="text-muted-foreground">
-                <strong className="text-white">{finalCtaExtra.closing_subtitle ?? "Davide – Fondatore di 4 Elementi Italia"}</strong>
-              </p>
-            </div>
-            <div>
-              <AnimatedButton
-                IconLeft={Download}
-                IconRight={ChevronDown}
-                className="px-12 py-6 text-lg"
-                onClick={() => document.getElementById('video-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                aria-label="Vai al mini corso"
+                onClick={() => scrollToId('video-form', 'center')}
               >
-                {landingFinalCta?.cta_label ?? "SCARICA IL VIDEO GRATUITO"}
-              </AnimatedButton>
-              <p className="text-sm text-white/70 mt-4 text-center">
-                {finalCtaExtra.cta_note ?? "✓ Nessun pagamento richiesto • Download immediato • Guarda quando vuoi"}
-              </p>
+                <ArrowRight />
+              </Button>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Newsletter Section */}
-      <section className="py-20 px-4 relative overflow-hidden bg-gradient-to-br from-gray-900 to-gray-800">
-        <Glow variant="center" />
-        
-        <div className="container mx-auto relative z-10">
-          <div className="max-w-6xl mx-auto">
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              {/* Left Column - Benefits */}
-              <div className="space-y-8">
-                <div>
-                  <h2 className="font-playfair text-3xl md:text-4xl font-bold text-white mb-6 leading-tight">
-                    {landingNewsletter?.title ?? "Sta per arrivare qualcosa di grande."}
-                  </h2>
-                  <p className="text-muted-foreground text-lg mb-8">
-                    {landingNewsletter?.body ?? "Iscriviti ora per non perderti il lancio ufficiale della piattaforma e accedere in anteprima alla community riservata ai professionisti del settore."}
+      {/* Scroll hint */}
+      <div className="flex flex-col items-center gap-2 py-10">
+        <p className="text-xs uppercase tracking-widest text-muted-foreground">
+          Scorri per esplorare
+        </p>
+        <ChevronDown className="h-4 w-4 animate-bounce text-muted-foreground" />
+      </div>
+
+      {/* Feature split — services list + browser mockup with the free video */}
+      <section id="video" className="border-t border-border py-24">
+        <div className="container mx-auto grid items-center gap-16 px-6 lg:grid-cols-2">
+          <div>
+            <Badge id="services">
+              <Sparkles className="h-3 w-3" />
+              I SERVIZI
+            </Badge>
+            <h2 className="mt-6 font-display text-4xl font-semibold tracking-tight sm:text-5xl">
+              Tutto ciò che ti serve per crescere
+            </h2>
+            <p className="mt-4 max-w-lg text-muted-foreground">
+              Formazione, strategia e strumenti digitali per trasformare il tuo centro
+              estetico in una vera impresa.
+            </p>
+
+            <div className="mt-8 divide-y divide-border border-y border-border">
+              {SERVICES.map((service) => (
+                <div key={service.name} className="py-5">
+                  <div className="flex items-center justify-between gap-4">
+                    <p className="font-display text-lg font-semibold">{service.name}</p>
+                    <Badge>{service.tag}</Badge>
+                  </div>
+                  <p className="mt-1 text-sm text-muted-foreground">{service.description}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+              <Button size="pill" onClick={() => scrollToId('video-form', 'center')}>
+                {landingHero?.cta_label ?? "SCARICA IL MINI CORSO GRATUITO"}
+              </Button>
+              <Button size="pill" variant="outline" onClick={() => scrollToId('method')}>
+                Scopri il metodo
+                <ArrowRight />
+              </Button>
+            </div>
+          </div>
+
+          {/* Browser chrome mockup */}
+          <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-lg shadow-black/20">
+            <div className="flex items-center gap-1.5 border-b border-border px-4 py-3">
+              <span className="h-2.5 w-2.5 rounded-full bg-foreground/15" />
+              <span className="h-2.5 w-2.5 rounded-full bg-foreground/15" />
+              <span className="h-2.5 w-2.5 rounded-full bg-foreground/15" />
+            </div>
+            <div className="aspect-video w-full">
+              {previewVideo ? (
+                <VideoPlayer video={previewVideo} className="h-full w-full" />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-muted">
+                  <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-foreground" />
+                </div>
+              )}
+            </div>
+            <div className="grid grid-cols-3 gap-2 p-4">
+              {MOSAIC_IMAGES.map((image) => (
+                <img
+                  key={image}
+                  src={image}
+                  alt=""
+                  aria-hidden="true"
+                  className="h-20 w-full rounded-lg object-cover grayscale"
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Method / process — numbered steps */}
+      <section id="method" className="border-t border-border py-24">
+        <div className="container mx-auto px-6">
+          <div className="mx-auto max-w-2xl text-center">
+            <p className="text-xs uppercase tracking-widest text-muted-foreground">
+              Il metodo
+            </p>
+            <h2 className="mt-4 font-display text-4xl font-semibold tracking-tight sm:text-5xl">
+              Cosa imparerai nel video
+            </h2>
+            <p className="mt-4 text-muted-foreground">
+              Ti mostro, passo dopo passo, tutto quello che serve per creare un listino
+              strategico e professionale.
+            </p>
+          </div>
+
+          <div className="mt-16 divide-y divide-border border-y border-border">
+            {METHOD_STEPS.map((step, stepIndex) => (
+              <div
+                key={step.index}
+                className="grid gap-8 py-12 lg:grid-cols-12 lg:items-center"
+              >
+                <p className="font-display text-6xl font-semibold text-foreground/15 lg:col-span-2">
+                  {step.index}
+                </p>
+
+                <ul className="space-y-3 lg:col-span-5">
+                  {step.checks.map((check) => (
+                    <li key={check} className="flex items-start gap-3">
+                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+                      <span className="text-sm text-foreground/90">{check}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <div className="lg:col-span-5 lg:text-right">
+                  <h3 className="font-display text-2xl font-semibold">{step.title}</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">{step.subtitle}</p>
+                  <div className="mt-4 flex gap-3 lg:justify-end">
+                    {STEP_IMAGES[stepIndex].map((image) => (
+                      <img
+                        key={image}
+                        src={image}
+                        alt=""
+                        aria-hidden="true"
+                        className="h-20 w-28 rounded-xl border border-border object-cover grayscale"
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-12 flex justify-center">
+            <Button size="pill" onClick={() => scrollToId('video-form', 'center')}>
+              <Download />
+              {landingHero?.cta_label ?? "SCARICA IL MINI CORSO GRATUITO"}
+            </Button>
+          </div>
+        </div>
+      </section>
+
+      {/* About statement band */}
+      <section id="about" className="border-t border-border py-24">
+        <div className="container mx-auto max-w-3xl px-6 text-center">
+          <p className="text-xs uppercase tracking-widest text-muted-foreground">Chi siamo</p>
+          <h2 className="mt-4 font-display text-4xl font-semibold tracking-tight sm:text-5xl">
+            Trasformiamo centri estetici in vere imprese.
+          </h2>
+          <p className="mt-6 text-muted-foreground">
+            4 Elementi Italia è una realtà nata per trasformare i centri estetici e i
+            professionisti del beauty in vere imprese consapevoli. Con oltre 10 anni di
+            esperienza nel settore, uniamo formazione, strategia e strumenti digitali per
+            supportare estetiste e professionisti del benessere nel loro percorso di
+            crescita.
+          </p>
+          <p className="mt-4 text-muted-foreground">{heroParagraphs[1]}</p>
+          <p className="mt-4 text-sm text-muted-foreground">
+            Collaboriamo con brand d'eccellenza come Tokio, Nee Make Up Milano ed
+            Everlinespa, per garantire qualità, innovazione e prestigio.
+          </p>
+        </div>
+      </section>
+
+      {/* Testimonials — cream cards over a darker panel */}
+      <section className="py-24">
+        <div className="container mx-auto px-6">
+          <div className="rounded-3xl border border-border bg-card/40 p-8 lg:p-16">
+            <div className="mx-auto max-w-2xl text-center">
+              <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                Testimonianze
+              </p>
+              <h2 className="mt-4 font-display text-4xl font-semibold tracking-tight">
+                Cosa dicono di noi
+              </h2>
+            </div>
+
+            <div className="mt-12 grid gap-6 md:grid-cols-3">
+              {testimonialItems.map((testimonial) => (
+                <div
+                  key={testimonial.name}
+                  className="flex h-full flex-col rounded-2xl bg-brand-cream p-6 text-brand-black shadow-lg shadow-black/30"
+                >
+                  <div className="flex gap-1">
+                    {Array.from({ length: 5 }).map((_, starIndex) => (
+                      <Star
+                        key={starIndex}
+                        className="h-4 w-4 fill-brand-earth text-brand-earth"
+                      />
+                    ))}
+                  </div>
+                  <p className="mt-4 flex-grow text-sm leading-relaxed">
+                    “{testimonial.quote}”
+                  </p>
+                  <div className="mt-6 flex items-center gap-3">
+                    <img
+                      src={testimonial.image}
+                      alt={testimonial.name}
+                      className="h-10 w-10 rounded-full object-cover grayscale"
+                    />
+                    <div>
+                      <p className="text-sm font-semibold">{testimonial.name}</p>
+                      <p className="text-xs opacity-70">{testimonial.title}</p>
+                    </div>
+                  </div>
+                  <p className="mt-4 flex items-center gap-1.5 text-xs opacity-70">
+                    <BadgeCheck className="h-3.5 w-3.5" />
+                    Cliente verificato
                   </p>
                 </div>
-                
-                <div className="space-y-4">
-                  {newsletterBenefits.map((benefit, index) => (
-                    <div key={index} className="flex items-center space-x-3">
-                      <div className="w-6 h-6 bg-[#6AA8B3] rounded-full flex items-center justify-center shrink-0">
-                        <Check className="w-4 h-4 text-white" />
-                      </div>
-                      <span className="text-white font-medium">{benefit}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Right Column - Newsletter Form */}
-              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8">
-                <div className="text-center mb-8">
-                  <div className="w-16 h-16 bg-[#6AA8B3]/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <User className="w-8 h-8 text-[#6AA8B3]" />
-                  </div>
-                  <h3 className="font-playfair text-2xl font-bold text-white mb-2">
-                    {newsletterExtra.form_title ?? "👉 Iscriviti oggi. Sii tra i primi a entrare."}
-                  </h3>
-                </div>
-
-                <form onSubmit={handleNewsletterSubmit} className="space-y-6">
-                  <div>
-                    <Label htmlFor="newsletter-name" className="text-white mb-2 block">
-                      {newsletterExtra.name_label ?? "Nome *"}
-                    </Label>
-                    <Input
-                      id="newsletter-name"
-                      type="text"
-                      value={newsletterData.name}
-                      onChange={(e) => setNewsletterData(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder={newsletterExtra.name_placeholder ?? "Il tuo nome"}
-                      required
-                      disabled={isSubmittingNewsletter}
-                      className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:bg-white/20 transition-all duration-200"
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="newsletter-email" className="text-white mb-2 block">
-                      {newsletterExtra.email_label ?? "Email *"}
-                    </Label>
-                    <Input
-                      id="newsletter-email"
-                      type="email"
-                      value={newsletterData.email}
-                      onChange={(e) => setNewsletterData(prev => ({ ...prev, email: e.target.value }))}
-                      placeholder={newsletterExtra.email_placeholder ?? "la.tua.email@esempio.com"}
-                      required
-                      disabled={isSubmittingNewsletter}
-                      className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:bg-white/20 transition-all duration-200"
-                    />
-                  </div>
-
-                  <Button 
-                    type="submit" 
-                    disabled={isSubmittingNewsletter}
-                    className="w-full bg-gradient-to-r from-[#6AA8B3] to-[#E46A39] hover:from-[#5a97a2] hover:to-[#d45f32] text-white font-semibold py-3 transition-all duration-300 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {isSubmittingNewsletter ? (
-                      <div className="flex items-center justify-center space-x-2">
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        <span>{newsletterExtra.loading_label ?? "Iscrizione in corso..."}</span>
-                      </div>
-                    ) : (
-                      landingNewsletter?.cta_label ?? 'ISCRIVITI ALLA NEWSLETTER'
-                    )}
-                  </Button>
-                </form>
-
-                <p className="text-xs text-gray-400 text-center mt-4">
-                  {newsletterExtra.privacy_note ?? "Rispettiamo la tua privacy. Nessuno spam, solo contenuti di valore."}
-                </p>
-              </div>
+              ))}
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Closing CTA — dramatic centered section with the lead form */}
+      <section id="contact" className="border-t border-border py-32">
+        <div className="container mx-auto max-w-3xl px-6 text-center">
+          <h2 className="font-display text-4xl font-semibold leading-[1.05] tracking-tightest sm:text-5xl lg:text-6xl">
+            {landingFinalCta?.title ?? "TRASFORMA IL TUO CENTRO ESTETICO IN UNA"}
+            <span className="block">{landingFinalCta?.subtitle ?? "VERA IMPRESA"}</span>
+          </h2>
+          <p className="mt-6 text-lg text-muted-foreground">
+            {landingFinalCta?.body ??
+              "Se vuoi trasformare il tuo centro estetico in una vera impresa, sei nel posto giusto. ✨"}
+          </p>
+
+          <div className="mx-auto mt-12 max-w-md text-left">
+            <h3 className="text-center font-display text-2xl font-semibold">
+              {heroExtra.form_title ?? "SCARICA IL VIDEO GRATUITO"}
+            </h3>
+            <p className="mt-2 text-center text-sm text-muted-foreground">
+              {heroExtra.form_subtitle ??
+                "Compila il form e ricevi subito il link per scaricare il video completo"}
+            </p>
+
+            <form id="video-form" onSubmit={handleSubmit} className="mt-6 space-y-3">
+              <Input
+                placeholder="Il tuo nome"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              />
+              <Input
+                type="email"
+                placeholder="La tua email"
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+              />
+              <Button type="submit" disabled={isSubmitting} className="w-full">
+                {isSubmitting ? (
+                  heroExtra.submit_loading_label ?? "INVIO IN CORSO..."
+                ) : (
+                  <>
+                    <Download />
+                    {heroExtra.submit_label ?? "SCARICA IL MINI CORSO GRATUITO"}
+                  </>
+                )}
+              </Button>
+            </form>
+
+            <div className="mt-4 flex items-start gap-2 rounded-lg border border-border bg-foreground/5 p-3">
+              <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+              <p className="text-xs text-muted-foreground">
+                {heroExtra.success_note ??
+                  "Riceverai immediatamente un'email con il link per scaricare il video completo. Controlla anche la cartella spam!"}
+              </p>
+            </div>
+            <p className="mt-3 text-center text-xs text-muted-foreground">
+              {heroExtra.form_disclaimer ??
+                "✓ Nessun pagamento richiesto • Download immediato • Guarda quando vuoi"}
+            </p>
+          </div>
+
+          <div className="mt-12">
+            <p className="font-medium">
+              {finalCtaExtra.closing_title ?? "Ti aspetto dall'altra parte!"}
+            </p>
+            <p className="mt-1 text-sm text-muted-foreground">
+              {finalCtaExtra.closing_subtitle ?? "Davide – Fondatore di 4 Elementi Italia"}
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Newsletter band */}
+      <section className="border-t border-border py-20">
+        <div className="container mx-auto grid gap-12 px-6 md:grid-cols-2 md:items-center">
+          <div>
+            <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
+              {landingNewsletter?.title ?? "Sta per arrivare qualcosa di grande."}
+            </h2>
+            <p className="mt-4 text-muted-foreground">
+              {landingNewsletter?.body ??
+                "Iscriviti ora per non perderti il lancio ufficiale della piattaforma e accedere in anteprima alla community riservata ai professionisti del settore."}
+            </p>
+            <ul className="mt-6 space-y-3">
+              {newsletterBenefits.map((benefit) => (
+                <li key={benefit} className="flex items-start gap-3">
+                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" />
+                  <span className="text-sm text-foreground/90">{benefit}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="rounded-2xl border border-border bg-card p-8 shadow-lg shadow-black/20">
+            <h3 className="font-display text-xl font-semibold">
+              {newsletterExtra.form_title ?? "👉 Iscriviti oggi. Sii tra i primi a entrare."}
+            </h3>
+
+            <form onSubmit={handleNewsletterSubmit} className="mt-6 space-y-4">
+              <div>
+                <Label htmlFor="newsletter-name" className="mb-2 block">
+                  {newsletterExtra.name_label ?? "Nome *"}
+                </Label>
+                <Input
+                  id="newsletter-name"
+                  type="text"
+                  value={newsletterData.name}
+                  onChange={(e) =>
+                    setNewsletterData((prev) => ({ ...prev, name: e.target.value }))
+                  }
+                  placeholder={newsletterExtra.name_placeholder ?? "Il tuo nome"}
+                  required
+                  disabled={isSubmittingNewsletter}
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="newsletter-email" className="mb-2 block">
+                  {newsletterExtra.email_label ?? "Email *"}
+                </Label>
+                <Input
+                  id="newsletter-email"
+                  type="email"
+                  value={newsletterData.email}
+                  onChange={(e) =>
+                    setNewsletterData((prev) => ({ ...prev, email: e.target.value }))
+                  }
+                  placeholder={newsletterExtra.email_placeholder ?? "la.tua.email@esempio.com"}
+                  required
+                  disabled={isSubmittingNewsletter}
+                />
+              </div>
+
+              <Button type="submit" disabled={isSubmittingNewsletter} className="w-full">
+                {isSubmittingNewsletter
+                  ? newsletterExtra.loading_label ?? "Iscrizione in corso..."
+                  : landingNewsletter?.cta_label ?? 'ISCRIVITI ALLA NEWSLETTER'}
+              </Button>
+            </form>
+
+            <p className="mt-4 text-center text-xs text-muted-foreground">
+              {newsletterExtra.privacy_note ??
+                "Rispettiamo la tua privacy. Nessuno spam, solo contenuti di valore."}
+            </p>
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="relative z-10 px-4 py-8 border-t border-white/10">
-        <div className="container mx-auto text-center">
-          <div className="flex items-center justify-center space-x-3 mb-4">
-            <img src="/4-elementi-logo.png" alt="4 Elementi Italia Logo" className="h-10 w-auto" />
-          </div>
-          <p className="text-muted-foreground mb-2">
-            {landingFooter?.body ?? "© 2024 4 Elementi Italia. Tutti i diritti riservati."}
-          </p>
-          <p className="text-muted-foreground text-sm">
-            {landingFooterExtra.recovery_text ?? "Hai perso l'email di accesso?"}{' '}
-            <Button 
-              variant="link" 
-              onClick={() => navigate('/recupera-accesso')}
-              className="p-0 h-auto text-[#6AA8B3] hover:text-[#6AA8B3]/80 text-sm"
-            >
-              {landingFooterExtra.recovery_cta ?? "Recupera qui"}
-            </Button>
-          </p>
-          <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm">
-            {landingLegalLinks.map((link, index) => (
-              <div key={`${link.location}-${link.link_key}`} className="flex items-center gap-2">
-                {index > 0 && <span className="text-muted-foreground">•</span>}
-                <a 
-                  href={link.url}
-                  className="iubenda-white iubenda-noiframe iubenda-embed hover:underline"
-                  title={link.label}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {link.label}
-                </a>
+      <footer className="border-t border-border py-12">
+        <div className="container mx-auto px-6">
+          <div className="grid gap-10 md:grid-cols-4">
+            <div className="md:col-span-2">
+              <div className="flex items-center gap-3">
+                <img
+                  src="/4-elementi-logo.png"
+                  alt="4 Elementi Italia Logo"
+                  className="h-10 w-auto"
+                />
+                <span className="font-display text-lg font-semibold tracking-tight">
+                  4 Elementi Italia
+                </span>
               </div>
-            ))}
+              <p className="mt-4 max-w-sm text-sm text-muted-foreground">
+                Formazione, community e strumenti gestionali per estetiste e professionisti
+                del benessere.
+              </p>
+            </div>
+
+            <div>
+              <p className="text-xs uppercase tracking-widest text-muted-foreground">Naviga</p>
+              <ul className="mt-4 space-y-2">
+                {navLinks.map((navLink) => (
+                  <li key={navLink.href}>
+                    <a
+                      href={navLink.href}
+                      className="text-sm text-foreground/80 transition-colors hover:text-foreground"
+                    >
+                      {navLink.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div>
+              <p className="text-xs uppercase tracking-widest text-muted-foreground">Legale</p>
+              <ul className="mt-4 space-y-2">
+                {landingLegalLinks.map((link) => (
+                  <li key={`${link.location}-${link.link_key}`}>
+                    <a
+                      href={link.url}
+                      className="iubenda-white iubenda-noiframe iubenda-embed text-sm text-foreground/80 transition-colors hover:text-foreground hover:underline"
+                      title={link.label}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {link.label}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-6 text-sm text-muted-foreground">
+                {landingFooterExtra.recovery_text ?? "Hai perso l'email di accesso?"}{' '}
+                <Button
+                  variant="link"
+                  onClick={() => navigate('/recupera-accesso')}
+                  className="h-auto p-0 text-sm"
+                >
+                  {landingFooterExtra.recovery_cta ?? "Recupera qui"}
+                </Button>
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-10 border-t border-border pt-6 text-center">
+            <p className="text-xs text-muted-foreground">
+              {landingFooter?.body ?? "© 2024 4 Elementi Italia. Tutti i diritti riservati."}
+            </p>
           </div>
         </div>
       </footer>
-    </div>;
+    </div>
+  );
 };
 export default LandingPage;
