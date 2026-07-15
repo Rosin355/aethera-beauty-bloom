@@ -14,6 +14,8 @@ import {
   Instagram,
   Facebook,
   Youtube,
+  Menu,
+  X,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -163,6 +165,7 @@ const fallbackTestimonials: Array<{
 const LandingPage = () => {
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [isSubmittingNewsletter, setIsSubmittingNewsletter] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
   const [previewVideo, setPreviewVideo] = useState<SiteVideo | null>(null);
@@ -303,9 +306,9 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* 1) Navbar — sticky, centered menu, floating glass pill */}
-      <header className="sticky top-0 z-40 px-4 pt-4">
-        <div className="glass container mx-auto grid h-14 grid-cols-[1fr_auto] items-center rounded-full px-4 sm:px-6 md:grid-cols-[1fr_auto_1fr]">
+      {/* 1) Navbar — transparent bar over the hero, centered menu from md up */}
+      <header className="absolute inset-x-0 top-0 z-40">
+        <div className="mx-auto grid max-w-7xl grid-cols-[1fr_auto] items-center px-6 py-5 md:grid-cols-[1fr_auto_1fr] md:px-8">
           <a href="/" className="flex items-center gap-3">
             <img
               src="/4-elementi-logo.png"
@@ -329,16 +332,50 @@ const LandingPage = () => {
             ))}
           </nav>
 
-          <div className="flex items-center justify-end">
-            <Button size="pill" className="h-9 px-5" onClick={() => navigate('/login')}>
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              className="hidden h-10 px-4 md:inline-flex"
+              onClick={() => navigate('/login')}
+            >
               Area riservata
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="glass h-10 w-10 border-0 md:hidden"
+              aria-label={mobileMenuOpen ? "Chiudi il menu" : "Apri il menu"}
+              aria-expanded={mobileMenuOpen}
+              onClick={() => setMobileMenuOpen((open) => !open)}
+            >
+              {mobileMenuOpen ? <X /> : <Menu />}
             </Button>
           </div>
         </div>
+
+        {/* Mobile menu */}
+        {mobileMenuOpen && (
+          <div className="px-6 md:hidden">
+            <nav className="glass flex flex-col gap-1 rounded-2xl p-4">
+              {NAV_LINKS.map((navLink) => (
+                <a
+                  key={navLink.href}
+                  href={navLink.href}
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="rounded-lg px-3 py-2 text-sm text-foreground/80 transition-colors hover:bg-foreground/5 hover:text-foreground"
+                >
+                  {navLink.label}
+                </a>
+              ))}
+              <Button className="mt-2 h-10 w-full" onClick={() => navigate('/login')}>
+                Area riservata
+              </Button>
+            </nav>
+          </div>
+        )}
       </header>
 
       {/* 2) Hero — text left, warm photo breathing on the right, floating glass cards */}
-      <section className="relative -mt-[4.5rem] flex min-h-screen flex-col justify-center overflow-hidden">
+      <section className="relative flex min-h-screen flex-col justify-center overflow-hidden">
         <img
           src={HERO_IMAGE}
           alt=""
@@ -352,31 +389,29 @@ const LandingPage = () => {
         {/* Stronger veil on small screens where text sits over the photo */}
         <div className="absolute inset-0 bg-background/40 lg:hidden" />
 
-        <div className="container relative z-10 mx-auto px-6 pb-36 pt-40 lg:pb-44">
+        <div className="relative z-10 mx-auto w-full max-w-7xl px-6 pb-36 pt-40 md:px-8 lg:pb-44">
           <div className="max-w-2xl lg:max-w-[55%]">
-            <p className="text-xs uppercase tracking-widest text-muted-foreground">
+            <p className="text-xs font-normal uppercase tracking-[0.18em] text-foreground/60">
               La piattaforma del metodo 4 Elementi
             </p>
 
-            <h1 className="mt-6 font-display text-5xl font-semibold leading-[1.05] tracking-tightest text-foreground sm:text-6xl lg:text-7xl">
+            <h1 className="mt-6 font-display text-[2.75rem] font-semibold leading-[1.02] tracking-[-0.05em] text-foreground sm:text-6xl md:text-7xl md:leading-none">
               Da estetista
               <span className="block">a imprenditrice.</span>
             </h1>
 
-            <p className="mt-6 max-w-xl text-lg text-muted-foreground">
+            <p className="mt-5 max-w-2xl text-base leading-7 text-foreground/80 md:text-lg">
               La piattaforma 4 Elementi riunisce formazione, community, strumenti
               gestionali e un assistente AI per gestire e far crescere il tuo centro.
               Tutto in un unico posto.
             </p>
 
-            <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Button size="pill" onClick={() => navigate('/login')}>
+            <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center">
+              <Button onClick={() => navigate('/login')}>
                 Accedi alla piattaforma
               </Button>
               <Button
-                size="pill"
                 variant="secondary"
-                className="glass border-0"
                 onClick={() => scrollToId('piattaforma')}
               >
                 <Play />
@@ -384,7 +419,7 @@ const LandingPage = () => {
               </Button>
             </div>
 
-            <p className="mt-10 text-xs uppercase tracking-widest text-muted-foreground">
+            <p className="mt-10 text-xs uppercase tracking-[0.18em] text-foreground/60">
               Formazione — Community — Gestionale — Assistente AI
             </p>
 
@@ -484,21 +519,21 @@ const LandingPage = () => {
 
       {/* 3) Scroll hint */}
       <div className="flex flex-col items-center gap-2 py-10">
-        <p className="text-xs uppercase tracking-widest text-muted-foreground">
+        <p className="text-xs uppercase tracking-[0.18em] text-foreground/60">
           Scopri di più
         </p>
         <ChevronDown className="h-4 w-4 animate-bounce text-muted-foreground" />
       </div>
 
       {/* 4) Feature split — the platform */}
-      <section id="piattaforma" className="border-t border-border py-24">
-        <div className="container mx-auto grid items-center gap-16 px-6 lg:grid-cols-2">
+      <section id="piattaforma" className="border-t border-border py-16 md:py-24">
+        <div className="mx-auto grid max-w-7xl items-center gap-16 px-6 md:px-8 lg:grid-cols-2">
           <div>
             <Badge className="glass border-0">
               <Sparkles className="h-3 w-3" />
               LA PIATTAFORMA
             </Badge>
-            <h2 className="mt-6 font-display text-4xl font-semibold tracking-tight sm:text-5xl">
+            <h2 className="mt-6 font-display text-4xl font-semibold tracking-[-0.05em] sm:text-5xl">
               Tutto ciò che ti serve, in un posto
             </h2>
             <p className="mt-4 max-w-lg text-muted-foreground">
@@ -518,12 +553,12 @@ const LandingPage = () => {
               ))}
             </div>
 
-            <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Button size="pill" variant="outline" onClick={() => scrollToId('metodo')}>
+            <div className="mt-8 flex flex-col gap-4 sm:flex-row">
+              <Button variant="outline" onClick={() => scrollToId('metodo')}>
                 Scopri di più
                 <ArrowRight />
               </Button>
-              <Button size="pill" onClick={() => navigate('/login')}>
+              <Button onClick={() => navigate('/login')}>
                 Accedi
               </Button>
             </div>
@@ -561,13 +596,13 @@ const LandingPage = () => {
       </section>
 
       {/* 5) Philosophy / method — numbered 1–3 */}
-      <section id="metodo" className="border-t border-border py-24">
-        <div className="container mx-auto px-6">
+      <section id="metodo" className="border-t border-border py-16 md:py-24">
+        <div className="mx-auto max-w-7xl px-6 md:px-8">
           <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
-            <h2 className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">
+            <h2 className="font-display text-4xl font-semibold tracking-[-0.05em] sm:text-5xl md:text-6xl">
               Il Metodo 4 Elementi
             </h2>
-            <span className="glass inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs uppercase tracking-widest text-muted-foreground">
+            <span className="glass inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs uppercase tracking-[0.18em] text-foreground/60">
               <Sparkles className="h-3 w-3" />
               Scopri il metodo
             </span>
@@ -614,14 +649,14 @@ const LandingPage = () => {
       </section>
 
       {/* 6) Community love — testimonials */}
-      <section id="testimonianze" className="py-24">
-        <div className="container mx-auto px-6">
+      <section id="testimonianze" className="py-16 md:py-24">
+        <div className="mx-auto max-w-7xl px-6 md:px-8">
           <div className="rounded-3xl border border-border bg-card/40 p-8 lg:p-16">
             <div className="mx-auto max-w-2xl text-center">
-              <p className="text-xs uppercase tracking-widest text-muted-foreground">
+              <p className="text-xs uppercase tracking-[0.18em] text-foreground/60">
                 Risultati veri
               </p>
-              <h2 className="mt-4 font-display text-4xl font-semibold tracking-tight">
+              <h2 className="mt-4 font-display text-4xl font-semibold tracking-[-0.05em]">
                 Le nostre professioniste
               </h2>
             </div>
@@ -666,12 +701,12 @@ const LandingPage = () => {
       </section>
 
       {/* 7) Stats band */}
-      <section className="border-t border-border py-24">
-        <div className="container mx-auto px-6">
+      <section className="border-t border-border py-16 md:py-24">
+        <div className="mx-auto max-w-7xl px-6 md:px-8">
           <div className="grid gap-12 text-center sm:grid-cols-3">
             {BAND_STATS.map(([value, label]) => (
               <div key={label}>
-                <p className="font-display text-6xl font-semibold tracking-tightest sm:text-7xl">
+                <p className="font-display text-6xl font-semibold tracking-[-0.05em] sm:text-7xl">
                   {value}
                 </p>
                 <p className="mt-3 text-sm text-muted-foreground">{label}</p>
@@ -683,7 +718,12 @@ const LandingPage = () => {
 
       {/* 8) Footer — dark rounded card */}
       <footer id="contatti" className="px-4 pb-6 pt-12 sm:px-6">
-        <div className="container mx-auto rounded-3xl border border-border bg-card p-8 lg:p-16">
+        <div className="relative mx-auto max-w-7xl overflow-hidden rounded-3xl border border-border bg-card p-8 md:p-12 lg:p-16">
+          {/* Metallic sheen overlay (LUMINA) */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br from-foreground/5 via-transparent to-foreground/10"
+          />
           <div className="grid gap-12 lg:grid-cols-2">
             <div>
               <div className="flex items-center gap-3">
@@ -725,7 +765,7 @@ const LandingPage = () => {
 
             <div className="grid gap-10 sm:grid-cols-3">
               <div>
-                <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                <p className="text-xs uppercase tracking-[0.18em] text-foreground/60">
                   Piattaforma
                 </p>
                 <ul className="mt-4 space-y-2">
@@ -753,7 +793,7 @@ const LandingPage = () => {
               </div>
 
               <div>
-                <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                <p className="text-xs uppercase tracking-[0.18em] text-foreground/60">
                   Azienda
                 </p>
                 <ul className="mt-4 space-y-2">
@@ -771,7 +811,7 @@ const LandingPage = () => {
               </div>
 
               <div>
-                <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                <p className="text-xs uppercase tracking-[0.18em] text-foreground/60">
                   Legale
                 </p>
                 <ul className="mt-4 space-y-2">
