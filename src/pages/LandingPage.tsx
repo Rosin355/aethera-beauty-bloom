@@ -308,7 +308,7 @@ const LandingPage = () => {
     <div className="min-h-screen bg-background text-foreground">
       {/* 1) Navbar — transparent bar over the hero, centered menu from md up */}
       <header className="absolute inset-x-0 top-0 z-40">
-        <div className="mx-auto grid max-w-7xl grid-cols-[1fr_auto] items-center px-6 py-5 md:grid-cols-[1fr_auto_1fr] md:px-8">
+        <div className="mx-auto grid w-full max-w-7xl grid-cols-[1fr_auto] items-center px-6 py-5 md:grid-cols-[1fr_auto_1fr] md:px-10">
           <a href="/" className="flex items-center gap-3">
             <img
               src="/4-elementi-logo.png"
@@ -389,7 +389,7 @@ const LandingPage = () => {
         {/* Stronger veil on small screens where text sits over the photo */}
         <div className="absolute inset-0 bg-background/40 lg:hidden" />
 
-        <div className="relative z-10 mx-auto w-full max-w-7xl px-6 pb-36 pt-40 md:px-8 lg:pb-44">
+        <div className="relative z-10 mx-auto w-full max-w-7xl px-6 pb-36 pt-40 md:px-10 lg:pb-44">
           <div className="max-w-2xl lg:max-w-[55%]">
             <p className="text-xs font-normal uppercase tracking-[0.18em] text-foreground/60">
               La piattaforma del metodo 4 Elementi
@@ -527,7 +527,7 @@ const LandingPage = () => {
 
       {/* 4) Feature split — the platform */}
       <section id="piattaforma" className="border-t border-border py-16 md:py-24">
-        <div className="mx-auto grid max-w-7xl items-center gap-16 px-6 md:px-8 lg:grid-cols-2">
+        <div className="mx-auto grid w-full max-w-7xl items-center gap-16 px-6 md:px-10 lg:grid-cols-2">
           <div>
             <Badge className="glass border-0">
               <Sparkles className="h-3 w-3" />
@@ -597,7 +597,7 @@ const LandingPage = () => {
 
       {/* 5) Philosophy / method — numbered 1–3 */}
       <section id="metodo" className="border-t border-border py-16 md:py-24">
-        <div className="mx-auto max-w-7xl px-6 md:px-8">
+        <div className="mx-auto w-full max-w-7xl px-6 md:px-10">
           <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
             <h2 className="font-display text-4xl font-semibold tracking-[-0.05em] sm:text-5xl md:text-6xl">
               Il Metodo 4 Elementi
@@ -650,7 +650,7 @@ const LandingPage = () => {
 
       {/* 6) Community love — testimonials */}
       <section id="testimonianze" className="py-16 md:py-24">
-        <div className="mx-auto max-w-7xl px-6 md:px-8">
+        <div className="mx-auto w-full max-w-7xl px-6 md:px-10">
           <div className="rounded-3xl border border-border bg-card/40 p-8 lg:p-16">
             <div className="mx-auto max-w-2xl text-center">
               <p className="text-xs uppercase tracking-[0.18em] text-foreground/60">
@@ -702,7 +702,7 @@ const LandingPage = () => {
 
       {/* 7) Stats band */}
       <section className="border-t border-border py-16 md:py-24">
-        <div className="mx-auto max-w-7xl px-6 md:px-8">
+        <div className="mx-auto w-full max-w-7xl px-6 md:px-10">
           <div className="grid gap-12 text-center sm:grid-cols-3">
             {BAND_STATS.map(([value, label]) => (
               <div key={label}>
@@ -717,12 +717,13 @@ const LandingPage = () => {
       </section>
 
       {/* 8) Footer — dark rounded card */}
-      <footer id="contatti" className="px-4 pb-6 pt-12 sm:px-6">
-        <div className="relative mx-auto max-w-7xl overflow-hidden rounded-3xl border border-border bg-card p-8 md:p-12 lg:p-16">
+      <footer id="contatti" className="pb-6 pt-12">
+        <div className="mx-auto w-full max-w-7xl px-6 md:px-10">
+        <div className="relative overflow-hidden rounded-3xl border border-foreground/10 bg-card p-8 md:p-12 lg:p-16">
           {/* Metallic sheen overlay (LUMINA) */}
           <div
             aria-hidden="true"
-            className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br from-foreground/5 via-transparent to-foreground/10"
+            className="pointer-events-none absolute inset-0 rounded-3xl bg-[linear-gradient(to_bottom_right,rgba(255,255,255,0.05),rgba(255,255,255,0),rgba(255,255,255,0.10))]"
           />
           <div className="grid gap-12 lg:grid-cols-2">
             <div>
@@ -864,6 +865,7 @@ const LandingPage = () => {
               </Button>
             </div>
           </div>
+        </div>
         </div>
       </footer>
     </div>
