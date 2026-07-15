@@ -11,6 +11,7 @@ import {
   X,
 } from "lucide-react";
 import HeroDashboardPreview from "@/components/Landing/HeroDashboardPreview";
+import { LANDING_IMAGES } from "@/content/landingImages";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -36,34 +37,26 @@ const getSectionByKey = (
   key: string,
 ): SiteSectionRow | null => sections[key] ?? null;
 
-/* Warm, luminous beauty/wellness photography (full color) — same slot structure
-   as the reference; swap these for the client's real photos without touching layout. */
+/* CSS custom properties injected on the landing root; consumed by src/styles/landing.css.
+   All URLs live in src/content/landingImages.ts so photos can be swapped in one place. */
+const asUrl = (value: string) => `url('${value}')`;
 const IMAGE_VARS = {
-  // BASE hero layer — warm beauty-center interior (swap for the client's real photo).
-  "--base-image":
-    "url('https://images.unsplash.com/photo-1600334129128-685c5582fd35?auto=format&fit=crop&w=2400&q=90')",
-  "--section-ambient-image":
-    "url('https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=2200&q=90')",
-  "--section-floral-image":
-    "url('https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=2200&q=90')",
-  "--product-image-1":
-    "url('https://images.unsplash.com/photo-1560750588-73207b1ef5b8?auto=format&fit=crop&w=1400&q=90')",
-  "--product-image-2":
-    "url('https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=1400&q=90')",
-  "--product-image-3":
-    "url('https://images.unsplash.com/photo-1519823551278-64ac92734fb1?auto=format&fit=crop&w=1400&q=90')",
-  "--vision-image":
-    "url('https://images.unsplash.com/photo-1522337660859-02fbefca4702?auto=format&fit=crop&w=1800&q=90')",
-  "--story-image-1":
-    "url('https://images.unsplash.com/photo-1552693673-1bf958298935?auto=format&fit=crop&w=1400&q=90')",
-  "--story-image-2":
-    "url('https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?auto=format&fit=crop&w=1400&q=90')",
-  "--story-image-3":
-    "url('https://images.unsplash.com/photo-1505944270255-72b8c68c6a70?auto=format&fit=crop&w=1400&q=90')",
-  "--story-image-4":
-    "url('https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?auto=format&fit=crop&w=1400&q=90')",
-  "--story-image-5":
-    "url('https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=1400&q=90')",
+  "--base-image": asUrl(LANDING_IMAGES.heroBase),
+  "--section-ambient-image": asUrl(LANDING_IMAGES.storyAmbient),
+  "--section-floral-image": asUrl(LANDING_IMAGES.storyReveal),
+  "--vision-image": asUrl(LANDING_IMAGES.cinemaAmbient),
+  "--story-image-1": asUrl(LANDING_IMAGES.storyFormazione),
+  "--story-image-2": asUrl(LANDING_IMAGES.storyGestionale),
+  "--story-image-3": asUrl(LANDING_IMAGES.storyAI),
+  "--story-image-4": asUrl(LANDING_IMAGES.storyCommunity),
+  "--story-image-5": asUrl(LANDING_IMAGES.storyNumeri),
+  "--product-image-1": asUrl(LANDING_IMAGES.percorsoSettePassi),
+  "--product-image-2": asUrl(LANDING_IMAGES.percorsoGestione),
+  "--product-image-3": asUrl(LANDING_IMAGES.percorsoMarketing),
+  "--cinema-image-1": asUrl(LANDING_IMAGES.cinemaCheckup),
+  "--cinema-image-2": asUrl(LANDING_IMAGES.cinemaMetodo),
+  "--cinema-image-3": asUrl(LANDING_IMAGES.cinemaCrescita),
+  "--diario-image-1": asUrl(LANDING_IMAGES.diarioListino),
 } as React.CSSProperties;
 
 const NAV_LINKS = [
@@ -1106,8 +1099,8 @@ const LandingPage = () => {
               <div className="grid grid-cols-1 gap-12 lg:grid-cols-[1.08fr_.92fr] lg:items-center lg:gap-16">
                 <div className="relative overflow-hidden rounded-[2rem] border border-white/10">
                   <img
-                    src="https://images.unsplash.com/photo-1596178065887-1198b6148b2b?auto=format&fit=crop&w=1800&q=90"
-                    alt="Trattamento viso durante un percorso del metodo 4 Elementi"
+                    src={LANDING_IMAGES.metodoEquilibrio}
+                    alt="Equilibrio tra corpo, mente e natura — il metodo 4 Elementi"
                     className="parallax-media image-mask h-[520px] w-full object-cover object-center md:h-[680px]"
                   />
                   <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-transparent"></div>

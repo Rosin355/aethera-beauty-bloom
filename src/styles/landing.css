@@ -706,7 +706,7 @@
   top: 8%;
   width: 46%;
   height: 56%;
-  --frame-img: var(--story-image-1);
+  --frame-img: var(--cinema-image-1);
   transform: translate3d(calc(var(--cinema-progress, 0) * -60px), calc(var(--cinema-progress, 0) * -20px), 0) rotateY(calc(-12deg + var(--cinema-progress, 0) * 10deg)) scale(calc(0.86 + var(--cinema-progress, 0) * 0.14));
 }
 .landing-root .cinema-frame.two {
@@ -714,7 +714,7 @@
   top: 18%;
   width: 50%;
   height: 66%;
-  --frame-img: var(--product-image-2);
+  --frame-img: var(--cinema-image-2);
   transform: translate3d(calc((1 - var(--cinema-progress, 0)) * 120px), calc(var(--cinema-progress, 0) * 14px), 0) rotateY(calc(16deg - var(--cinema-progress, 0) * 13deg)) scale(calc(0.76 + var(--cinema-progress, 0) * 0.24));
   z-index: 3;
 }
@@ -723,7 +723,7 @@
   bottom: 0;
   width: 40%;
   height: 40%;
-  --frame-img: var(--product-image-3);
+  --frame-img: var(--cinema-image-3);
   transform: translate3d(calc(var(--cinema-progress, 0) * 70px), calc((1 - var(--cinema-progress, 0)) * 80px), 0) rotateZ(calc(5deg - var(--cinema-progress, 0) * 5deg)) scale(calc(0.72 + var(--cinema-progress, 0) * 0.28));
   z-index: 4;
 }
@@ -920,7 +920,7 @@
   inset: 18px;
   border-radius: 26px;
   overflow: hidden;
-  background-image: var(--section-floral-image);
+  background-image: var(--diario-image-1);
   background-size: cover;
   background-position: center;
   transform: scale(1.04);
