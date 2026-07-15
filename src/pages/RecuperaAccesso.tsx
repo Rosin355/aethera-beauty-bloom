@@ -13,6 +13,8 @@ const RecuperaAccesso = () => {
   const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  // Honeypot: stays empty for humans; if a bot fills it, resend-access-link drops the request.
+  const [honeypot, setHoneypot] = useState('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,7 +31,7 @@ const RecuperaAccesso = () => {
     try {
       // Chiama l'edge function per inviare il link di accesso
       const { data, error } = await supabase.functions.invoke('resend-access-link', {
-        body: { email: email.trim() }
+        body: { email: email.trim(), company: honeypot }
       });
 
       if (error) {
@@ -115,6 +117,16 @@ const RecuperaAccesso = () => {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-6">
+              <input
+                type="text"
+                name="company"
+                className="honeypot-field"
+                tabIndex={-1}
+                autoComplete="off"
+                aria-hidden="true"
+                value={honeypot}
+                onChange={(e) => setHoneypot(e.target.value)}
+              />
               <div>
                 <label className="block text-foreground text-sm font-medium mb-2">
                   Email *

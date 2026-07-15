@@ -210,6 +210,8 @@ const LandingPage = () => {
   const [isSubmittingLead, setIsSubmittingLead] = useState(false);
   const [newsletterEmail, setNewsletterEmail] = useState("");
   const [isSubmittingNewsletter, setIsSubmittingNewsletter] = useState(false);
+  // Honeypot: stays empty for humans; if a bot fills it, the edge functions drop the submission.
+  const [honeypot, setHoneypot] = useState("");
 
   const [landingSections, setLandingSections] = useState<Record<string, SiteSectionRow>>({});
   const [landingLegalLinks, setLandingLegalLinks] = useState<LegalLinkRow[]>([
@@ -544,6 +546,7 @@ const LandingPage = () => {
           name: leadData.name.trim(),
           email: leadData.email.trim(),
           source: "hero_section",
+          company: honeypot,
         },
       });
 
@@ -615,6 +618,7 @@ const LandingPage = () => {
           email,
           name: email.split("@")[0],
           source: "footer_newsletter",
+          company: honeypot,
         },
       });
       if (response.error) {
@@ -1340,6 +1344,16 @@ const LandingPage = () => {
                   className="mx-auto mt-10 flex max-w-xl flex-col gap-3"
                   aria-label="Richiedi il check-up gratuito"
                 >
+                  <input
+                    type="text"
+                    name="company"
+                    className="honeypot-field"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    aria-hidden="true"
+                    value={honeypot}
+                    onChange={(e) => setHoneypot(e.target.value)}
+                  />
                   <div className="flex flex-col gap-3 sm:flex-row">
                     <input
                       type="text"
@@ -1452,6 +1466,16 @@ const LandingPage = () => {
                       className="mt-4 flex flex-col gap-3 sm:flex-row"
                       aria-label="Iscriviti alla newsletter"
                     >
+                      <input
+                        type="text"
+                        name="company"
+                        className="honeypot-field"
+                        tabIndex={-1}
+                        autoComplete="off"
+                        aria-hidden="true"
+                        value={honeypot}
+                        onChange={(e) => setHoneypot(e.target.value)}
+                      />
                       <input
                         type="email"
                         className="lead-input"

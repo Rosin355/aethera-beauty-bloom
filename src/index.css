@@ -82,6 +82,20 @@
 }
 
 @layer components {
+  /* Honeypot: off-screen (not display:none, which some bots detect) so a real user
+     never sees or focuses it; bots that fill it get their submission silently dropped
+     server-side. */
+  .honeypot-field {
+    position: absolute !important;
+    left: -9999px;
+    top: auto;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+
   /* Glass/liquid surfaces — token-based, reusable across the whole app */
   .glass {
     background: hsl(var(--foreground) / 0.06);
