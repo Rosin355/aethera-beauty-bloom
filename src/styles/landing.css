@@ -251,6 +251,24 @@
 }
 .landing-intro.hide { opacity: 0; visibility: hidden; }
 .landing-intro-inner { position: relative; z-index: 2; text-align: center; }
+.landing-intro .load-mark {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  margin: 0 auto 18px;
+  place-items: center;
+  border: 1px solid rgba(191, 238, 255, 0.55);
+  border-radius: 999px;
+  background: radial-gradient(circle at 34% 28%, rgba(191, 238, 255, 0.2), rgba(255, 255, 255, 0.025) 58%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 0 50px rgba(191, 238, 255, 0.12);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  opacity: 0;
+  transform: scale(0.72) rotate(-8deg);
+  animation: introMark 0.85s cubic-bezier(0.16, 1, 0.3, 1) 0.06s forwards;
+}
 .landing-intro .load-kicker {
   margin-bottom: 18px;
   color: #bfeeff;
@@ -290,6 +308,7 @@
 }
 @keyframes introGrid { to { transform: scale(1); opacity: 0.1; } }
 @keyframes introOrbit { to { transform: translate(-50%, -50%) scale(1); opacity: 0.38; } }
+@keyframes introMark { to { opacity: 1; transform: scale(1) rotate(0); } }
 @keyframes introFade { to { opacity: 1; } }
 @keyframes introBrand { to { transform: translateY(0); opacity: 1; filter: blur(0); } }
 @keyframes introLine { to { transform: translateX(100%); } }

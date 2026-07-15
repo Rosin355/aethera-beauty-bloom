@@ -352,19 +352,39 @@ const LandingPage = () => {
       layer.style.maskImage = mask;
       layer.style.webkitMaskImage = mask;
     };
-    drawMask(window.innerWidth * 0.68, window.innerHeight * 0.44);
+    const restingPoint = () => ({
+      x: window.innerWidth * 0.68,
+      y: window.innerHeight * 0.44,
+    });
+    const initial = restingPoint();
+    drawMask(initial.x, initial.y);
     if (reducedMotion) return;
+
+    const target = { ...initial };
+    const current = { ...initial };
     let raf = 0;
     const onMove = (event: PointerEvent) => {
-      if (raf) return;
-      raf = requestAnimationFrame(() => {
-        drawMask(event.clientX, event.clientY);
-        raf = 0;
-      });
+      target.x = event.clientX;
+      target.y = event.clientY;
     };
+    const onLeave = () => {
+      const resting = restingPoint();
+      target.x = resting.x;
+      target.y = resting.y;
+    };
+    const loop = () => {
+      current.x += (target.x - current.x) * 0.095;
+      current.y += (target.y - current.y) * 0.095;
+      drawMask(current.x, current.y);
+      raf = requestAnimationFrame(loop);
+    };
+
     window.addEventListener("pointermove", onMove, { passive: true });
+    window.addEventListener("pointerleave", onLeave, { passive: true });
+    raf = requestAnimationFrame(loop);
     return () => {
       window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerleave", onLeave);
       if (raf) cancelAnimationFrame(raf);
     };
   }, [reducedMotion]);
@@ -668,6 +688,7 @@ const LandingPage = () => {
       {!introRemoved && (
         <div className={`landing-intro ${introHidden ? "hide" : ""}`} aria-hidden="true">
           <div className="landing-intro-inner">
+            <div className="load-mark">4E</div>
             <div className="load-kicker">4 Elementi Italia</div>
             <div className="load-brand">Aethera</div>
             <div className="load-line">
