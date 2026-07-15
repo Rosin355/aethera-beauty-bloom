@@ -72,27 +72,28 @@ const getSectionByKey = (
   key: string,
 ): SiteSectionRow | null => sections[key] ?? null;
 
+// Warm, luminous beauty/wellness photography (full color — the UI stays monochrome)
 const HERO_IMAGE =
-  "https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=2000&q=80";
+  "https://images.unsplash.com/photo-1505944270255-72b8c68c6a70?auto=format&fit=crop&w=2000&q=80";
 
 const MOSAIC_IMAGES = [
-  "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=600&q=80",
-  "https://images.unsplash.com/photo-1596178065887-1198b6148b2b?auto=format&fit=crop&w=600&q=80",
-  "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80",
+  "https://images.unsplash.com/photo-1560750588-73207b1ef5b8?auto=format&fit=crop&w=600&q=80",
+  "https://images.unsplash.com/photo-1519823551278-64ac92734fb1?auto=format&fit=crop&w=600&q=80",
+  "https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=600&q=80",
 ];
 
 const STEP_IMAGES: Array<[string, string]> = [
   [
-    "https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?auto=format&fit=crop&w=600&q=80",
-    "https://images.unsplash.com/photo-1519415943484-9fa1873496d4?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1556228720-195a672e8a03?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=600&q=80",
   ],
   [
     "https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?auto=format&fit=crop&w=600&q=80",
-    "https://images.unsplash.com/photo-1596178065887-1198b6148b2b?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=600&q=80",
   ],
   [
-    "https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=600&q=80",
-    "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?auto=format&fit=crop&w=600&q=80",
+    "https://images.unsplash.com/photo-1522337660859-02fbefca4702?auto=format&fit=crop&w=600&q=80",
   ],
 ];
 
@@ -478,66 +479,76 @@ const LandingPage = () => {
         </div>
       </header>
 
-      {/* Hero — full-bleed image, dark overlay, centered display type */}
+      {/* Hero — full-bleed warm photo, text left, photo breathing on the right */}
       <section className="relative -mt-16 flex min-h-screen flex-col justify-center overflow-hidden">
         <img
           src={HERO_IMAGE}
           alt=""
           aria-hidden="true"
-          className="absolute inset-0 h-full w-full object-cover opacity-50 grayscale"
+          className="absolute inset-0 h-full w-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-background/70 via-background/60 to-background" />
+        {/* Horizontal legibility gradient: dark behind the text, transparent over the photo */}
+        <div className="absolute inset-0 bg-gradient-to-r from-background via-background/75 to-background/15" />
+        {/* Soft bottom fade for the floating cards and section transition */}
+        <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-background to-transparent" />
+        {/* Stronger veil on small screens where text sits over the photo */}
+        <div className="absolute inset-0 bg-background/40 lg:hidden" />
 
-        <div className="container relative z-10 mx-auto px-6 pb-32 pt-36 text-center lg:pb-40">
-          <p className="text-xs uppercase tracking-widest text-muted-foreground">
-            Il metodo 4 Elementi
-          </p>
+        <div className="container relative z-10 mx-auto px-6 pb-36 pt-36 lg:pb-44">
+          <div className="max-w-2xl lg:max-w-[55%]">
+            <p className="text-xs uppercase tracking-widest text-muted-foreground">
+              Il metodo 4 Elementi
+            </p>
 
-          <h1 className="mx-auto mt-6 max-w-4xl font-display text-5xl font-semibold leading-[1.05] tracking-tightest text-foreground sm:text-6xl lg:text-7xl">
-            {landingHero?.title ?? "SEI UN'ESTETISTA"}
-            <span className="block">{landingHero?.subtitle ?? "PROFESSIONISTA?"}</span>
-          </h1>
+            <h1 className="mt-6 font-display text-5xl font-semibold leading-[1.05] tracking-tightest text-foreground sm:text-6xl lg:text-7xl">
+              {landingHero?.title ?? "SEI UN'ESTETISTA"}
+              <span className="block">{landingHero?.subtitle ?? "PROFESSIONISTA?"}</span>
+            </h1>
 
-          <p className="mx-auto mt-6 max-w-xl text-lg text-muted-foreground">
-            {landingHero?.body ??
-              "Ecco come strutturare il tuo listino in modo strategico (senza stress)"}
-          </p>
+            <p className="mt-6 max-w-xl text-lg text-muted-foreground">
+              {landingHero?.body ??
+                "Ecco come strutturare il tuo listino in modo strategico (senza stress)"}
+            </p>
 
-          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-            <Button
-              size="pill"
-              onClick={() => scrollToId('video-form', 'center')}
-            >
-              <Download />
-              {landingHero?.cta_label ?? "SCARICA IL MINI CORSO GRATUITO"}
-            </Button>
-            <Button
-              size="pill"
-              variant="secondary"
-              onClick={() => scrollToId('video')}
-            >
-              <Play />
-              Guarda il video
-            </Button>
-          </div>
+            <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Button
+                size="pill"
+                onClick={() => scrollToId('video-form', 'center')}
+              >
+                <Download />
+                {landingHero?.cta_label ?? "SCARICA IL MINI CORSO GRATUITO"}
+              </Button>
+              <Button
+                size="pill"
+                variant="secondary"
+                onClick={() => scrollToId('video')}
+              >
+                <Play />
+                Guarda il video
+              </Button>
+            </div>
 
-          <p className="mt-4 text-xs text-muted-foreground">
-            {heroExtra.cta_note ??
-              "✓ Nessun pagamento richiesto • Download immediato • Guarda quando vuoi"}
-          </p>
+            <p className="mt-4 text-xs text-muted-foreground">
+              {heroExtra.cta_note ??
+                "✓ Nessun pagamento richiesto • Download immediato • Guarda quando vuoi"}
+            </p>
 
-          <p className="mt-10 text-xs uppercase tracking-widest text-muted-foreground">
-            Formazione — Community — Strumenti gestionali
-          </p>
+            <p className="mt-10 text-xs uppercase tracking-widest text-muted-foreground">
+              Formazione — Community — Strumenti gestionali
+            </p>
 
-          {/* Stats row */}
-          <div className="mx-auto mt-6 flex max-w-2xl items-center justify-center divide-x divide-border">
-            {HERO_STATS.map(([value, label]) => (
-              <div key={label} className="px-6 sm:px-10">
-                <p className="font-display text-3xl font-semibold sm:text-4xl">{value}</p>
-                <p className="mt-1 text-xs text-muted-foreground">{label}</p>
-              </div>
-            ))}
+            {/* Stats row */}
+            <div className="mt-6 flex flex-wrap items-center divide-x divide-border">
+              {HERO_STATS.map(([value, label], statIndex) => (
+                <div
+                  key={label}
+                  className={statIndex === 0 ? "pr-6 sm:pr-10" : "px-6 sm:px-10"}
+                >
+                  <p className="font-display text-3xl font-semibold sm:text-4xl">{value}</p>
+                  <p className="mt-1 text-xs text-muted-foreground">{label}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -553,7 +564,7 @@ const LandingPage = () => {
               <img
                 src={heroTestimonial.image}
                 alt={heroTestimonial.name}
-                className="h-9 w-9 rounded-full border border-border object-cover grayscale"
+                className="h-9 w-9 rounded-full border border-border object-cover"
               />
               <div>
                 <p className="text-sm font-medium">{heroTestimonial.name}</p>
@@ -588,7 +599,7 @@ const LandingPage = () => {
             <img
               src={MOSAIC_IMAGES[0]}
               alt="Mini corso Il Listino Perfetto"
-              className="mt-3 h-28 w-full rounded-xl object-cover grayscale"
+              className="mt-3 h-28 w-full rounded-xl object-cover"
             />
             <p className="mt-3 font-display text-base font-semibold">Il Listino Perfetto</p>
             <p className="text-xs text-muted-foreground">Mini corso gratuito in video</p>
@@ -600,7 +611,7 @@ const LandingPage = () => {
                     src={item.image}
                     alt=""
                     aria-hidden="true"
-                    className="h-6 w-6 rounded-full border border-border object-cover grayscale"
+                    className="h-6 w-6 rounded-full border border-border object-cover"
                   />
                 ))}
               </div>
@@ -688,7 +699,7 @@ const LandingPage = () => {
                   src={image}
                   alt=""
                   aria-hidden="true"
-                  className="h-20 w-full rounded-lg object-cover grayscale"
+                  className="h-20 w-full rounded-lg object-cover"
                 />
               ))}
             </div>
@@ -741,7 +752,7 @@ const LandingPage = () => {
                         src={image}
                         alt=""
                         aria-hidden="true"
-                        className="h-20 w-28 rounded-xl border border-border object-cover grayscale"
+                        className="h-20 w-28 rounded-xl border border-border object-cover"
                       />
                     ))}
                   </div>
@@ -815,7 +826,7 @@ const LandingPage = () => {
                     <img
                       src={testimonial.image}
                       alt={testimonial.name}
-                      className="h-10 w-10 rounded-full object-cover grayscale"
+                      className="h-10 w-10 rounded-full object-cover"
                     />
                     <div>
                       <p className="text-sm font-semibold">{testimonial.name}</p>
