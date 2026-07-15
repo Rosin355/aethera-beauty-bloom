@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
   Check,
@@ -11,8 +10,10 @@ import {
   ArrowRight,
   Star,
   Sparkles,
-  Download,
   BadgeCheck,
+  Instagram,
+  Facebook,
+  Youtube,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -22,43 +23,13 @@ import {
   getLegalLinks,
   getSiteSections,
   getTestimonials,
-  readSectionExtraArray,
   readSectionExtraObject,
   type LegalLinkRow,
   type SiteSectionRow,
   type TestimonialRow,
 } from "@/lib/api/siteContent";
 
-type LandingNavLink = {
-  label: string;
-  href: string;
-};
-
-type LandingHeroExtra = {
-  paragraphs?: string[];
-  cta_note?: string;
-  form_title?: string;
-  form_subtitle?: string;
-  submit_loading_label?: string;
-  submit_label?: string;
-  success_note?: string;
-  form_disclaimer?: string;
-};
-
-type LandingFinalCtaExtra = {
-  closing_title?: string;
-  closing_subtitle?: string;
-  cta_note?: string;
-};
-
 type LandingNewsletterExtra = {
-  benefits?: string[];
-  form_title?: string;
-  name_label?: string;
-  name_placeholder?: string;
-  email_label?: string;
-  email_placeholder?: string;
-  loading_label?: string;
   privacy_note?: string;
 };
 
@@ -72,9 +43,9 @@ const getSectionByKey = (
   key: string,
 ): SiteSectionRow | null => sections[key] ?? null;
 
-// Warm, luminous beauty/wellness photography (full color — the UI stays monochrome)
+// Warm, luminous beauty photography (full color — the UI stays monochrome)
 const HERO_IMAGE =
-  "https://images.unsplash.com/photo-1505944270255-72b8c68c6a70?auto=format&fit=crop&w=2000&q=80";
+  "https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=2000&q=80";
 
 const MOSAIC_IMAGES = [
   "https://images.unsplash.com/photo-1560750588-73207b1ef5b8?auto=format&fit=crop&w=600&q=80",
@@ -97,67 +68,63 @@ const STEP_IMAGES: Array<[string, string]> = [
   ],
 ];
 
+const NAV_LINKS = [
+  { label: "La Piattaforma", href: "#piattaforma" },
+  { label: "Il Metodo", href: "#metodo" },
+  { label: "Testimonianze", href: "#testimonianze" },
+  { label: "Contatti", href: "#contatti" },
+];
+
 const HERO_STATS: Array<[string, string]> = [
-  ["10+", "Anni di esperienza"],
-  ["4", "Elementi del metodo"],
+  ["132", "Centri attivi"],
+  ["4", "Pilastri del metodo"],
   ["+40%", "Crescita media clientela"],
 ];
 
-const SERVICES = [
+const BAND_STATS: Array<[string, string]> = [
+  ["+40%", "Crescita media clientela"],
+  ["132", "Centri che usano il metodo"],
+  ["4", "Elementi del metodo"],
+];
+
+const PLATFORM_FEATURES = [
   {
-    name: "Fuoco",
-    tag: "Consulenza",
-    description: "Piattaforma 4 Elementi Italia e consulenza strategica personalizzata.",
-  },
-  {
-    name: "Terra",
-    tag: "Restyling",
+    name: "Strumenti gestionali",
+    tag: "Gestione",
     description:
-      "Riqualificazione del centro estetico, restyling dell'arredamento e sistema operativo.",
+      "Servizi, appuntamenti, inventario e KPI del tuo centro sempre sotto controllo.",
   },
   {
-    name: "Aria",
-    tag: "Marketing",
-    description: "Marketing specifico per il settore beauty.",
+    name: "Formazione & Community",
+    tag: "Crescita",
+    description:
+      "I corsi del metodo 4E e una community di professioniste con cui confrontarti.",
   },
   {
-    name: "Acqua",
-    tag: "Partnership",
-    description: "Partnership con Tokio, Nee Make Up Milano ed Everlinespa.",
+    name: "Assistente AI",
+    tag: "AI",
+    description: "Un assistente addestrato sul metodo 4E che ti guida ogni giorno.",
   },
 ];
 
 const METHOD_STEPS = [
   {
-    index: "01",
-    title: "Calcolo del costo orario",
-    subtitle:
-      "Organizza il tuo listino in modo strategico, anche se non sei brava con i numeri o il marketing.",
-    checks: [
-      "Analisi dei costi fissi e variabili del centro",
-      "Definizione del costo orario reale della cabina",
-      "Una base solida su cui costruire ogni prezzo",
-    ],
+    index: "1",
+    title: "La Diagnosi",
+    subtitle: "Da dove parti.",
+    checks: ["Analisi di Valore", "Numeri del centro", "Obiettivi chiari"],
   },
   {
-    index: "02",
-    title: "Calcolo del prodotto",
-    subtitle: "Trasmetti professionalità e fatti scegliere dai tuoi clienti.",
-    checks: [
-      "Incidenza del prodotto per ogni trattamento",
-      "Un listino chiaro che comunica il tuo valore",
-      "Prezzi che non devi più giustificare",
-    ],
+    index: "2",
+    title: "Il Metodo",
+    subtitle: "Come cresci.",
+    checks: ["Organizzazione & protocolli", "Team formato", "Marketing costante"],
   },
   {
-    index: "03",
-    title: "Calcolo del margine operativo",
-    subtitle: "La formula per valutare il prezzo giusto.",
-    checks: [
-      "Margine corretto su ogni servizio",
-      "Vendere meglio, senza svenderti",
-      "Crescita sostenibile del tuo centro",
-    ],
+    index: "3",
+    title: "Il Risultato",
+    subtitle: "Dove arrivi.",
+    checks: ["Più margine", "Clienti fidelizzati", "Un'impresa solida"],
   },
 ];
 
@@ -194,15 +161,7 @@ const fallbackTestimonials: Array<{
 ];
 
 const LandingPage = () => {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: ""
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [newsletterData, setNewsletterData] = useState({
-    name: "",
-    email: ""
-  });
+  const [newsletterEmail, setNewsletterEmail] = useState("");
   const [isSubmittingNewsletter, setIsSubmittingNewsletter] = useState(false);
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -237,7 +196,7 @@ const LandingPage = () => {
 
   useEffect(() => {
     const loadVideo = async () => {
-      const video = await getSiteVideo('preview'); // Usando 'preview' per il modal
+      const video = await getSiteVideo('preview');
       if (video) {
         setPreviewVideo(video);
       }
@@ -251,13 +210,7 @@ const LandingPage = () => {
 
     const loadCmsContent = async () => {
       const [sections, legalLinks, testimonials] = await Promise.all([
-        getSiteSections([
-          "landing_header",
-          "landing_hero",
-          "landing_final_cta",
-          "landing_newsletter",
-          "landing_footer",
-        ]),
+        getSiteSections(["landing_newsletter", "landing_footer"]),
         getLegalLinks("landing_footer"),
         getTestimonials(),
       ]);
@@ -277,31 +230,9 @@ const LandingPage = () => {
     };
   }, []);
 
-  const landingHeader = getSectionByKey(landingSections, "landing_header");
-  const landingHero = getSectionByKey(landingSections, "landing_hero");
-  const landingFinalCta = getSectionByKey(landingSections, "landing_final_cta");
   const landingNewsletter = getSectionByKey(landingSections, "landing_newsletter");
   const landingFooter = getSectionByKey(landingSections, "landing_footer");
-
-  const navLinks = readSectionExtraArray<LandingNavLink>(landingHeader, "nav_links", [
-    { label: "VIDEO GRATUITO", href: "#video" },
-    { label: "CHI SIAMO", href: "#about" },
-    { label: "SERVIZI", href: "#services" },
-    { label: "CONTATTI", href: "#contact" },
-  ]);
-
-  const heroExtra = readSectionExtraObject<LandingHeroExtra>(landingHero, {});
-  const heroParagraphs = heroExtra.paragraphs ?? [
-    "Ciao! Se sei un'estetista professionista e ti stai chiedendo come strutturare un listino prezzi che sia chiaro, professionale e che valorizzi davvero i tuoi servizi... sei nel posto giusto.",
-    "Mi chiamo Davide e con 4 Elementi Italia aiutiamo estetiste e professionisti del benessere a diventare imprenditori consapevoli, strategici e autonomi – senza stress, senza perdere tempo in corsi complicati o contenuti poco chiari.",
-  ];
-  const finalCtaExtra = readSectionExtraObject<LandingFinalCtaExtra>(landingFinalCta, {});
   const newsletterExtra = readSectionExtraObject<LandingNewsletterExtra>(landingNewsletter, {});
-  const newsletterBenefits = newsletterExtra.benefits ?? [
-    "Tips settimanali esclusivi per far crescere il tuo business",
-    "Strategie pratiche e strumenti pronti all'uso",
-    "Accesso anticipato a corsi, risorse e novità",
-  ];
   const landingFooterExtra = readSectionExtraObject<LandingFooterExtra>(landingFooter, {});
 
   const testimonialItems =
@@ -320,88 +251,13 @@ const LandingPage = () => {
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!formData.name.trim() || !formData.email.trim()) {
-      toast({
-        title: "Campi obbligatori",
-        description: "Inserisci nome e email per continuare",
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsSubmitting(true);
-    console.log('🔍 Inizio registrazione per:', formData.email);
-    try {
-      const response = await supabase.functions.invoke('mailing-list-signup', {
-        body: {
-          name: formData.name.trim(),
-          email: formData.email.trim(),
-          source: 'hero_section'
-        }
-      });
-
-      console.log('📧 Risposta edge function:', response);
-
-      if (response.error) {
-        if (response.error.message?.includes('già registrata')) {
-          // Email già registrata, recupero l'access token
-          const { data: existingData } = await supabase
-            .from('mailing_list')
-            .select('access_token')
-            .eq('email', formData.email.trim())
-            .single();
-
-          if (existingData?.access_token) {
-            toast({
-              title: "Accesso trovato!",
-              description: "Ti stiamo reindirizzando alla tua area riservata. Email di promemoria inviata!",
-            });
-
-            setTimeout(() => {
-              window.location.href = `/welcome?token=${existingData.access_token}`;
-            }, 1000);
-            return;
-          }
-        }
-        throw new Error(response.error.message || 'Errore durante la registrazione');
-      }
-
-      // Redirect to welcome page with token
-      const data = response.data;
-      if (data?.access_token) {
-        // Mostra feedback basato sullo stato dell'email
-        const emailStatus = data.email_sent ? "Email di benvenuto inviata!" : "Registrazione completata (email in sospeso)";
-
-        toast({
-          title: "Perfetto! 🎉",
-          description: emailStatus + " Ti stiamo reindirizzando...",
-        });
-
-        setTimeout(() => {
-          window.location.href = `/welcome?token=${data.access_token}`;
-        }, 1500);
-      }
-
-    } catch (error) {
-      console.error('Errore durante la registrazione:', error);
-      toast({
-        title: "Errore",
-        description: "Si è verificato un errore. Riprova tra qualche minuto.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newsletterData.name.trim() || !newsletterData.email.trim()) {
+    const email = newsletterEmail.trim();
+    if (!email) {
       toast({
-        title: "Campi obbligatori",
-        description: "Inserisci nome e email per iscriverti alla newsletter",
+        title: "Email obbligatoria",
+        description: "Inserisci la tua email per iscriverti",
         variant: "destructive"
       });
       return;
@@ -411,9 +267,9 @@ const LandingPage = () => {
     try {
       const response = await supabase.functions.invoke('newsletter-subscribe', {
         body: {
-          email: newsletterData.email.trim(),
-          name: newsletterData.name.trim(),
-          source: 'newsletter_section'
+          email,
+          name: email.split('@')[0],
+          source: 'footer_newsletter'
         }
       });
 
@@ -426,7 +282,7 @@ const LandingPage = () => {
         description: "Ti sei iscritto con successo alla nostra newsletter. Riceverai presto contenuti esclusivi!",
       });
 
-      setNewsletterData({ name: "", email: "" });
+      setNewsletterEmail("");
 
     } catch (error) {
       console.error('Errore durante l\'iscrizione alla newsletter:', error);
@@ -447,22 +303,22 @@ const LandingPage = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Navbar — sticky, translucent over the hero */}
-      <header className="sticky top-0 z-40 h-16 border-b border-border/40 bg-background/60 backdrop-blur-xl">
-        <div className="container mx-auto flex h-full items-center justify-between px-6">
+      {/* 1) Navbar — sticky, centered menu, floating glass pill */}
+      <header className="sticky top-0 z-40 px-4 pt-4">
+        <div className="glass container mx-auto grid h-14 grid-cols-[1fr_auto] items-center rounded-full px-4 sm:px-6 md:grid-cols-[1fr_auto_1fr]">
           <a href="/" className="flex items-center gap-3">
             <img
               src="/4-elementi-logo.png"
               alt="4 Elementi Italia Logo"
-              className="h-9 w-auto"
+              className="h-8 w-auto"
             />
-            <span className="hidden font-display text-lg font-semibold tracking-tight sm:block">
+            <span className="hidden font-display text-base font-semibold tracking-tight lg:block">
               4 Elementi Italia
             </span>
           </a>
 
-          <nav className="hidden items-center gap-8 md:flex">
-            {navLinks.map((navLink) => (
+          <nav className="hidden items-center justify-center gap-8 md:flex">
+            {NAV_LINKS.map((navLink) => (
               <a
                 key={navLink.href}
                 href={navLink.href}
@@ -473,14 +329,16 @@ const LandingPage = () => {
             ))}
           </nav>
 
-          <Button size="pill" className="h-9 px-5" onClick={() => navigate('/login')}>
-            Area riservata
-          </Button>
+          <div className="flex items-center justify-end">
+            <Button size="pill" className="h-9 px-5" onClick={() => navigate('/login')}>
+              Area riservata
+            </Button>
+          </div>
         </div>
       </header>
 
-      {/* Hero — full-bleed warm photo, text left, photo breathing on the right */}
-      <section className="relative -mt-16 flex min-h-screen flex-col justify-center overflow-hidden">
+      {/* 2) Hero — text left, warm photo breathing on the right, floating glass cards */}
+      <section className="relative -mt-[4.5rem] flex min-h-screen flex-col justify-center overflow-hidden">
         <img
           src={HERO_IMAGE}
           alt=""
@@ -494,47 +352,40 @@ const LandingPage = () => {
         {/* Stronger veil on small screens where text sits over the photo */}
         <div className="absolute inset-0 bg-background/40 lg:hidden" />
 
-        <div className="container relative z-10 mx-auto px-6 pb-36 pt-36 lg:pb-44">
+        <div className="container relative z-10 mx-auto px-6 pb-36 pt-40 lg:pb-44">
           <div className="max-w-2xl lg:max-w-[55%]">
             <p className="text-xs uppercase tracking-widest text-muted-foreground">
-              Il metodo 4 Elementi
+              La piattaforma del metodo 4 Elementi
             </p>
 
             <h1 className="mt-6 font-display text-5xl font-semibold leading-[1.05] tracking-tightest text-foreground sm:text-6xl lg:text-7xl">
-              {landingHero?.title ?? "SEI UN'ESTETISTA"}
-              <span className="block">{landingHero?.subtitle ?? "PROFESSIONISTA?"}</span>
+              Da estetista
+              <span className="block">a imprenditrice.</span>
             </h1>
 
             <p className="mt-6 max-w-xl text-lg text-muted-foreground">
-              {landingHero?.body ??
-                "Ecco come strutturare il tuo listino in modo strategico (senza stress)"}
+              La piattaforma 4 Elementi riunisce formazione, community, strumenti
+              gestionali e un assistente AI per gestire e far crescere il tuo centro.
+              Tutto in un unico posto.
             </p>
 
             <div className="mt-10 flex flex-col gap-3 sm:flex-row sm:items-center">
-              <Button
-                size="pill"
-                onClick={() => scrollToId('video-form', 'center')}
-              >
-                <Download />
-                {landingHero?.cta_label ?? "SCARICA IL MINI CORSO GRATUITO"}
+              <Button size="pill" onClick={() => navigate('/login')}>
+                Accedi alla piattaforma
               </Button>
               <Button
                 size="pill"
                 variant="secondary"
-                onClick={() => scrollToId('video')}
+                className="glass border-0"
+                onClick={() => scrollToId('piattaforma')}
               >
                 <Play />
-                Guarda il video
+                Guarda la demo
               </Button>
             </div>
 
-            <p className="mt-4 text-xs text-muted-foreground">
-              {heroExtra.cta_note ??
-                "✓ Nessun pagamento richiesto • Download immediato • Guarda quando vuoi"}
-            </p>
-
             <p className="mt-10 text-xs uppercase tracking-widest text-muted-foreground">
-              Formazione — Community — Strumenti gestionali
+              Formazione — Community — Gestionale — Assistente AI
             </p>
 
             {/* Stats row */}
@@ -554,7 +405,7 @@ const LandingPage = () => {
 
         {/* Floating testimonial card — bottom left */}
         <div className="absolute bottom-10 left-8 z-10 hidden w-80 lg:block">
-          <div className="rounded-2xl border border-border bg-card/80 p-5 shadow-lg shadow-black/20 backdrop-blur-md">
+          <div className="glass rounded-2xl p-5">
             <p className="text-sm leading-relaxed text-foreground/90">
               “{heroTestimonial.quote.length > 140
                 ? `${heroTestimonial.quote.slice(0, 140)}…`
@@ -591,18 +442,20 @@ const LandingPage = () => {
 
         {/* Floating highlight card — right */}
         <div className="absolute right-8 top-1/2 z-10 hidden w-64 -translate-y-1/2 xl:block">
-          <div className="rounded-2xl border border-border bg-card/80 p-4 shadow-lg shadow-black/20 backdrop-blur-md">
-            <Badge>
+          <div className="glass rounded-2xl p-4">
+            <Badge className="glass border-0">
               <Sparkles className="h-3 w-3" />
               PIÙ RICHIESTO
             </Badge>
             <img
               src={MOSAIC_IMAGES[0]}
-              alt="Mini corso Il Listino Perfetto"
+              alt="Analisi di Valore"
               className="mt-3 h-28 w-full rounded-xl object-cover"
             />
-            <p className="mt-3 font-display text-base font-semibold">Il Listino Perfetto</p>
-            <p className="text-xs text-muted-foreground">Mini corso gratuito in video</p>
+            <p className="mt-3 font-display text-base font-semibold">Analisi di Valore</p>
+            <p className="text-xs text-muted-foreground">
+              Diagnosi digitale del tuo centro
+            </p>
             <div className="mt-3 flex items-center justify-between">
               <div className="flex -space-x-2">
                 {fallbackTestimonials.map((item) => (
@@ -619,8 +472,8 @@ const LandingPage = () => {
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8"
-                aria-label="Vai al mini corso"
-                onClick={() => scrollToId('video-form', 'center')}
+                aria-label="Accedi alla piattaforma"
+                onClick={() => navigate('/login')}
               >
                 <ArrowRight />
               </Button>
@@ -629,49 +482,49 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Scroll hint */}
+      {/* 3) Scroll hint */}
       <div className="flex flex-col items-center gap-2 py-10">
         <p className="text-xs uppercase tracking-widest text-muted-foreground">
-          Scorri per esplorare
+          Scopri di più
         </p>
         <ChevronDown className="h-4 w-4 animate-bounce text-muted-foreground" />
       </div>
 
-      {/* Feature split — services list + browser mockup with the free video */}
-      <section id="video" className="border-t border-border py-24">
+      {/* 4) Feature split — the platform */}
+      <section id="piattaforma" className="border-t border-border py-24">
         <div className="container mx-auto grid items-center gap-16 px-6 lg:grid-cols-2">
           <div>
-            <Badge id="services">
+            <Badge className="glass border-0">
               <Sparkles className="h-3 w-3" />
-              I SERVIZI
+              LA PIATTAFORMA
             </Badge>
             <h2 className="mt-6 font-display text-4xl font-semibold tracking-tight sm:text-5xl">
-              Tutto ciò che ti serve per crescere
+              Tutto ciò che ti serve, in un posto
             </h2>
             <p className="mt-4 max-w-lg text-muted-foreground">
-              Formazione, strategia e strumenti digitali per trasformare il tuo centro
-              estetico in una vera impresa.
+              Un unico ambiente digitale per gestire il tuo centro, formarti con il
+              metodo 4E e farti accompagnare ogni giorno.
             </p>
 
             <div className="mt-8 divide-y divide-border border-y border-border">
-              {SERVICES.map((service) => (
-                <div key={service.name} className="py-5">
+              {PLATFORM_FEATURES.map((feature) => (
+                <div key={feature.name} className="py-5">
                   <div className="flex items-center justify-between gap-4">
-                    <p className="font-display text-lg font-semibold">{service.name}</p>
-                    <Badge>{service.tag}</Badge>
+                    <p className="font-display text-lg font-semibold">{feature.name}</p>
+                    <Badge>{feature.tag}</Badge>
                   </div>
-                  <p className="mt-1 text-sm text-muted-foreground">{service.description}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{feature.description}</p>
                 </div>
               ))}
             </div>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-              <Button size="pill" onClick={() => scrollToId('video-form', 'center')}>
-                {landingHero?.cta_label ?? "SCARICA IL MINI CORSO GRATUITO"}
-              </Button>
-              <Button size="pill" variant="outline" onClick={() => scrollToId('method')}>
-                Scopri il metodo
+              <Button size="pill" variant="outline" onClick={() => scrollToId('metodo')}>
+                Scopri di più
                 <ArrowRight />
+              </Button>
+              <Button size="pill" onClick={() => navigate('/login')}>
+                Accedi
               </Button>
             </div>
           </div>
@@ -707,20 +560,17 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Method / process — numbered steps */}
-      <section id="method" className="border-t border-border py-24">
+      {/* 5) Philosophy / method — numbered 1–3 */}
+      <section id="metodo" className="border-t border-border py-24">
         <div className="container mx-auto px-6">
-          <div className="mx-auto max-w-2xl text-center">
-            <p className="text-xs uppercase tracking-widest text-muted-foreground">
-              Il metodo
-            </p>
-            <h2 className="mt-4 font-display text-4xl font-semibold tracking-tight sm:text-5xl">
-              Cosa imparerai nel video
+          <div className="flex flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
+            <h2 className="font-display text-4xl font-semibold tracking-tight sm:text-5xl">
+              Il Metodo 4 Elementi
             </h2>
-            <p className="mt-4 text-muted-foreground">
-              Ti mostro, passo dopo passo, tutto quello che serve per creare un listino
-              strategico e professionale.
-            </p>
+            <span className="glass inline-flex items-center gap-2 rounded-full px-4 py-2 text-xs uppercase tracking-widest text-muted-foreground">
+              <Sparkles className="h-3 w-3" />
+              Scopri il metodo
+            </span>
           </div>
 
           <div className="mt-16 divide-y divide-border border-y border-border">
@@ -760,48 +610,19 @@ const LandingPage = () => {
               </div>
             ))}
           </div>
-
-          <div className="mt-12 flex justify-center">
-            <Button size="pill" onClick={() => scrollToId('video-form', 'center')}>
-              <Download />
-              {landingHero?.cta_label ?? "SCARICA IL MINI CORSO GRATUITO"}
-            </Button>
-          </div>
         </div>
       </section>
 
-      {/* About statement band */}
-      <section id="about" className="border-t border-border py-24">
-        <div className="container mx-auto max-w-3xl px-6 text-center">
-          <p className="text-xs uppercase tracking-widest text-muted-foreground">Chi siamo</p>
-          <h2 className="mt-4 font-display text-4xl font-semibold tracking-tight sm:text-5xl">
-            Trasformiamo centri estetici in vere imprese.
-          </h2>
-          <p className="mt-6 text-muted-foreground">
-            4 Elementi Italia è una realtà nata per trasformare i centri estetici e i
-            professionisti del beauty in vere imprese consapevoli. Con oltre 10 anni di
-            esperienza nel settore, uniamo formazione, strategia e strumenti digitali per
-            supportare estetiste e professionisti del benessere nel loro percorso di
-            crescita.
-          </p>
-          <p className="mt-4 text-muted-foreground">{heroParagraphs[1]}</p>
-          <p className="mt-4 text-sm text-muted-foreground">
-            Collaboriamo con brand d'eccellenza come Tokio, Nee Make Up Milano ed
-            Everlinespa, per garantire qualità, innovazione e prestigio.
-          </p>
-        </div>
-      </section>
-
-      {/* Testimonials — cream cards over a darker panel */}
-      <section className="py-24">
+      {/* 6) Community love — testimonials */}
+      <section id="testimonianze" className="py-24">
         <div className="container mx-auto px-6">
           <div className="rounded-3xl border border-border bg-card/40 p-8 lg:p-16">
             <div className="mx-auto max-w-2xl text-center">
               <p className="text-xs uppercase tracking-widest text-muted-foreground">
-                Testimonianze
+                Risultati veri
               </p>
               <h2 className="mt-4 font-display text-4xl font-semibold tracking-tight">
-                Cosa dicono di noi
+                Le nostre professioniste
               </h2>
             </div>
 
@@ -844,222 +665,164 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Closing CTA — dramatic centered section with the lead form */}
-      <section id="contact" className="border-t border-border py-32">
-        <div className="container mx-auto max-w-3xl px-6 text-center">
-          <h2 className="font-display text-4xl font-semibold leading-[1.05] tracking-tightest sm:text-5xl lg:text-6xl">
-            {landingFinalCta?.title ?? "TRASFORMA IL TUO CENTRO ESTETICO IN UNA"}
-            <span className="block">{landingFinalCta?.subtitle ?? "VERA IMPRESA"}</span>
-          </h2>
-          <p className="mt-6 text-lg text-muted-foreground">
-            {landingFinalCta?.body ??
-              "Se vuoi trasformare il tuo centro estetico in una vera impresa, sei nel posto giusto. ✨"}
-          </p>
-
-          <div className="mx-auto mt-12 max-w-md text-left">
-            <h3 className="text-center font-display text-2xl font-semibold">
-              {heroExtra.form_title ?? "SCARICA IL VIDEO GRATUITO"}
-            </h3>
-            <p className="mt-2 text-center text-sm text-muted-foreground">
-              {heroExtra.form_subtitle ??
-                "Compila il form e ricevi subito il link per scaricare il video completo"}
-            </p>
-
-            <form id="video-form" onSubmit={handleSubmit} className="mt-6 space-y-3">
-              <Input
-                placeholder="Il tuo nome"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              />
-              <Input
-                type="email"
-                placeholder="La tua email"
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              />
-              <Button type="submit" disabled={isSubmitting} className="w-full">
-                {isSubmitting ? (
-                  heroExtra.submit_loading_label ?? "INVIO IN CORSO..."
-                ) : (
-                  <>
-                    <Download />
-                    {heroExtra.submit_label ?? "SCARICA IL MINI CORSO GRATUITO"}
-                  </>
-                )}
-              </Button>
-            </form>
-
-            <div className="mt-4 flex items-start gap-2 rounded-lg border border-border bg-foreground/5 p-3">
-              <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" />
-              <p className="text-xs text-muted-foreground">
-                {heroExtra.success_note ??
-                  "Riceverai immediatamente un'email con il link per scaricare il video completo. Controlla anche la cartella spam!"}
-              </p>
-            </div>
-            <p className="mt-3 text-center text-xs text-muted-foreground">
-              {heroExtra.form_disclaimer ??
-                "✓ Nessun pagamento richiesto • Download immediato • Guarda quando vuoi"}
-            </p>
-          </div>
-
-          <div className="mt-12">
-            <p className="font-medium">
-              {finalCtaExtra.closing_title ?? "Ti aspetto dall'altra parte!"}
-            </p>
-            <p className="mt-1 text-sm text-muted-foreground">
-              {finalCtaExtra.closing_subtitle ?? "Davide – Fondatore di 4 Elementi Italia"}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Newsletter band */}
-      <section className="border-t border-border py-20">
-        <div className="container mx-auto grid gap-12 px-6 md:grid-cols-2 md:items-center">
-          <div>
-            <h2 className="font-display text-3xl font-semibold tracking-tight sm:text-4xl">
-              {landingNewsletter?.title ?? "Sta per arrivare qualcosa di grande."}
-            </h2>
-            <p className="mt-4 text-muted-foreground">
-              {landingNewsletter?.body ??
-                "Iscriviti ora per non perderti il lancio ufficiale della piattaforma e accedere in anteprima alla community riservata ai professionisti del settore."}
-            </p>
-            <ul className="mt-6 space-y-3">
-              {newsletterBenefits.map((benefit) => (
-                <li key={benefit} className="flex items-start gap-3">
-                  <Check className="mt-0.5 h-4 w-4 shrink-0 text-success" />
-                  <span className="text-sm text-foreground/90">{benefit}</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div className="rounded-2xl border border-border bg-card p-8 shadow-lg shadow-black/20">
-            <h3 className="font-display text-xl font-semibold">
-              {newsletterExtra.form_title ?? "👉 Iscriviti oggi. Sii tra i primi a entrare."}
-            </h3>
-
-            <form onSubmit={handleNewsletterSubmit} className="mt-6 space-y-4">
-              <div>
-                <Label htmlFor="newsletter-name" className="mb-2 block">
-                  {newsletterExtra.name_label ?? "Nome *"}
-                </Label>
-                <Input
-                  id="newsletter-name"
-                  type="text"
-                  value={newsletterData.name}
-                  onChange={(e) =>
-                    setNewsletterData((prev) => ({ ...prev, name: e.target.value }))
-                  }
-                  placeholder={newsletterExtra.name_placeholder ?? "Il tuo nome"}
-                  required
-                  disabled={isSubmittingNewsletter}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="newsletter-email" className="mb-2 block">
-                  {newsletterExtra.email_label ?? "Email *"}
-                </Label>
-                <Input
-                  id="newsletter-email"
-                  type="email"
-                  value={newsletterData.email}
-                  onChange={(e) =>
-                    setNewsletterData((prev) => ({ ...prev, email: e.target.value }))
-                  }
-                  placeholder={newsletterExtra.email_placeholder ?? "la.tua.email@esempio.com"}
-                  required
-                  disabled={isSubmittingNewsletter}
-                />
-              </div>
-
-              <Button type="submit" disabled={isSubmittingNewsletter} className="w-full">
-                {isSubmittingNewsletter
-                  ? newsletterExtra.loading_label ?? "Iscrizione in corso..."
-                  : landingNewsletter?.cta_label ?? 'ISCRIVITI ALLA NEWSLETTER'}
-              </Button>
-            </form>
-
-            <p className="mt-4 text-center text-xs text-muted-foreground">
-              {newsletterExtra.privacy_note ??
-                "Rispettiamo la tua privacy. Nessuno spam, solo contenuti di valore."}
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Footer */}
-      <footer className="border-t border-border py-12">
+      {/* 7) Stats band */}
+      <section className="border-t border-border py-24">
         <div className="container mx-auto px-6">
-          <div className="grid gap-10 md:grid-cols-4">
-            <div className="md:col-span-2">
+          <div className="grid gap-12 text-center sm:grid-cols-3">
+            {BAND_STATS.map(([value, label]) => (
+              <div key={label}>
+                <p className="font-display text-6xl font-semibold tracking-tightest sm:text-7xl">
+                  {value}
+                </p>
+                <p className="mt-3 text-sm text-muted-foreground">{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 8) Footer — dark rounded card */}
+      <footer id="contatti" className="px-4 pb-6 pt-12 sm:px-6">
+        <div className="container mx-auto rounded-3xl border border-border bg-card p-8 lg:p-16">
+          <div className="grid gap-12 lg:grid-cols-2">
+            <div>
               <div className="flex items-center gap-3">
                 <img
                   src="/4-elementi-logo.png"
                   alt="4 Elementi Italia Logo"
                   className="h-10 w-auto"
                 />
-                <span className="font-display text-lg font-semibold tracking-tight">
+                <span className="font-display text-xl font-semibold tracking-tight">
                   4 Elementi Italia
                 </span>
               </div>
-              <p className="mt-4 max-w-sm text-sm text-muted-foreground">
-                Formazione, community e strumenti gestionali per estetiste e professionisti
-                del benessere.
+              <p className="mt-4 max-w-sm text-muted-foreground">
+                Entra nel percorso che trasforma il tuo centro in un'impresa.
               </p>
-            </div>
 
-            <div>
-              <p className="text-xs uppercase tracking-widest text-muted-foreground">Naviga</p>
-              <ul className="mt-4 space-y-2">
-                {navLinks.map((navLink) => (
-                  <li key={navLink.href}>
-                    <a
-                      href={navLink.href}
-                      className="text-sm text-foreground/80 transition-colors hover:text-foreground"
-                    >
-                      {navLink.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            <div>
-              <p className="text-xs uppercase tracking-widest text-muted-foreground">Legale</p>
-              <ul className="mt-4 space-y-2">
-                {landingLegalLinks.map((link) => (
-                  <li key={`${link.location}-${link.link_key}`}>
-                    <a
-                      href={link.url}
-                      className="iubenda-white iubenda-noiframe iubenda-embed text-sm text-foreground/80 transition-colors hover:text-foreground hover:underline"
-                      title={link.label}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                    >
-                      {link.label}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-6 text-sm text-muted-foreground">
-                {landingFooterExtra.recovery_text ?? "Hai perso l'email di accesso?"}{' '}
-                <Button
-                  variant="link"
-                  onClick={() => navigate('/recupera-accesso')}
-                  className="h-auto p-0 text-sm"
-                >
-                  {landingFooterExtra.recovery_cta ?? "Recupera qui"}
+              <form
+                onSubmit={handleNewsletterSubmit}
+                className="mt-8 flex max-w-md flex-col gap-3 sm:flex-row"
+              >
+                <Input
+                  type="email"
+                  value={newsletterEmail}
+                  onChange={(e) => setNewsletterEmail(e.target.value)}
+                  placeholder="la.tua.email@esempio.com"
+                  aria-label="Email per la newsletter"
+                  required
+                  disabled={isSubmittingNewsletter}
+                />
+                <Button type="submit" disabled={isSubmittingNewsletter} className="shrink-0">
+                  {isSubmittingNewsletter ? "Invio..." : "Iscriviti"}
                 </Button>
+              </form>
+              <p className="mt-3 text-xs text-muted-foreground">
+                {newsletterExtra.privacy_note ??
+                  "Rispettiamo la tua privacy. Nessuno spam, solo contenuti di valore."}
               </p>
+            </div>
+
+            <div className="grid gap-10 sm:grid-cols-3">
+              <div>
+                <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Piattaforma
+                </p>
+                <ul className="mt-4 space-y-2">
+                  <li>
+                    <a href="#piattaforma" className="text-sm text-foreground/80 transition-colors hover:text-foreground">
+                      La Piattaforma
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#metodo" className="text-sm text-foreground/80 transition-colors hover:text-foreground">
+                      Il Metodo
+                    </a>
+                  </li>
+                  <li>
+                    <a href="/login" className="text-sm text-foreground/80 transition-colors hover:text-foreground">
+                      Formazione
+                    </a>
+                  </li>
+                  <li>
+                    <a href="/login" className="text-sm text-foreground/80 transition-colors hover:text-foreground">
+                      Community
+                    </a>
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Azienda
+                </p>
+                <ul className="mt-4 space-y-2">
+                  <li>
+                    <a href="#metodo" className="text-sm text-foreground/80 transition-colors hover:text-foreground">
+                      Chi siamo
+                    </a>
+                  </li>
+                  <li>
+                    <a href="#contatti" className="text-sm text-foreground/80 transition-colors hover:text-foreground">
+                      Contatti
+                    </a>
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <p className="text-xs uppercase tracking-widest text-muted-foreground">
+                  Legale
+                </p>
+                <ul className="mt-4 space-y-2">
+                  {landingLegalLinks.map((link) => (
+                    <li key={`${link.location}-${link.link_key}`}>
+                      <a
+                        href={link.url}
+                        className="iubenda-white iubenda-noiframe iubenda-embed text-sm text-foreground/80 transition-colors hover:text-foreground hover:underline"
+                        title={link.label}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {link.label}
+                      </a>
+                    </li>
+                  ))}
+                  <li>
+                    <Button
+                      variant="link"
+                      onClick={() => navigate('/recupera-accesso')}
+                      className="h-auto p-0 text-sm text-foreground/80 hover:text-foreground"
+                    >
+                      {landingFooterExtra.recovery_cta ?? "Recupera accesso"}
+                    </Button>
+                  </li>
+                </ul>
+              </div>
             </div>
           </div>
 
-          <div className="mt-10 border-t border-border pt-6 text-center">
+          <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border pt-6 sm:flex-row">
             <p className="text-xs text-muted-foreground">
-              {landingFooter?.body ?? "© 2024 4 Elementi Italia. Tutti i diritti riservati."}
+              {landingFooter?.body ?? "© 2026 4 Elementi Italia. Tutti i diritti riservati."}
             </p>
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" className="glass h-9 w-9 border-0" aria-label="Instagram" asChild>
+                <a href="https://www.instagram.com" target="_blank" rel="noopener noreferrer">
+                  <Instagram />
+                </a>
+              </Button>
+              <Button variant="ghost" size="icon" className="glass h-9 w-9 border-0" aria-label="Facebook" asChild>
+                <a href="https://www.facebook.com" target="_blank" rel="noopener noreferrer">
+                  <Facebook />
+                </a>
+              </Button>
+              <Button variant="ghost" size="icon" className="glass h-9 w-9 border-0" aria-label="YouTube" asChild>
+                <a href="https://www.youtube.com" target="_blank" rel="noopener noreferrer">
+                  <Youtube />
+                </a>
+              </Button>
+            </div>
           </div>
         </div>
       </footer>
