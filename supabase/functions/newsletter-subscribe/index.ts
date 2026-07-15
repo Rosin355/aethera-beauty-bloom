@@ -1,5 +1,12 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createServiceClient, HttpError, toErrorResponse } from "../_shared/auth.ts";
+import {
+  emailIsValid,
+  enforceRateLimit,
+  getClientIp,
+  isHoneypotTripped,
+  readJsonBody,
+} from "../_shared/security.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -7,85 +14,72 @@ const corsHeaders = {
 };
 
 interface NewsletterRequest {
-  email: string;
+  email?: string;
   name?: string;
   mailing_list_id?: string;
 }
 
+const json = (body: unknown, status: number): Response =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json", ...corsHeaders },
+  });
+
+const unsubscribeUrl = (token: string): string =>
+  `${Deno.env.get("SUPABASE_URL") ?? ""}/functions/v1/newsletter-unsubscribe?token=${token}`;
+
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const supabase = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
+    const supabase = createServiceClient();
+    const body = await readJsonBody<NewsletterRequest & Record<string, unknown>>(req);
 
-    const { email, name, mailing_list_id }: NewsletterRequest = await req.json();
-
-    // Validation
-    if (!email?.trim()) {
-      return new Response(
-        JSON.stringify({ error: "Email è obbligatoria" }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
+    // Bots that fill the hidden honeypot field: accept silently, do nothing.
+    if (isHoneypotTripped(body)) {
+      return json({ success: true, message: "Iscrizione completata" }, 200);
     }
 
-    // Insert into newsletter_subscriptions
+    await enforceRateLimit(supabase, `newsletter-subscribe:${getClientIp(req)}`, 5, 600);
+
+    const email = typeof body.email === "string" ? body.email.trim() : "";
+    if (!emailIsValid(email)) {
+      throw new HttpError(400, "Email non valida");
+    }
+    const name = typeof body.name === "string" ? body.name.trim().slice(0, 200) : null;
+    const mailingListId = typeof body.mailing_list_id === "string" ? body.mailing_list_id : null;
+
     const { data, error } = await supabase
-      .from('newsletter_subscriptions')
-      .insert([{
-        email: email.trim(),
-        name: name?.trim() || null,
-        mailing_list_id: mailing_list_id || null
-      }])
-      .select()
+      .from("newsletter_subscriptions")
+      .insert([{ email, name, mailing_list_id: mailingListId }])
+      .select("email, name, unsubscribe_token")
       .single();
 
     if (error) {
-      console.error('Database error:', error);
-      
-      if (error.code === '23505') {
-        return new Response(
-          JSON.stringify({ error: "Email già iscritta alla newsletter" }),
-          {
-            status: 409,
-            headers: { "Content-Type": "application/json", ...corsHeaders },
-          }
-        );
+      if (error.code === "23505") {
+        throw new HttpError(409, "Email già iscritta alla newsletter");
       }
-
-      return new Response(
-        JSON.stringify({ error: "Errore durante l'iscrizione" }),
-        {
-          status: 500,
-          headers: { "Content-Type": "application/json", ...corsHeaders },
-        }
-      );
+      console.error("Database error:", error);
+      throw new HttpError(500, "Errore durante l'iscrizione");
     }
 
-    console.log("Newsletter subscription successful:", { email, name });
-
-    // Send newsletter confirmation email
-    const resendApiKey = Deno.env.get('RESEND_API_KEY');
+    // Confirmation email is secondary: a send failure must NOT undo the (successful)
+    // subscription, but we also never claim it was sent when it wasn't.
+    const resendApiKey = Deno.env.get("RESEND_API_KEY");
     if (resendApiKey) {
       try {
-        const emailResponse = await fetch('https://api.resend.com/emails', {
-          method: 'POST',
+        const emailResponse = await fetch("https://api.resend.com/emails", {
+          method: "POST",
           headers: {
-            'Authorization': `Bearer ${resendApiKey}`,
-            'Content-Type': 'application/json',
+            "Authorization": `Bearer ${resendApiKey}`,
+            "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            from: '4 Elementi Italia <newsletter@4elementiitalia.it>',
-            to: [email],
-            subject: 'Iscrizione Newsletter Confermata! 📧',
+            from: "4 Elementi Italia <newsletter@4elementiitalia.it>",
+            to: [data.email],
+            subject: "Iscrizione Newsletter Confermata! 📧",
             html: `
               <div style="font-family: 'Inter', Arial, sans-serif; max-width: 600px; margin: 0 auto; background: linear-gradient(135deg, #1B1B1B, #2D2D2D); color: white; border-radius: 12px; overflow: hidden;">
                 <div style="padding: 40px 30px; text-align: center;">
@@ -93,68 +87,36 @@ const handler = async (req: Request): Promise<Response> => {
                     Iscrizione Confermata! 📧
                   </h1>
                   <p style="font-size: 18px; margin-bottom: 30px; color: #F6F4ED;">
-                    Ciao ${name || 'bellezza'}! La tua iscrizione alla newsletter è stata confermata.
+                    Ciao ${data.name || "bellezza"}! La tua iscrizione alla newsletter è stata confermata.
                   </p>
                   <p style="margin-bottom: 30px; color: #CBD8D4;">
                     Riceverai i nostri contenuti esclusivi, tips e aggiornamenti direttamente nella tua casella email.
                   </p>
-                  <div style="background: rgba(106, 168, 179, 0.1); padding: 20px; border-radius: 8px; margin: 30px 0;">
-                    <h3 style="color: #6AA8B3; margin-bottom: 15px;">Cosa riceverai:</h3>
-                    <ul style="text-align: left; color: #CBD8D4; line-height: 1.6;">
-                      <li>✅ Tips esclusivi per il business della bellezza</li>
-                      <li>✅ Strategie di pricing e marketing</li>
-                      <li>✅ Novità e contenuti in anteprima</li>
-                      <li>✅ Inviti a eventi speciali</li>
-                    </ul>
-                  </div>
-                  <p style="margin-top: 30px; color: #C2977E; font-style: italic;">
-                    Ti arriverà presto la prima newsletter!
-                  </p>
                 </div>
                 <div style="background: #1B1B1B; padding: 20px; text-align: center;">
                   <p style="color: #888; font-size: 12px; margin: 0;">
-                    © 2024 4 Elementi Italia. Tutti i diritti riservati.<br>
-                    <a href="${Deno.env.get('SUPABASE_URL')?.replace('.supabase.co', '.lovable.app') || 'https://4elementiitalia.it'}/unsubscribe?email=${encodeURIComponent(email)}" style="color: #6AA8B3;">Annulla iscrizione</a>
+                    © 2026 4 Elementi Italia. Tutti i diritti riservati.<br>
+                    <a href="${unsubscribeUrl(data.unsubscribe_token)}" style="color: #6AA8B3;">Annulla iscrizione</a>
                   </p>
                 </div>
               </div>
-            `
+            `,
           }),
         });
 
         if (!emailResponse.ok) {
-          const errorData = await emailResponse.text();
-          console.error('Error sending newsletter confirmation:', errorData);
-        } else {
-          console.log('Newsletter confirmation sent successfully to:', email);
+          console.error("Error sending newsletter confirmation:", await emailResponse.text());
         }
-      } catch (error) {
-        console.error('Error sending newsletter confirmation:', error);
+      } catch (sendError) {
+        console.error("Error sending newsletter confirmation:", sendError);
       }
     } else {
-      console.log('RESEND_API_KEY not configured, skipping newsletter confirmation');
+      console.log("RESEND_API_KEY not configured, skipping newsletter confirmation");
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        message: "Iscrizione alla newsletter completata con successo"
-      }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
-
-  } catch (error: unknown) {
-    console.error("Error in newsletter-subscribe function:", error);
-    return new Response(
-      JSON.stringify({ error: "Errore interno del server" }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json", ...corsHeaders },
-      }
-    );
+    return json({ success: true, message: "Iscrizione alla newsletter completata con successo" }, 200);
+  } catch (error) {
+    return toErrorResponse(error, corsHeaders);
   }
 };
 

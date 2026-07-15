@@ -25,7 +25,27 @@ serve(async (req) => {
     if (!Array.isArray(messages) || messages.length === 0) {
       throw new HttpError(400, "Messaggi non validi");
     }
-    
+
+    // Input hardening: cap conversation size, reject oversized payloads, and only
+    // accept user/assistant roles (a client must never inject a "system" message,
+    // nor malformed roles/content).
+    const MAX_MESSAGES = 30;
+    const MAX_MESSAGES_BYTES = 32 * 1024;
+    if (messages.length > MAX_MESSAGES) {
+      throw new HttpError(400, "Troppi messaggi nella conversazione");
+    }
+    if (new TextEncoder().encode(JSON.stringify(messages)).length > MAX_MESSAGES_BYTES) {
+      throw new HttpError(413, "Payload dei messaggi troppo grande");
+    }
+    const sanitizedMessages = messages.map((message: unknown) => {
+      const role = (message as { role?: unknown })?.role;
+      const content = (message as { content?: unknown })?.content;
+      if (typeof content !== "string" || (role !== "user" && role !== "assistant")) {
+        throw new HttpError(400, "Formato messaggio non valido");
+      }
+      return { role, content };
+    });
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY non configurata');
@@ -97,7 +117,7 @@ IMPORTANTE: Personalizza le tue risposte in base a questo profilo. Se l'utente Ã
     }
 
     // Generate embedding for user's query for semantic search
-    const lastUserMessage = messages[messages.length - 1]?.content || '';
+    const lastUserMessage = sanitizedMessages[sanitizedMessages.length - 1]?.content || '';
     const queryEmbedding = generateSimpleEmbedding(lastUserMessage);
     const embeddingStr = `[${queryEmbedding.join(',')}]`;
 
@@ -184,7 +204,7 @@ ${trainingContext}`;
         model: modelName,
         messages: [
           { role: 'system', content: systemPrompt },
-          ...messages,
+          ...sanitizedMessages,
         ],
         stream: true,
       }),
@@ -215,7 +235,7 @@ ${trainingContext}`;
     EdgeRuntime.waitUntil((async () => {
       try {
         // Estimate token counts (rough approximation)
-        const inputTokens = Math.ceil((systemPrompt.length + messages.reduce((acc: number, m: { content?: string }) => acc + (m.content?.length ?? 0), 0)) / 4);
+        const inputTokens = Math.ceil((systemPrompt.length + sanitizedMessages.reduce((acc: number, m: { content?: string }) => acc + (m.content?.length ?? 0), 0)) / 4);
         
         await supabase.from('ai_usage_logs').insert({
           user_id: authenticatedUserId,

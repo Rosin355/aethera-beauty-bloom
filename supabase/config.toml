@@ -6,17 +6,14 @@ verify_jwt = false
 [functions.newsletter-subscribe]
 verify_jwt = false
 
-[functions.resend-access-link]
+[functions.newsletter-unsubscribe]
 verify_jwt = false
 
-[functions.send-welcome-email]
+[functions.resend-access-link]
 verify_jwt = false
 
 [functions.send-newsletter]
 verify_jwt = true
-
-[functions.resend-test-email]
-verify_jwt = false
 
 [functions.ai-assistant]
 verify_jwt = true
