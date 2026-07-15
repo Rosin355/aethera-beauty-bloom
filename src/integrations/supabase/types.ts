@@ -14,6 +14,60 @@ export type Database = {
   }
   public: {
     Tables: {
+      centers: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          owner_user_id: string
+          plan: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          owner_user_id: string
+          plan?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          owner_user_id?: string
+          plan?: string
+        }
+        Relationships: []
+      }
+      center_members: {
+        Row: {
+          center_id: string
+          created_at: string
+          id: string
+          invited_email: string | null
+          role: string
+          status: string
+          user_id: string | null
+        }
+        Insert: {
+          center_id: string
+          created_at?: string
+          id?: string
+          invited_email?: string | null
+          role: string
+          status?: string
+          user_id?: string | null
+        }
+        Update: {
+          center_id?: string
+          created_at?: string
+          id?: string
+          invited_email?: string | null
+          role?: string
+          status?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       ai_conversations: {
         Row: {
           created_at: string
@@ -410,6 +464,7 @@ export type Database = {
       }
       business_appointments: {
         Row: {
+          center_id: string
           appointment_at: string
           client_name: string
           created_at: string
@@ -423,6 +478,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          center_id: string
           appointment_at: string
           client_name: string
           created_at?: string
@@ -436,6 +492,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          center_id?: string
           appointment_at?: string
           client_name?: string
           created_at?: string
@@ -460,6 +517,7 @@ export type Database = {
       }
       business_services: {
         Row: {
+          center_id: string
           category: string
           created_at: string
           description: string | null
@@ -472,6 +530,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          center_id: string
           category: string
           created_at?: string
           description?: string | null
@@ -484,6 +543,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          center_id?: string
           category?: string
           created_at?: string
           description?: string | null
@@ -499,6 +559,7 @@ export type Database = {
       }
       client_metrics: {
         Row: {
+          center_id: string
           active_clients: number
           bookings_count: number
           business_health_score: number | null
@@ -518,6 +579,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          center_id: string
           active_clients?: number
           bookings_count?: number
           business_health_score?: number | null
@@ -537,6 +599,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          center_id?: string
           active_clients?: number
           bookings_count?: number
           business_health_score?: number | null
@@ -559,6 +622,7 @@ export type Database = {
       }
       client_notes: {
         Row: {
+          center_id: string
           category: string
           client_user_id: string
           created_at: string
@@ -570,6 +634,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          center_id: string
           category?: string
           client_user_id: string
           created_at?: string
@@ -581,6 +646,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          center_id?: string
           category?: string
           client_user_id?: string
           created_at?: string
@@ -595,6 +661,7 @@ export type Database = {
       }
       inventory_items: {
         Row: {
+          center_id: string
           category: string
           created_at: string
           id: string
@@ -607,6 +674,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          center_id: string
           category: string
           created_at?: string
           id?: string
@@ -619,6 +687,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          center_id?: string
           category?: string
           created_at?: string
           id?: string
