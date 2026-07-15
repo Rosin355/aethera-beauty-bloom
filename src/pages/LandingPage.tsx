@@ -10,6 +10,7 @@ import {
   Plus,
   X,
 } from "lucide-react";
+import HeroDashboardPreview from "@/components/Landing/HeroDashboardPreview";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -38,10 +39,9 @@ const getSectionByKey = (
 /* Warm, luminous beauty/wellness photography (full color) — same slot structure
    as the reference; swap these for the client's real photos without touching layout. */
 const IMAGE_VARS = {
+  // BASE hero layer — warm beauty-center interior (swap for the client's real photo).
   "--base-image":
     "url('https://images.unsplash.com/photo-1600334129128-685c5582fd35?auto=format&fit=crop&w=2400&q=90')",
-  "--reveal-image":
-    "url('https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=2400&q=90')",
   "--section-ambient-image":
     "url('https://images.unsplash.com/photo-1540555700478-4be289fbecef?auto=format&fit=crop&w=2200&q=90')",
   "--section-floral-image":
@@ -111,20 +111,6 @@ const GATHER_WORDS = [
   { word: "una", x: -160, y: -95, r: 9 },
   { word: "sola", x: 220, y: 210, r: -16 },
   { word: "piattaforma", x: -360, y: 60, r: -10 },
-];
-
-const ARCHIVE_TILES = [
-  { className: "archive-tile tall", col: 0, row: 0, img: "var(--story-image-1)" },
-  { className: "archive-tile", col: 1, row: 0, img: "var(--product-image-1)" },
-  { className: "archive-tile wide", col: 2, row: 0, img: "var(--section-floral-image)" },
-  { className: "archive-tile", col: 4, row: 0, img: "var(--story-image-2)" },
-  { className: "archive-tile", col: 1, row: 1, img: "var(--product-image-2)" },
-  { className: "archive-tile tall", col: 2, row: 1, img: "var(--vision-image)" },
-  { className: "archive-tile", col: 3, row: 1, img: "var(--story-image-3)" },
-  { className: "archive-tile", col: 4, row: 1, img: "var(--product-image-3)" },
-  { className: "archive-tile wide", col: 0, row: 2, img: "var(--story-image-4)" },
-  { className: "archive-tile", col: 3, row: 2, img: "var(--story-image-5)" },
-  { className: "archive-tile", col: 4, row: 2, img: "var(--section-ambient-image)" },
 ];
 
 const PERCORSI = [
@@ -224,6 +210,8 @@ const LandingPage = () => {
   const [hasScrolled, setHasScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  // Use a real dashboard screenshot if present, otherwise fall back to the mock component.
+  const [hasDashboardShot, setHasDashboardShot] = useState(false);
 
   const [leadData, setLeadData] = useState({ name: "", email: "" });
   const [isSubmittingLead, setIsSubmittingLead] = useState(false);
@@ -265,7 +253,6 @@ const LandingPage = () => {
   const storyIndexRef = useRef<HTMLSpanElement>(null);
   const cinemaRef = useRef<HTMLElement>(null);
   const gatherRef = useRef<HTMLElement>(null);
-  const archiveRef = useRef<HTMLElement>(null);
 
   /* ---------- CMS content (Supabase, wired as before) ---------- */
   useEffect(() => {
@@ -291,6 +278,14 @@ const LandingPage = () => {
   const landingFooter = getSectionByKey(landingSections, "landing_footer");
   const newsletterExtra = readSectionExtraObject<LandingNewsletterExtra>(landingNewsletter, {});
   const landingFooterExtra = readSectionExtraObject<LandingFooterExtra>(landingFooter, {});
+
+  /* ---------- Optional real dashboard screenshot ---------- */
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => setHasDashboardShot(true);
+    img.onerror = () => setHasDashboardShot(false);
+    img.src = "/images/dashboard-preview.png";
+  }, []);
 
   /* ---------- Loading intro ---------- */
   useEffect(() => {
@@ -393,7 +388,7 @@ const LandingPage = () => {
     };
   }, [reducedMotion]);
 
-  /* ---------- Global scroll motion (progress rail, story, cinema, gather, archive, parallax) ---------- */
+  /* ---------- Global scroll motion (progress rail, story, cinema, gather, parallax) ---------- */
   const hasScrolledRef = useRef(false);
   useEffect(() => {
     const root = rootRef.current;
@@ -495,33 +490,6 @@ const LandingPage = () => {
           word.style.setProperty("--scale", (0.78 + eased * 0.22).toFixed(3));
           word.style.setProperty("--word-opacity", String(0.28 + eased * 0.72));
           word.style.setProperty("--word-blur", `${((1 - eased) * 2.6).toFixed(2)}px`);
-        });
-      }
-
-      const archive = archiveRef.current;
-      if (archive) {
-        const p = sectionProgress(archive);
-        const eased = 1 - Math.pow(1 - p, 3);
-        archive.style.setProperty("--archive-word-x", `${(-8 * eased).toFixed(2)}vw`);
-        archive.style.setProperty("--archive-word-opacity", (0.75 - eased * 0.35).toFixed(3));
-        archive.style.setProperty("--archive-radius", `${(8 + eased * 18).toFixed(1)}px`);
-        archive.style.setProperty("--archive-progress-width", `${(eased * 100).toFixed(2)}%`);
-        archive.style.setProperty("--tile-img-scale", (1.2 - eased * 0.08).toFixed(3));
-        archive.style.setProperty("--tile-gray", (1 - eased).toFixed(3));
-        archive.style.setProperty("--tile-overlay-opacity", (0.65 - eased * 0.35).toFixed(3));
-        const grid = archive.querySelector<HTMLElement>(".archive-grid");
-        grid?.style.setProperty("--archive-scale", (0.48 + eased * 0.52).toFixed(3));
-        archive.querySelectorAll<HTMLElement>(".archive-tile").forEach((tile, index) => {
-          const col = Number(tile.dataset.col || 0);
-          const row = Number(tile.dataset.row || 0);
-          const fromX = (2 - col) * 138;
-          const fromY = (1 - row) * 124;
-          const delay = Math.min(0.18, index * 0.012);
-          const local = clamp((eased - delay) / (1 - delay), 0, 1);
-          tile.style.setProperty("--tile-x", `${(fromX * (1 - local)).toFixed(1)}px`);
-          tile.style.setProperty("--tile-y", `${(fromY * (1 - local)).toFixed(1)}px`);
-          tile.style.setProperty("--tile-scale", (0.58 + local * 0.42).toFixed(3));
-          tile.style.setProperty("--tile-opacity", String(0.18 + local * 0.82));
         });
       }
 
@@ -697,8 +665,8 @@ const LandingPage = () => {
         <div className={`landing-intro ${introHidden ? "hide" : ""}`} aria-hidden="true">
           <div className="landing-intro-inner">
             <div className="load-mark">4E</div>
-            <div className="load-kicker">4 Elementi Italia</div>
-            <div className="load-brand">Aethera</div>
+            <div className="load-kicker">Il metodo per estetiste</div>
+            <div className="load-brand">4 Elementi Italia</div>
             <div className="load-line">
               <span></span>
             </div>
@@ -716,16 +684,16 @@ const LandingPage = () => {
         className="floating-nav fixed left-1/2 top-5 z-[100] flex w-[calc(100%-32px)] max-w-6xl -translate-x-1/2 items-center justify-between rounded-full border border-white/15 bg-black/35 px-4 py-3 backdrop-blur-2xl sm:px-5 md:px-6"
         aria-label="Navigazione principale"
       >
-        <a href="/" className="group flex items-center gap-3 text-white" aria-label="Aethera — home">
+        <a href="/" className="group flex items-center gap-3 text-white" aria-label="4 Elementi Italia — home">
           <img
             src="/4-elementi-logo.png"
             alt="Logo 4 Elementi Italia"
             className="h-10 w-10 object-contain transition-transform duration-300 group-hover:scale-105"
           />
           <span className="flex flex-col leading-none">
-            <span className="font-playfair text-2xl italic tracking-tight">Aethera</span>
+            <span className="font-playfair text-xl italic tracking-tight">4 Elementi Italia</span>
             <span className="mt-1 hidden text-[9px] font-semibold uppercase tracking-[0.28em] text-white/75 sm:block">
-              4 Elementi Italia
+              Metodo &amp; Piattaforma
             </span>
           </span>
         </a>
@@ -801,14 +769,27 @@ const LandingPage = () => {
           ref={heroRef}
           className="relative h-screen w-full overflow-hidden bg-black"
           style={{ height: "100dvh" }}
-          aria-label="Aethera — piattaforma del metodo 4 Elementi"
+          aria-label="4 Elementi Italia — piattaforma del metodo"
         >
           <div className="hero-base absolute inset-0 z-10"></div>
+          {/* Reveal layer — masked by the pointer spotlight; shows the product dashboard
+              (real screenshot if available, otherwise the mock) under the photo. */}
           <div
             ref={revealLayerRef}
             className="hero-reveal-layer pointer-events-none absolute inset-0 z-[42]"
             aria-hidden="true"
-          ></div>
+          >
+            {hasDashboardShot ? (
+              <img
+                src="/images/dashboard-preview.png"
+                alt=""
+                className="h-full w-full object-cover"
+                style={{ transform: "scale(1.05)" }}
+              />
+            ) : (
+              <HeroDashboardPreview />
+            )}
+          </div>
 
           <div className="hero-scrim pointer-events-none absolute inset-0 z-40" aria-hidden="true"></div>
           <div
@@ -824,7 +805,7 @@ const LandingPage = () => {
                   style={{ animationDelay: ".18s" }}
                 >
                   <span className="h-px w-14 bg-[#bfeeff]"></span>
-                  Aethera 01 · Metodo 4 Elementi
+                  4 Elementi Italia · Metodo 4E
                 </div>
                 <h1 className="leading-[0.88] text-white drop-shadow-[0_4px_28px_rgba(0,0,0,0.85)]">
                   <span
@@ -892,7 +873,7 @@ const LandingPage = () => {
             className="vertical-label hero-anim hero-fade pointer-events-none absolute bottom-10 left-4 z-50 hidden text-[10px] font-semibold uppercase tracking-[0.26em] text-white/50 md:block"
             style={{ animationDelay: ".95s" }}
           >
-            AETHERA / 4 ELEMENTI ITALIA
+            4 ELEMENTI ITALIA / METODO 4E
           </div>
         </section>
 
@@ -972,7 +953,7 @@ const LandingPage = () => {
                 </div>
                 <div className="reveal glass-card rounded-[2rem] border border-white/10 p-6 sm:p-8">
                   <p className="text-base leading-relaxed text-white/65 md:text-lg">
-                    Aethera è pensata per i centri estetici moderni: ogni funzione nasce
+                    4 Elementi Italia è pensata per i centri estetici moderni: ogni funzione nasce
                     per farti risparmiare tempo, dalla gestione dell'agenda alla
                     fidelizzazione delle clienti, e per rimettere te al centro
                     dell'impresa.
@@ -1007,7 +988,7 @@ const LandingPage = () => {
                       Dalla diagnosi <em>alla crescita.</em>
                     </h2>
                     <p className="cinema-desc">
-                      Un percorso completo: Aethera accompagna tutto il ciclo di vita del
+                      Un percorso completo: 4 Elementi Italia accompagna tutto il ciclo di vita del
                       tuo centro, così tu puoi concentrarti sulla cabina e sulle clienti.
                     </p>
                   </div>
@@ -1054,34 +1035,6 @@ const LandingPage = () => {
                     Tutto ciò che serve per gestire il tuo centro estetico o la tua spa,
                     unito in un'unica suite semplice da usare.
                   </p>
-                </div>
-              </div>
-            </section>
-
-            {/* ---------- FEATURE ARCHIVE ---------- */}
-            <section ref={archiveRef} className="archive-expand-scroll" aria-label="Archivio funzioni">
-              <div className="archive-sticky">
-                <div className="archive-word" aria-hidden="true">
-                  FUNZIONI
-                </div>
-                <div className="archive-grid" aria-hidden="true">
-                  {ARCHIVE_TILES.map((tile, index) => (
-                    <div
-                      key={index}
-                      className={tile.className}
-                      data-col={tile.col}
-                      data-row={tile.row}
-                      style={{ "--tile-img": tile.img } as React.CSSProperties}
-                    ></div>
-                  ))}
-                </div>
-                <div className="archive-meta">
-                  <span>Archivio funzioni / 2026</span>
-                  Un solo sistema diventa il motore del tuo centro: dalla prima
-                  prenotazione al riacquisto, la parte amministrativa la gestiamo noi.
-                </div>
-                <div className="archive-progress" aria-hidden="true">
-                  <span></span>
                 </div>
               </div>
             </section>
@@ -1377,7 +1330,7 @@ const LandingPage = () => {
                 <div className="absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-[#bfeeff]/60 to-transparent"></div>
                 <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#bfeeff]/10 blur-3xl"></div>
                 <p className="text-[11px] font-bold uppercase tracking-[.26em] text-[#bfeeff]">
-                  Aethera · Inizia ora
+                  4 Elementi Italia · Inizia ora
                 </p>
                 <h2
                   className="mx-auto mt-7 max-w-4xl text-4xl font-medium leading-[1.02] tracking-tight sm:text-5xl md:text-7xl"
@@ -1476,16 +1429,15 @@ const LandingPage = () => {
             <footer className="border-t border-white/10">
               <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 md:py-20">
                 <div className="mb-14 overflow-hidden">
-                  <p className="font-playfair text-[18vw] italic leading-none tracking-[-.08em] text-white/90 md:text-[10rem]">
-                    Aethera
+                  <p className="font-playfair text-[13vw] italic leading-none tracking-[-.06em] text-white/90 md:text-[7rem]">
+                    4 Elementi Italia
                   </p>
                 </div>
                 <div className="flex flex-col gap-12 md:flex-row md:items-start md:justify-between">
                   <div className="max-w-sm">
                     <p className="text-sm leading-relaxed text-white/55">
-                      Aethera — La piattaforma 4 Elementi Italia per estetiste, centri
-                      estetici e spa: formazione, gestionale, AI e community in un unico
-                      luogo.
+                      La piattaforma 4 Elementi Italia per estetiste, centri estetici e
+                      spa: formazione, gestionale, AI e community in un unico luogo.
                     </p>
                     {(landingNewsletter?.title || landingNewsletter?.body) && (
                       <div className="mt-8">
