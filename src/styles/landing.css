@@ -1222,7 +1222,7 @@
   .landing-root .story-title { font-size: clamp(54px, 18vw, 92px); max-width: 100%; }
   .landing-root .story-stage { margin-left: 0; height: auto; overflow-x: auto; padding: 18px 0 48px; -webkit-overflow-scrolling: touch; }
   .landing-root .story-track { transform: none !important; }
-  .landing-root .story-card { width: 76vw; max-width: 330px; height: 470px; }
+  .landing-root .story-card { width: 76vw; max-width: 330px; height: 470px; transform: none !important; --card-y: 0px; }
   .landing-root .story-progress { margin-top: 0; }
 
   .landing-root .gather-line span { transform: none !important; opacity: 1 !important; filter: none !important; }
@@ -1244,7 +1244,7 @@
 
   .landing-root .cinema-shell { grid-template-columns: 1fr; }
   .landing-root .cinema-stage { height: 560px; }
-  .landing-root .cinema-frame { transform: none; }
+  .landing-root .cinema-frame { transform: none !important; }
   .landing-root .cinema-frame.one { left: 0; width: 62%; }
   .landing-root .cinema-frame.two { right: 0; width: 62%; }
   .landing-root .cinema-frame.three { left: 12%; width: 66%; }
@@ -1291,6 +1291,7 @@
   .landing-root .archive-sticky,
   .landing-root .cinema-sticky { position: relative; min-height: auto; }
   .landing-root .story-track { transform: none !important; }
+  .landing-root .story-card { transform: none !important; --card-y: 0px; }
   .landing-root .story-stage { margin-left: 0; height: auto; overflow-x: auto; }
   .landing-root .story-title,
   .landing-root .story-kicker,

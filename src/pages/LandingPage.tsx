@@ -57,13 +57,13 @@ const IMAGE_VARS = {
   "--story-image-1":
     "url('https://images.unsplash.com/photo-1552693673-1bf958298935?auto=format&fit=crop&w=1400&q=90')",
   "--story-image-2":
-    "url('https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=1400&q=90')",
+    "url('https://images.unsplash.com/photo-1616394584738-fc6e612e71b9?auto=format&fit=crop&w=1400&q=90')",
   "--story-image-3":
-    "url('https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=1400&q=90')",
+    "url('https://images.unsplash.com/photo-1505944270255-72b8c68c6a70?auto=format&fit=crop&w=1400&q=90')",
   "--story-image-4":
     "url('https://images.unsplash.com/photo-1487412947147-5cebf100ffc2?auto=format&fit=crop&w=1400&q=90')",
   "--story-image-5":
-    "url('https://images.unsplash.com/photo-1522337660859-02fbefca4702?auto=format&fit=crop&w=1400&q=90')",
+    "url('https://images.unsplash.com/photo-1508214751196-bcfd4ca60f91?auto=format&fit=crop&w=1400&q=90')",
 } as React.CSSProperties;
 
 const NAV_LINKS = [
@@ -358,7 +358,11 @@ const LandingPage = () => {
     });
     const initial = restingPoint();
     drawMask(initial.x, initial.y);
-    if (reducedMotion) return;
+    // Touch / coarse-pointer devices and reduced-motion keep a static spotlight (no listener).
+    const coarsePointer =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(pointer: coarse)").matches;
+    if (reducedMotion || coarsePointer) return;
 
     const target = { ...initial };
     const current = { ...initial };
@@ -503,6 +507,7 @@ const LandingPage = () => {
         archive.style.setProperty("--archive-radius", `${(8 + eased * 18).toFixed(1)}px`);
         archive.style.setProperty("--archive-progress-width", `${(eased * 100).toFixed(2)}%`);
         archive.style.setProperty("--tile-img-scale", (1.2 - eased * 0.08).toFixed(3));
+        archive.style.setProperty("--tile-gray", (1 - eased).toFixed(3));
         archive.style.setProperty("--tile-overlay-opacity", (0.65 - eased * 0.35).toFixed(3));
         const grid = archive.querySelector<HTMLElement>(".archive-grid");
         grid?.style.setProperty("--archive-scale", (0.48 + eased * 0.52).toFixed(3));
@@ -551,9 +556,12 @@ const LandingPage = () => {
   ) => {
     event.preventDefault();
     setMobileMenuOpen(false);
-    document.getElementById(id)?.scrollIntoView({
-      behavior: reducedMotion ? "auto" : "smooth",
-    });
+    const target = document.getElementById(id);
+    if (!target) return;
+    target.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth" });
+    // Move keyboard focus to the target so sequential focus continues from there.
+    target.setAttribute("tabindex", "-1");
+    target.focus({ preventScroll: true });
   };
 
   /* ---------- Lead capture (existing mailing-list-signup flow) ---------- */
@@ -912,7 +920,12 @@ const LandingPage = () => {
                     <span className="story-word">metodo.</span>
                   </h2>
 
-                  <div className="story-stage">
+                  <div
+                    className="story-stage"
+                    tabIndex={0}
+                    role="group"
+                    aria-label="Capitoli della piattaforma — scorri orizzontalmente"
+                  >
                     <div ref={storyTrackRef} className="story-track">
                       {STORY_CHAPTERS.map((chapter, index) => (
                         <article key={chapter.title} className={`story-card ${index % 2 === 1 ? "alt" : ""}`}>
@@ -989,7 +1002,7 @@ const LandingPage = () => {
                 <div className="cinema-grid" aria-hidden="true"></div>
                 <div className="cinema-shell">
                   <div className="cinema-copy">
-                    <p className="cinema-kicker">Sequenza on scroll</p>
+                    <p className="cinema-kicker">Sequenza in scorrimento</p>
                     <h2 className="cinema-title">
                       Dalla diagnosi <em>alla crescita.</em>
                     </h2>
@@ -1387,6 +1400,7 @@ const LandingPage = () => {
                       className="lead-input"
                       placeholder="Il tuo nome"
                       aria-label="Il tuo nome"
+                      autoComplete="name"
                       value={leadData.name}
                       onChange={(e) => setLeadData((prev) => ({ ...prev, name: e.target.value }))}
                       disabled={isSubmittingLead}
@@ -1396,6 +1410,7 @@ const LandingPage = () => {
                       className="lead-input"
                       placeholder="La tua email"
                       aria-label="La tua email"
+                      autoComplete="email"
                       value={leadData.email}
                       onChange={(e) => setLeadData((prev) => ({ ...prev, email: e.target.value }))}
                       disabled={isSubmittingLead}
@@ -1472,10 +1487,24 @@ const LandingPage = () => {
                       estetici e spa: formazione, gestionale, AI e community in un unico
                       luogo.
                     </p>
+                    {(landingNewsletter?.title || landingNewsletter?.body) && (
+                      <div className="mt-8">
+                        {landingNewsletter?.title && (
+                          <p className="text-sm font-semibold text-white/90">
+                            {landingNewsletter.title}
+                          </p>
+                        )}
+                        {landingNewsletter?.body && (
+                          <p className="mt-1 text-xs leading-relaxed text-white/55">
+                            {landingNewsletter.body}
+                          </p>
+                        )}
+                      </div>
+                    )}
                     <form
                       id="newsletter"
                       onSubmit={handleNewsletterSubmit}
-                      className="mt-8 flex flex-col gap-3 sm:flex-row"
+                      className="mt-4 flex flex-col gap-3 sm:flex-row"
                       aria-label="Iscriviti alla newsletter"
                     >
                       <input
@@ -1483,6 +1512,7 @@ const LandingPage = () => {
                         className="lead-input"
                         placeholder="la.tua.email@esempio.com"
                         aria-label="Email per la newsletter"
+                        autoComplete="email"
                         value={newsletterEmail}
                         onChange={(e) => setNewsletterEmail(e.target.value)}
                         required
@@ -1493,7 +1523,9 @@ const LandingPage = () => {
                         disabled={isSubmittingNewsletter}
                         className="shrink-0 rounded-full bg-white px-6 py-3 text-sm font-semibold text-black transition-all hover:scale-[1.03] hover:bg-[#effbff] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
                       >
-                        {isSubmittingNewsletter ? "Invio..." : "Iscriviti"}
+                        {isSubmittingNewsletter
+                          ? "Invio..."
+                          : landingNewsletter?.cta_label ?? "Iscriviti"}
                       </button>
                     </form>
                     <p className="mt-3 text-xs text-white/40">
@@ -1539,6 +1571,11 @@ const LandingPage = () => {
                             Contatti
                           </a>
                         </li>
+                        {landingFooterExtra.recovery_text && (
+                          <li className="text-xs text-white/45">
+                            {landingFooterExtra.recovery_text}
+                          </li>
+                        )}
                         <li>
                           <button
                             type="button"
@@ -1579,7 +1616,7 @@ const LandingPage = () => {
                     </div>
                   </div>
                 </div>
-                <div className="mt-14 flex flex-col gap-3 border-t border-white/10 pt-7 text-xs text-white/40 sm:flex-row sm:items-center sm:justify-between">
+                <div className="mt-14 flex flex-col gap-3 border-t border-white/10 pt-7 text-xs text-white/60 sm:flex-row sm:items-center sm:justify-between">
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
                     <p>
                       {landingFooter?.body ??
