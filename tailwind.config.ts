@@ -24,10 +24,9 @@ export default {
 		},
 		extend: {
 			fontFamily: {
-				display: ['"Bricolage Grotesque"', 'sans-serif'],
+				display: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
 				sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
-				// Legacy aliases kept for existing components, remapped to the new type system
-				'playfair': ['"Bricolage Grotesque"', 'sans-serif'],
+				'playfair': ['"Playfair Display"', 'serif'],
 				'inter': ['Inter', 'sans-serif'],
 			},
 			letterSpacing: {
@@ -54,6 +53,7 @@ export default {
 				success: {
 					DEFAULT: 'hsl(var(--success))'
 				},
+				ice: 'hsl(var(--ice))',
 				muted: {
 					DEFAULT: 'hsl(var(--muted))',
 					foreground: 'hsl(var(--muted-foreground))'

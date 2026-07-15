@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { X, Cookie } from 'lucide-react';
+import { Cookie } from 'lucide-react';
 import {
   getLegalLinks,
   getSiteSection,
@@ -109,19 +109,19 @@ export const CookieBanner = () => {
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-end justify-center p-3 sm:p-4 pointer-events-none">
-      <Card 
-        className={`max-w-full sm:max-w-md w-full bg-white/98 backdrop-blur-sm border-gray-200 shadow-2xl pointer-events-auto transform transition-all duration-300 ${
+      <Card
+        className={`pointer-events-auto w-full max-w-full transform border-white/15 bg-[#070707]/95 text-white shadow-[0_30px_90px_rgba(0,0,0,.58)] backdrop-blur-xl transition-all duration-300 sm:max-w-md ${
           isAnimating ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
         }`}
       >
         <div className="p-4 sm:p-6 space-y-4">
           <div className="flex items-start gap-3">
-            <Cookie className="w-6 h-6 text-brand-fire shrink-0 mt-0.5" />
+            <Cookie className="mt-0.5 h-6 w-6 shrink-0 text-[#bfeeff]" />
             <div className="flex-1">
-              <h3 className="font-semibold text-brand-black mb-2">
+              <h3 className="mb-2 font-semibold text-white">
                 {title}
               </h3>
-              <p className="text-sm text-gray-600 leading-relaxed">
+              <p className="text-sm leading-relaxed text-white/65">
                 {description}
               </p>
             </div>
@@ -130,7 +130,7 @@ export const CookieBanner = () => {
           <div className="flex flex-col sm:flex-row gap-2">
             <Button 
               onClick={acceptAllCookies}
-              className="bg-brand-fire hover:bg-brand-fire/90 text-white flex-1"
+              className="flex-1 rounded-full bg-white text-[#050505] hover:bg-[#effbff]"
               size="sm"
             >
               {acceptLabel}
@@ -138,7 +138,7 @@ export const CookieBanner = () => {
             <Button 
               onClick={rejectCookies}
               variant="outline"
-              className="border-gray-300 text-gray-700 hover:bg-gray-50 flex-1"
+              className="flex-1 rounded-full border-white/25 bg-white/[0.04] text-white hover:bg-white/10 hover:text-white"
               size="sm"
             >
               {rejectLabel}
@@ -148,10 +148,10 @@ export const CookieBanner = () => {
           <div className="flex flex-wrap gap-2 text-xs">
             {legalLinks.map((link, index) => (
               <div key={`${link.link_key}-${link.location}`} className="flex items-center gap-2">
-                {index > 0 && <span className="text-gray-400">•</span>}
+                {index > 0 && <span className="text-white/35">•</span>}
                 <a 
                   href={link.url}
-                  className="text-brand-fire hover:underline"
+                  className="text-[#bfeeff] hover:underline"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
