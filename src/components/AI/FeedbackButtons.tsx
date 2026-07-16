@@ -43,14 +43,16 @@ export function FeedbackButtons({ userId, conversationId, messageIndex }: Feedba
 
   if (!userId) return null;
 
+  // Visibili anche a riposo: bordo e sfondo leggeri, mai hover-only.
   return (
-    <div className="flex items-center gap-1 mt-1">
+    <div className="flex items-center gap-1.5 mt-1.5">
       <Button
         variant="ghost"
         size="icon"
+        aria-label="Risposta utile"
         className={cn(
-          "h-6 w-6 rounded-full",
-          submitted === 'positive' && "bg-green-500/20 text-green-600"
+          "h-6 w-6 rounded-full border border-white/15 bg-white/[.04] text-white/60 hover:text-ice hover:border-ice/40",
+          submitted === 'positive' && "bg-success/15 text-success border-success/40"
         )}
         onClick={() => submitFeedback('positive')}
         disabled={isSubmitting || !!submitted}
@@ -60,9 +62,10 @@ export function FeedbackButtons({ userId, conversationId, messageIndex }: Feedba
       <Button
         variant="ghost"
         size="icon"
+        aria-label="Risposta non utile"
         className={cn(
-          "h-6 w-6 rounded-full",
-          submitted === 'negative' && "bg-red-500/20 text-red-600"
+          "h-6 w-6 rounded-full border border-white/15 bg-white/[.04] text-white/60 hover:text-red-300 hover:border-red-400/40",
+          submitted === 'negative' && "bg-destructive/15 text-red-300 border-destructive/40"
         )}
         onClick={() => submitFeedback('negative')}
         disabled={isSubmitting || !!submitted}

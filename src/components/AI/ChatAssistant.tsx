@@ -449,16 +449,16 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
           }`}
         >
           <Avatar className="h-8 w-8 flex-shrink-0">
-            <AvatarFallback className={message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-muted'}>
+            <AvatarFallback className={message.role === 'user' ? 'bg-primary text-primary-foreground' : 'bg-ice/10 text-ice'}>
               {message.role === 'user' ? 'U' : <Bot className="h-4 w-4" />}
             </AvatarFallback>
           </Avatar>
           <div className="flex flex-col max-w-[80%]">
             <div
-              className={`rounded-lg p-3 ${
+              className={`rounded-xl p-3 ${
                 message.role === 'user'
                   ? 'bg-primary text-primary-foreground'
-                  : 'bg-muted'
+                  : 'bg-white/[.04] border border-white/10 border-l-2 border-l-ice/70 backdrop-blur-sm'
               }`}
             >
               <p className="text-sm whitespace-pre-wrap">{message.content}</p>
@@ -476,12 +476,13 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
       {isLoading && messages[messages.length - 1]?.role !== 'assistant' && (
         <div className="flex gap-3">
           <Avatar className="h-8 w-8">
-            <AvatarFallback className="bg-muted">
+            <AvatarFallback className="bg-ice/10 text-ice">
               <Bot className="h-4 w-4" />
             </AvatarFallback>
           </Avatar>
-          <div className="rounded-lg p-3 bg-muted">
-            <Loader2 className="h-4 w-4 animate-spin" />
+          <div className="rounded-xl p-3 bg-white/[.04] border border-white/10 border-l-2 border-l-ice/70 flex items-center gap-2">
+            <Loader2 className="h-4 w-4 animate-spin text-ice" aria-hidden="true" />
+            <span className="text-xs text-muted-foreground">Sto scrivendo...</span>
           </div>
         </div>
       )}
@@ -550,21 +551,22 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
   );
 
   const renderInputArea = () => (
-    <div className="p-4 border-t border-border">
+    <div className="p-4 border-t border-white/10">
       <div className="flex items-end gap-3">
         <Textarea
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyPress={handleKeyPress}
           placeholder="Scrivi un messaggio..."
-          className="min-h-[44px] max-h-[120px] resize-none"
+          className="input-glass min-h-[44px] max-h-[120px] resize-none rounded-[22px] px-4"
           disabled={isLoading}
         />
         <Button
           onClick={() => sendMessage()}
           disabled={!input.trim() || isLoading}
           size="icon"
-          className="h-10 w-10 flex-shrink-0 rounded-full"
+          aria-label="Invia messaggio"
+          className="h-10 w-10 flex-shrink-0 bg-primary text-primary-foreground hover:bg-primary/90"
         >
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -581,7 +583,8 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
     return (
       <Button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg"
+        aria-label="Apri assistente AI"
+        className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_40px_rgba(191,238,255,0.25)]"
         size="icon"
       >
         <Bot className="h-6 w-6" />
@@ -593,14 +596,14 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
   if (embedded) {
     return (
       <div className="flex flex-col h-full">
-        <div className="flex items-center justify-between p-4 border-b border-border">
+        <div className="flex items-center justify-between p-4 border-b border-white/10">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-              <Bot className="h-5 w-5 text-primary" />
+            <div className="h-10 w-10 rounded-full bg-ice/10 border border-ice/25 flex items-center justify-center">
+              <Bot className="h-5 w-5 text-ice" />
             </div>
             <div>
-              <h2 className="text-base font-semibold text-foreground">Assistente AI</h2>
-              <p className="text-xs text-muted-foreground">4 Elementi Italia</p>
+              <h2 className="text-base font-semibold text-foreground font-playfair">Assistente AI</h2>
+              <p className="eyebrow text-[9px]">4 Elementi Italia</p>
             </div>
           </div>
           {userId && renderConversationHistory()}
@@ -617,15 +620,15 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
   }
 
   return (
-    <Card className="fixed bottom-6 right-6 w-96 h-[600px] shadow-2xl flex flex-col">
-      <CardHeader className="flex flex-row items-center justify-between pb-3 border-b">
+    <Card className="fixed bottom-6 right-6 w-96 h-[600px] glass-card border-white/10 shadow-2xl flex flex-col">
+      <CardHeader className="flex flex-row items-center justify-between pb-3 border-b border-white/10">
         <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-            <Bot className="h-5 w-5 text-primary" />
+          <div className="h-10 w-10 rounded-full bg-ice/10 border border-ice/25 flex items-center justify-center">
+            <Bot className="h-5 w-5 text-ice" />
           </div>
           <div>
-            <CardTitle className="text-base">Assistente AI</CardTitle>
-            <p className="text-xs text-muted-foreground">4 Elementi Italia</p>
+            <CardTitle className="text-base font-playfair">Assistente AI</CardTitle>
+            <p className="eyebrow text-[9px]">4 Elementi Italia</p>
           </div>
         </div>
         <div className="flex items-center gap-1">
@@ -647,21 +650,22 @@ export function ChatAssistant({ embedded = false }: ChatAssistantProps) {
           {showSuggestions && renderQuickSuggestions()}
         </ScrollArea>
 
-        <div className="p-4 border-t">
+        <div className="p-4 border-t border-white/10">
           <div className="flex items-end gap-3">
             <Textarea
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyPress={handleKeyPress}
               placeholder="Scrivi un messaggio..."
-              className="min-h-[44px] max-h-[120px] resize-none"
+              className="input-glass min-h-[44px] max-h-[120px] resize-none rounded-[22px] px-4"
               disabled={isLoading}
             />
             <Button
               onClick={() => sendMessage()}
               disabled={!input.trim() || isLoading}
               size="icon"
-              className="h-10 w-10 flex-shrink-0 rounded-full"
+              aria-label="Invia messaggio"
+              className="h-10 w-10 flex-shrink-0 bg-primary text-primary-foreground hover:bg-primary/90"
             >
               {isLoading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

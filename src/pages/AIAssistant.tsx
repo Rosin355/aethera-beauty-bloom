@@ -12,6 +12,7 @@ const AIAssistant = () => {
       <DashboardLayout>
         <div className="max-w-4xl mx-auto">
           <div className="mb-6">
+            <p className="eyebrow mb-2">Consulenza</p>
             <h1 className="text-2xl md:text-3xl font-bold text-foreground font-playfair">
               Assistente AI
             </h1>
@@ -19,8 +20,8 @@ const AIAssistant = () => {
               Il tuo consulente personale per supportare la gestione e crescita della tua attività
             </p>
           </div>
-          
-          <div className="bg-card border border-border rounded-xl overflow-hidden h-[calc(100vh-250px)] min-h-[500px]">
+
+          <div className="glass-card border border-white/10 rounded-[28px] overflow-hidden h-[calc(100vh-250px)] min-h-[500px]">
             <ChatAssistant embedded />
           </div>
         </div>
