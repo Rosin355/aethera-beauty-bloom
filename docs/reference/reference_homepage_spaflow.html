@@ -1,0 +1,64 @@
+<!--
+  Canonical design reference for the cinematic dark homepage ("SpaFlow").
+  This file is the SOURCE OF TRUTH for the interactive-effect values ported into
+  the React landing (src/pages/LandingPage.tsx + src/styles/landing.css):
+    - hero pointer spotlight (reveal-layer radial mask, lerp factor 0.095, rest 68%/44%)
+    - story horizontal scroll (progress, track translate, chapter index)
+    - gather word convergence, archive grid expansion, parallax, reveal-on-view
+  It is documentation only — not built, imported, or served by the app.
+  See also: aethera_md_pack/DESIGN_HOMEPAGE_SPAFLOW.md
+-->
+<html lang="en" style="--base-image: url('https://images.unsplash.com/photo-1600334129128-685c5582fd35?auto=format&fit=crop&w=3840&q=90'); --reveal-image: url('https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=3840&q=90'); --section-ambient-image: url('https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=2200&q=90'); --section-floral-image: url('https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=2200&q=90'); --product-image-1: url('https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1400&q=90'); --product-image-2: url('https://images.unsplash.com/photo-1552693673-1bf958298935?auto=format&fit=crop&w=1400&q=90'); --product-image-3: url('https://images.unsplash.com/photo-1596178065887-1198b6148b2b?auto=format&fit=crop&w=1400&q=90'); --vision-image: url('https://images.unsplash.com/photo-1522337660859-02fbefca4702?auto=format&fit=crop&w=1800&q=90'); --story-image-1: url('https://images.unsplash.com/photo-1600334129128-685c5582fd35?auto=format&fit=crop&w=1400&q=90'); --story-image-2: url('https://images.unsplash.com/photo-1515377905703-c4788e51af15?auto=format&fit=crop&w=1400&q=90'); --story-image-3: url('https://images.unsplash.com/photo-1570172619644-dfd03ed5d881?auto=format&fit=crop&w=1400&q=90'); --story-image-4: url('https://images.unsplash.com/photo-1552693673-1bf958298935?auto=format&fit=crop&w=1400&q=90'); --story-image-5: url('https://images.unsplash.com/photo-1560066984-138dadb4c035?auto=format&fit=crop&w=1400&q=90');">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SpaFlow - Salon Software</title>
+  <!--
+    KEY EFFECT VALUES (ported to React — see src/pages/LandingPage.tsx):
+
+    HERO SPOTLIGHT (reveal layer mask, pointer-following):
+      mask = radial-gradient(ellipse 620px 500px at <x>px <y>px,
+        white 0%, white 30%, rgba(255,255,255,.82) 48%, .42 68%, .12 88%, transparent 100%)
+      pointermove -> target; rAF loop lerps drawn pos toward target by factor 0.095
+      rest position: x = 68% vw, y = 44% vh; pointerleave returns there
+      touch / prefers-reduced-motion: static mask at rest, no listener
+
+    STORY SCROLL:
+      progress = clamp(-rect.top / (height - innerHeight), 0, 1)
+      track translateX = -progress * max(0, trackScrollWidth - innerWidth*0.48)
+      chapter index = floor(progress*4) clamped 0..3 (label 01..04, padStart)
+      story-bg   = translate3d(p*-70px, p*-22px, 0) scale(1.06 + p*.08)
+      story-reveal = translate3d(p*90px, p*26px, 0) scale(1.1 + p*.12), opacity .1 + p*.28
+      --story-light-x = 44 + p*34 (%)
+
+    GATHER (eased = 1-(1-p)^3):
+      per word --tx=x*(1-eased) --ty=y*(1-eased) --rot=r*(1-eased)
+               --scale=.78+eased*.22 --word-opacity=.28+eased*.72 --word-blur=(1-eased)*2.6px
+      --gather-ghost-y=-28*eased --gather-ghost-opacity=.8-eased*.45
+      --gather-glow-scale=.72+eased*.45 --gather-glow-opacity=.28+eased*.35
+      --gather-support-opacity=.2+eased*.8 --gather-support-y=(1-eased)*18px
+      --gather-cursor-left=18+eased*64% --gather-cursor-top=78-eased*58%
+
+    ARCHIVE (eased = 1-(1-p)^3):
+      --archive-scale=.48+eased*.52 (grid); --tile-gray=1-eased (grayscale->color)
+      --tile-img-scale=1.2-eased*.08 --archive-radius=8+eased*18px --archive-progress-width=eased*100%
+      per tile: fromX=(2-col)*138 fromY=(1-row)*124 delay=min(.18, index*.012)
+                local=clamp((eased-delay)/(1-delay),0,1)
+                --tile-x=fromX*(1-local) --tile-y=fromY*(1-local)
+                --tile-scale=.58+local*.42 --tile-opacity=.18+local*.82
+
+    REVEAL-ON-VIEW: IntersectionObserver threshold .16, rootMargin "0px 0px -8% 0px",
+      add .in + unobserve; .stagger children transitionDelay = index*90ms.
+    PARALLAX: y = clamp(progress*-42, -36, 36) px.
+    All effects rAF-throttled (single tick), passive listeners, cleanup on unmount,
+    and degrade to final/static state under prefers-reduced-motion.
+
+    The full original inline <style>/<script> from the exported reference are preserved
+    in the conversation/design pack; the values above are the authoritative subset the
+    React port implements 1:1.
+  -->
+</head>
+<body>
+  <p>See the header comment for the authoritative effect values ported into the React landing.</p>
+</body>
+</html>

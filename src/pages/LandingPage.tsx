@@ -1,58 +1,29 @@
-import { useState, useEffect } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card } from "@/components/ui/card";
-import { GlowCard } from "@/components/ui/spotlight-card";
-import { AuroraBackground } from "@/components/ui/aurora-background";
-import { Check, Play, Users, Award, BookOpen, Headphones, User, Download, ChevronDown, ArrowRight } from "lucide-react";
-import { AnimatedButton } from "@/components/ui/animated-button";
-import { Glow } from "@/components/ui/glow";
+import {
+  ArrowRight,
+  Bot,
+  Droplets,
+  Footprints,
+  LineChart,
+  Menu,
+  Plus,
+  X,
+} from "lucide-react";
+import HeroDashboardPreview from "@/components/Landing/HeroDashboardPreview";
+import { LANDING_IMAGES } from "@/content/landingImages";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { getSiteVideo, SiteVideo, getYouTubeEmbedUrl } from "@/lib/siteVideos";
-import { getVideoUrl } from "@/lib/videoStorage";
-import VideoPlayer from "@/components/ui/VideoPlayer";
 import {
   getLegalLinks,
   getSiteSections,
-  readSectionExtraArray,
   readSectionExtraObject,
   type LegalLinkRow,
   type SiteSectionRow,
 } from "@/lib/api/siteContent";
-
-type LandingNavLink = {
-  label: string;
-  href: string;
-};
-
-type LandingHeroExtra = {
-  paragraphs?: string[];
-  cta_note?: string;
-  form_title?: string;
-  form_subtitle?: string;
-  submit_loading_label?: string;
-  submit_label?: string;
-  success_note?: string;
-  form_disclaimer?: string;
-};
-
-type LandingFinalCtaExtra = {
-  closing_title?: string;
-  closing_subtitle?: string;
-  cta_note?: string;
-};
+import "@/styles/landing.css";
 
 type LandingNewsletterExtra = {
-  benefits?: string[];
-  form_title?: string;
-  name_label?: string;
-  name_placeholder?: string;
-  email_label?: string;
-  email_placeholder?: string;
-  loading_label?: string;
   privacy_note?: string;
 };
 
@@ -66,20 +37,182 @@ const getSectionByKey = (
   key: string,
 ): SiteSectionRow | null => sections[key] ?? null;
 
+/* CSS custom properties injected on the landing root; consumed by src/styles/landing.css.
+   All URLs live in src/content/landingImages.ts so photos can be swapped in one place. */
+const asUrl = (value: string) => `url('${value}')`;
+const IMAGE_VARS = {
+  "--base-image": asUrl(LANDING_IMAGES.heroBase),
+  "--section-ambient-image": asUrl(LANDING_IMAGES.storyAmbient),
+  "--section-floral-image": asUrl(LANDING_IMAGES.storyReveal),
+  "--vision-image": asUrl(LANDING_IMAGES.cinemaAmbient),
+  "--story-image-1": asUrl(LANDING_IMAGES.storyFormazione),
+  "--story-image-2": asUrl(LANDING_IMAGES.storyGestionale),
+  "--story-image-3": asUrl(LANDING_IMAGES.storyAI),
+  "--story-image-4": asUrl(LANDING_IMAGES.storyCommunity),
+  "--story-image-5": asUrl(LANDING_IMAGES.storyNumeri),
+  "--product-image-1": asUrl(LANDING_IMAGES.percorsoSettePassi),
+  "--product-image-2": asUrl(LANDING_IMAGES.percorsoGestione),
+  "--product-image-3": asUrl(LANDING_IMAGES.percorsoMarketing),
+  "--cinema-image-1": asUrl(LANDING_IMAGES.cinemaCheckup),
+  "--cinema-image-2": asUrl(LANDING_IMAGES.cinemaMetodo),
+  "--cinema-image-3": asUrl(LANDING_IMAGES.cinemaCrescita),
+  "--diario-image-1": asUrl(LANDING_IMAGES.diarioListino),
+} as React.CSSProperties;
+
+const NAV_LINKS = [
+  { label: "Metodo", href: "#metodo" },
+  { label: "Piattaforma", href: "#piattaforma" },
+  { label: "Percorsi", href: "#percorsi" },
+  { label: "FAQ", href: "#faq" },
+];
+
+const STORY_CHAPTERS = [
+  {
+    chapter: "Capitolo 01",
+    title: "Formazione",
+    copy: "Percorsi, video-lezioni e materiali del metodo 4E per te e per il tuo team.",
+  },
+  {
+    chapter: "Capitolo 02",
+    title: "Gestionale",
+    copy: "Agenda, listino servizi, inventario e appuntamenti in un'unica vista.",
+  },
+  {
+    chapter: "Capitolo 03",
+    title: "Assistente AI",
+    copy: "Un consulente formato sul metodo 4E, disponibile ogni giorno, a ogni domanda.",
+  },
+  {
+    chapter: "Capitolo 04",
+    title: "Community",
+    copy: "Forum, confronto tra colleghe e opportunità di lavoro nel network 4 Elementi.",
+  },
+  {
+    chapter: "Capitolo 05",
+    title: "Numeri",
+    copy: "Fatturato, scontrino medio e ritorno clienti sempre sotto controllo.",
+  },
+];
+
+const CINEMA_STEPS = ["01 Diagnosi", "02 Metodo", "03 Strumenti", "04 Risultati"];
+
+const GATHER_WORDS = [
+  { word: "Ogni", x: -420, y: -210, r: -18 },
+  { word: "strumento", x: 310, y: -170, r: 14 },
+  { word: "riunito", x: -290, y: 150, r: 18 },
+  { word: "in", x: 430, y: 110, r: -12 },
+  { word: "una", x: -160, y: -95, r: 9 },
+  { word: "sola", x: 220, y: 210, r: -16 },
+  { word: "piattaforma", x: -360, y: 60, r: -10 },
+];
+
+const PERCORSI = [
+  {
+    number: "No. 01",
+    title: "Sette Passi",
+    copy: "Da estetista a imprenditrice: il percorso completo del metodo 4 Elementi.",
+    visualClass: "product-visual",
+    Icon: Footprints,
+  },
+  {
+    number: "No. 02",
+    title: "Gestione & Numeri",
+    copy: "Listino, KPI, organizzazione del team e controllo di gestione del centro.",
+    visualClass: "product-visual base",
+    Icon: LineChart,
+  },
+  {
+    number: "No. 03",
+    title: "AI & Marketing",
+    copy: "L'intelligenza artificiale e le campagne al servizio della tua agenda piena.",
+    visualClass: "product-visual solar",
+    Icon: Bot,
+  },
+];
+
+const ACTS = [
+  {
+    label: "Atto 01 / Diagnosi",
+    title: "Si parte dal check-up.",
+    copy: "Numeri, organizzazione e posizionamento del tuo centro, fotografati con onestà.",
+  },
+  {
+    label: "Atto 02 / Metodo",
+    title: "Concentrati sul lavoro, non sul caos.",
+    copy: "Listino, protocolli, team e marketing costruiti sul modello 4 Elementi.",
+  },
+  {
+    label: "Atto 03 / Crescita",
+    title: "Risultati che restano.",
+    copy: "KPI monitorati, clienti che tornano e un centro che cresce anche senza di te in cabina.",
+  },
+];
+
+const FAQ_ITEMS = [
+  {
+    question: "È adatta anche a un centro piccolo?",
+    answer:
+      "Sì. Il metodo 4E nasce proprio per centri estetici e spa indipendenti: si parte dalla diagnosi e si cresce per passi.",
+  },
+  {
+    question: "Devo essere esperta di strumenti digitali?",
+    answer:
+      "No. La piattaforma è guidata e l'assistente AI ti accompagna in ogni funzione, in italiano semplice.",
+  },
+  {
+    question: "Cosa include l'assistente AI?",
+    answer:
+      "Un consulente formato sul metodo 4 Elementi: risponde su listino, organizzazione, marketing e gestione quotidiana del centro.",
+  },
+];
+
+const MARQUEE_TAGS = ["Acqua", "Aria", "Fuoco", "Terra", "Metodo 4E", "Sette Passi"];
+
+const clamp = (value: number, min: number, max: number) =>
+  Math.max(min, Math.min(max, value));
+
+const sectionProgress = (el: HTMLElement) => {
+  const rect = el.getBoundingClientRect();
+  const scrollable = Math.max(1, rect.height - window.innerHeight);
+  return clamp(-rect.top / scrollable, 0, 1);
+};
+
+function usePrefersReducedMotion() {
+  const [reduced, setReduced] = useState(
+    () =>
+      typeof window !== "undefined" &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches,
+  );
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const onChange = () => setReduced(mq.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+  return reduced;
+}
+
 const LandingPage = () => {
-  const [formData, setFormData] = useState({
-    name: "",
-    email: ""
-  });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [newsletterData, setNewsletterData] = useState({
-    name: "",
-    email: ""
-  });
-  const [isSubmittingNewsletter, setIsSubmittingNewsletter] = useState(false);
-  const { toast } = useToast();
   const navigate = useNavigate();
-  const [previewVideo, setPreviewVideo] = useState<SiteVideo | null>(null);
+  const { toast } = useToast();
+  const reducedMotion = usePrefersReducedMotion();
+
+  const [pageReady, setPageReady] = useState(false);
+  const [introHidden, setIntroHidden] = useState(false);
+  const [introRemoved, setIntroRemoved] = useState(false);
+  const [hasScrolled, setHasScrolled] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
+  // Use a real dashboard screenshot if present, otherwise fall back to the mock component.
+  const [hasDashboardShot, setHasDashboardShot] = useState(false);
+
+  const [leadData, setLeadData] = useState({ name: "", email: "" });
+  const [isSubmittingLead, setIsSubmittingLead] = useState(false);
+  const [newsletterEmail, setNewsletterEmail] = useState("");
+  const [isSubmittingNewsletter, setIsSubmittingNewsletter] = useState(false);
+  // Honeypot: stays empty for humans; if a bot fills it, the edge functions drop the submission.
+  const [honeypot, setHoneypot] = useState("");
+
   const [landingSections, setLandingSections] = useState<Record<string, SiteSectionRow>>({});
   const [landingLegalLinks, setLandingLegalLinks] = useState<LegalLinkRow[]>([
     {
@@ -106,845 +239,1379 @@ const LandingPage = () => {
     },
   ]);
 
-  useEffect(() => {
-    const loadVideo = async () => {
-      const video = await getSiteVideo('preview'); // Usando 'preview' per il modal
-      if (video) {
-        setPreviewVideo(video);
-      }
-    };
-    
-    loadVideo();
-  }, []);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const railRef = useRef<HTMLDivElement>(null);
+  const heroRef = useRef<HTMLElement>(null);
+  const revealLayerRef = useRef<HTMLDivElement>(null);
+  const storyRef = useRef<HTMLElement>(null);
+  const storyTrackRef = useRef<HTMLDivElement>(null);
+  const storyIndexRef = useRef<HTMLSpanElement>(null);
+  const cinemaRef = useRef<HTMLElement>(null);
+  const gatherRef = useRef<HTMLElement>(null);
 
+  /* ---------- CMS content (Supabase, wired as before) ---------- */
   useEffect(() => {
     let mounted = true;
-
     const loadCmsContent = async () => {
       const [sections, legalLinks] = await Promise.all([
-        getSiteSections([
-          "landing_header",
-          "landing_hero",
-          "landing_final_cta",
-          "landing_newsletter",
-          "landing_footer",
-        ]),
+        getSiteSections(["landing_newsletter", "landing_footer"]),
         getLegalLinks("landing_footer"),
       ]);
-
       if (!mounted) return;
-
       setLandingSections(sections);
       if (legalLinks.length > 0) {
         setLandingLegalLinks(legalLinks);
       }
     };
-
     loadCmsContent();
     return () => {
       mounted = false;
     };
   }, []);
 
-  const landingHeader = getSectionByKey(landingSections, "landing_header");
-  const landingHero = getSectionByKey(landingSections, "landing_hero");
-  const landingFinalCta = getSectionByKey(landingSections, "landing_final_cta");
   const landingNewsletter = getSectionByKey(landingSections, "landing_newsletter");
   const landingFooter = getSectionByKey(landingSections, "landing_footer");
-
-  const navLinks = readSectionExtraArray<LandingNavLink>(landingHeader, "nav_links", [
-    { label: "VIDEO GRATUITO", href: "#video" },
-    { label: "CHI SIAMO", href: "#about" },
-    { label: "SERVIZI", href: "#services" },
-    { label: "CONTATTI", href: "#contact" },
-  ]);
-
-  const heroExtra = readSectionExtraObject<LandingHeroExtra>(landingHero, {});
-  const heroParagraphs = heroExtra.paragraphs ?? [
-    "Ciao! Se sei un'estetista professionista e ti stai chiedendo come strutturare un listino prezzi che sia chiaro, professionale e che valorizzi davvero i tuoi servizi... sei nel posto giusto.",
-    "Mi chiamo Davide e con 4 Elementi Italia aiutiamo estetiste e professionisti del benessere a diventare imprenditori consapevoli, strategici e autonomi – senza stress, senza perdere tempo in corsi complicati o contenuti poco chiari.",
-  ];
-  const finalCtaExtra = readSectionExtraObject<LandingFinalCtaExtra>(landingFinalCta, {});
   const newsletterExtra = readSectionExtraObject<LandingNewsletterExtra>(landingNewsletter, {});
-  const newsletterBenefits = newsletterExtra.benefits ?? [
-    "Tips settimanali esclusivi per far crescere il tuo business",
-    "Strategie pratiche e strumenti pronti all'uso",
-    "Accesso anticipato a corsi, risorse e novità",
-  ];
   const landingFooterExtra = readSectionExtraObject<LandingFooterExtra>(landingFooter, {});
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  /* ---------- Optional real dashboard screenshot ---------- */
+  useEffect(() => {
+    const img = new Image();
+    img.onload = () => setHasDashboardShot(true);
+    img.onerror = () => setHasDashboardShot(false);
+    img.src = "/images/dashboard-preview.png";
+  }, []);
+
+  /* ---------- Loading intro ---------- */
+  useEffect(() => {
+    if (reducedMotion) {
+      setPageReady(true);
+      setIntroHidden(true);
+      setIntroRemoved(true);
+      return;
+    }
+    document.body.style.overflow = "hidden";
+    const finish = window.setTimeout(() => {
+      setPageReady(true);
+      setIntroHidden(true);
+      document.body.style.overflow = "";
+    }, 1450);
+    const remove = window.setTimeout(() => setIntroRemoved(true), 2600);
+    return () => {
+      window.clearTimeout(finish);
+      window.clearTimeout(remove);
+      document.body.style.overflow = "";
+    };
+  }, [reducedMotion]);
+
+  /* ---------- Scroll reveals (IntersectionObserver) ---------- */
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    const items = root.querySelectorAll(".reveal, .text-mask, .image-mask");
+    if (reducedMotion) {
+      items.forEach((el) => el.classList.add("in"));
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          const el = entry.target as HTMLElement;
+          const parent = el.parentElement;
+          if (el.classList.contains("stagger") && parent) {
+            const index = Array.prototype.indexOf.call(parent.children, el);
+            el.style.transitionDelay = `${Math.max(index, 0) * 90}ms`;
+          }
+          el.classList.add("in");
+          observer.unobserve(el);
+        });
+      },
+      { threshold: 0.16, rootMargin: "0px 0px -8% 0px" },
+    );
+    items.forEach((el) => observer.observe(el));
+    return () => observer.disconnect();
+  }, [reducedMotion]);
+
+  /* ---------- Hero cursor spotlight (reveal layer mask) ---------- */
+  useEffect(() => {
+    const layer = revealLayerRef.current;
+    if (!layer) return;
+    const drawMask = (cx: number, cy: number) => {
+      const mask = `radial-gradient(ellipse 620px 500px at ${cx}px ${cy}px, rgba(255,255,255,1) 0%, rgba(255,255,255,1) 30%, rgba(255,255,255,.82) 48%, rgba(255,255,255,.42) 68%, rgba(255,255,255,.12) 88%, rgba(255,255,255,0) 100%)`;
+      layer.style.maskImage = mask;
+      layer.style.webkitMaskImage = mask;
+    };
+    const restingPoint = () => ({
+      x: window.innerWidth * 0.68,
+      y: window.innerHeight * 0.44,
+    });
+    const initial = restingPoint();
+    drawMask(initial.x, initial.y);
+    // Touch / coarse-pointer devices and reduced-motion keep a static spotlight (no listener).
+    const coarsePointer =
+      typeof window.matchMedia === "function" &&
+      window.matchMedia("(pointer: coarse)").matches;
+    if (reducedMotion || coarsePointer) return;
+
+    const target = { ...initial };
+    const current = { ...initial };
+    let raf = 0;
+    const onMove = (event: PointerEvent) => {
+      target.x = event.clientX;
+      target.y = event.clientY;
+    };
+    const onLeave = () => {
+      const resting = restingPoint();
+      target.x = resting.x;
+      target.y = resting.y;
+    };
+    const loop = () => {
+      current.x += (target.x - current.x) * 0.095;
+      current.y += (target.y - current.y) * 0.095;
+      drawMask(current.x, current.y);
+      raf = requestAnimationFrame(loop);
+    };
+
+    window.addEventListener("pointermove", onMove, { passive: true });
+    window.addEventListener("pointerleave", onLeave, { passive: true });
+    raf = requestAnimationFrame(loop);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerleave", onLeave);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [reducedMotion]);
+
+  /* ---------- Global scroll motion (progress rail, story, cinema, gather, parallax) ---------- */
+  const hasScrolledRef = useRef(false);
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return;
+    let ticking = false;
+
+    const update = () => {
+      ticking = false;
+
+      const scrolled = window.scrollY > 18;
+      if (scrolled !== hasScrolledRef.current) {
+        hasScrolledRef.current = scrolled;
+        setHasScrolled(scrolled);
+      }
+
+      if (reducedMotion) return;
+
+      const doc = document.documentElement;
+      const maxScroll = Math.max(1, doc.scrollHeight - window.innerHeight);
+      const pageProgress = clamp(window.scrollY / maxScroll, 0, 1);
+      railRef.current?.style.setProperty("--page-progress", pageProgress.toFixed(4));
+
+      const hero = heroRef.current;
+      if (hero) {
+        const lightX = 56 + Math.sin(window.scrollY * 0.003) * 8;
+        const lightY = 42 + Math.cos(window.scrollY * 0.002) * 5;
+        hero.style.setProperty("--hero-light-x", `${lightX.toFixed(2)}%`);
+        hero.style.setProperty("--hero-light-y", `${lightY.toFixed(2)}%`);
+      }
+
+      const desktop = window.innerWidth > 900;
+
+      const story = storyRef.current;
+      if (story) {
+        const p = sectionProgress(story);
+        story.style.setProperty("--story-progress", p.toFixed(4));
+        story.style.setProperty("--story-light-x", `${(44 + p * 34).toFixed(1)}%`);
+        const track = storyTrackRef.current;
+        if (track && desktop) {
+          const x = -p * Math.max(0, track.scrollWidth - window.innerWidth * 0.48);
+          track.style.transform = `translate3d(${x}px,0,0)`;
+        }
+        const bg = story.querySelector<HTMLElement>(".story-bg");
+        const bgReveal = story.querySelector<HTMLElement>(".story-bg-reveal");
+        if (bg) {
+          bg.style.transform = `translate3d(${p * -70}px,${p * -22}px,0) scale(${1.06 + p * 0.08})`;
+        }
+        if (bgReveal) {
+          bgReveal.style.transform = `translate3d(${p * 90}px,${p * 26}px,0) scale(${1.1 + p * 0.12})`;
+          bgReveal.style.opacity = String(0.1 + p * 0.28);
+        }
+        const cards = story.querySelectorAll<HTMLElement>(".story-card");
+        const focus = clamp(Math.round(p * (cards.length - 1)), 0, cards.length - 1);
+        cards.forEach((card, index) => {
+          card.classList.toggle("is-focus", index === focus);
+          card.style.setProperty("--card-r", `${((index - focus) * -2.8).toFixed(2)}deg`);
+        });
+        const step = clamp(Math.floor(p * STORY_CHAPTERS.length), 0, STORY_CHAPTERS.length - 1);
+        if (storyIndexRef.current) {
+          storyIndexRef.current.textContent = String(step + 1).padStart(2, "0");
+        }
+        story.querySelectorAll<HTMLElement>(".story-title .story-word").forEach((word, index) => {
+          const local = clamp(p * 1.3 - index * 0.12, 0, 1);
+          word.style.setProperty("--word-y", `${((1 - local) * 16).toFixed(2)}px`);
+          word.style.setProperty("--word-o", (0.55 + local * 0.45).toFixed(3));
+        });
+      }
+
+      const cinema = cinemaRef.current;
+      if (cinema) {
+        const p = sectionProgress(cinema);
+        cinema.style.setProperty("--cinema-progress", p.toFixed(4));
+        const steps = cinema.querySelectorAll<HTMLElement>(".cinema-step");
+        const active = clamp(Math.floor(p * steps.length), 0, steps.length - 1);
+        steps.forEach((stepEl, index) => {
+          stepEl.classList.toggle("is-active", index === active);
+        });
+      }
+
+      const gather = gatherRef.current;
+      if (gather) {
+        const p = sectionProgress(gather);
+        const eased = 1 - Math.pow(1 - p, 3);
+        gather.style.setProperty("--gather-ghost-y", `${(-28 * eased).toFixed(1)}px`);
+        gather.style.setProperty("--gather-ghost-opacity", (0.8 - eased * 0.45).toFixed(3));
+        gather.style.setProperty("--gather-glow-scale", (0.72 + eased * 0.45).toFixed(3));
+        gather.style.setProperty("--gather-glow-opacity", (0.28 + eased * 0.35).toFixed(3));
+        gather.style.setProperty("--gather-support-opacity", (0.2 + eased * 0.8).toFixed(3));
+        gather.style.setProperty("--gather-support-y", `${((1 - eased) * 18).toFixed(1)}px`);
+        gather.style.setProperty("--gather-cursor-left", `${(18 + eased * 64).toFixed(2)}%`);
+        gather.style.setProperty("--gather-cursor-top", `${(78 - eased * 58).toFixed(2)}%`);
+        gather.querySelectorAll<HTMLElement>(".gather-line span").forEach((word) => {
+          const x = Number(word.dataset.x || 0) * (1 - eased);
+          const y = Number(word.dataset.y || 0) * (1 - eased);
+          const r = Number(word.dataset.r || 0) * (1 - eased);
+          word.style.setProperty("--tx", `${x.toFixed(1)}px`);
+          word.style.setProperty("--ty", `${y.toFixed(1)}px`);
+          word.style.setProperty("--rot", `${r.toFixed(1)}deg`);
+          word.style.setProperty("--scale", (0.78 + eased * 0.22).toFixed(3));
+          word.style.setProperty("--word-opacity", String(0.28 + eased * 0.72));
+          word.style.setProperty("--word-blur", `${((1 - eased) * 2.6).toFixed(2)}px`);
+        });
+      }
+
+      const viewport = window.innerHeight || 1;
+      root.querySelectorAll<HTMLElement>(".parallax-media").forEach((el) => {
+        const rect = el.getBoundingClientRect();
+        const progress = (rect.top + rect.height / 2 - viewport / 2) / viewport;
+        const y = clamp(progress * -42, -36, 36);
+        el.style.transform = `translate3d(0,${y}px,0) scale(1.06)`;
+      });
+    };
+
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(update);
+    };
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+    update();
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+    };
+  }, [reducedMotion]);
+
+  /* ---------- Anchors ---------- */
+  const scrollToAnchor = (
+    event: React.MouseEvent<HTMLAnchorElement | HTMLButtonElement>,
+    id: string,
+  ) => {
+    event.preventDefault();
+    setMobileMenuOpen(false);
+    const target = document.getElementById(id);
+    if (!target) return;
+    target.scrollIntoView({ behavior: reducedMotion ? "auto" : "smooth" });
+    // Move keyboard focus to the target so sequential focus continues from there.
+    target.setAttribute("tabindex", "-1");
+    target.focus({ preventScroll: true });
+  };
+
+  /* ---------- Lead capture (existing mailing-list-signup flow) ---------- */
+  const handleLeadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name.trim() || !formData.email.trim()) {
+    if (!leadData.name.trim() || !leadData.email.trim()) {
       toast({
         title: "Campi obbligatori",
         description: "Inserisci nome e email per continuare",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
 
-    setIsSubmitting(true);
-    console.log('🔍 Inizio registrazione per:', formData.email);
+    setIsSubmittingLead(true);
     try {
-      const response = await supabase.functions.invoke('mailing-list-signup', {
+      const response = await supabase.functions.invoke("mailing-list-signup", {
         body: {
-          name: formData.name.trim(),
-          email: formData.email.trim(),
-          source: 'hero_section'
-        }
+          name: leadData.name.trim(),
+          email: leadData.email.trim(),
+          source: "hero_section",
+          company: honeypot,
+        },
       });
 
-      console.log('📧 Risposta edge function:', response);
-
       if (response.error) {
-        if (response.error.message?.includes('già registrata')) {
-          // Email già registrata, recupero l'access token
+        if (response.error.message?.includes("già registrata")) {
           const { data: existingData } = await supabase
-            .from('mailing_list')
-            .select('access_token')
-            .eq('email', formData.email.trim())
+            .from("mailing_list")
+            .select("access_token")
+            .eq("email", leadData.email.trim())
             .single();
-          
+
           if (existingData?.access_token) {
             toast({
               title: "Accesso trovato!",
-              description: "Ti stiamo reindirizzando alla tua area riservata. Email di promemoria inviata!",
+              description:
+                "Ti stiamo reindirizzando alla tua area riservata. Email di promemoria inviata!",
             });
-            
             setTimeout(() => {
               window.location.href = `/welcome?token=${existingData.access_token}`;
             }, 1000);
             return;
           }
         }
-        throw new Error(response.error.message || 'Errore durante la registrazione');
+        throw new Error(response.error.message || "Errore durante la registrazione");
       }
 
-      // Redirect to welcome page with token
       const data = response.data;
       if (data?.access_token) {
-        // Mostra feedback basato sullo stato dell'email
-        const emailStatus = data.email_sent ? "Email di benvenuto inviata!" : "Registrazione completata (email in sospeso)";
-        
+        const emailStatus = data.email_sent
+          ? "Email di benvenuto inviata!"
+          : "Registrazione completata (email in sospeso)";
         toast({
           title: "Perfetto! 🎉",
           description: emailStatus + " Ti stiamo reindirizzando...",
         });
-        
         setTimeout(() => {
           window.location.href = `/welcome?token=${data.access_token}`;
         }, 1500);
       }
-
     } catch (error) {
-      console.error('Errore durante la registrazione:', error);
+      console.error("Errore durante la registrazione:", error);
       toast({
         title: "Errore",
         description: "Si è verificato un errore. Riprova tra qualche minuto.",
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
-      setIsSubmitting(false);
+      setIsSubmittingLead(false);
     }
   };
 
+  /* ---------- Newsletter (existing newsletter-subscribe flow) ---------- */
   const handleNewsletterSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newsletterData.name.trim() || !newsletterData.email.trim()) {
+    const email = newsletterEmail.trim();
+    if (!email) {
       toast({
-        title: "Campi obbligatori",
-        description: "Inserisci nome e email per iscriverti alla newsletter",
-        variant: "destructive"
+        title: "Email obbligatoria",
+        description: "Inserisci la tua email per iscriverti",
+        variant: "destructive",
       });
       return;
     }
 
     setIsSubmittingNewsletter(true);
     try {
-      const response = await supabase.functions.invoke('newsletter-subscribe', {
+      const response = await supabase.functions.invoke("newsletter-subscribe", {
         body: {
-          email: newsletterData.email.trim(),
-          name: newsletterData.name.trim(),
-          source: 'newsletter_section'
-        }
+          email,
+          name: email.split("@")[0],
+          source: "footer_newsletter",
+          company: honeypot,
+        },
       });
-
       if (response.error) {
         throw response.error;
       }
-
       toast({
         title: "Iscrizione completata!",
-        description: "Ti sei iscritto con successo alla nostra newsletter. Riceverai presto contenuti esclusivi!",
+        description:
+          "Ti sei iscritto con successo alla nostra newsletter. Riceverai presto contenuti esclusivi!",
       });
-
-      setNewsletterData({ name: "", email: "" });
-
+      setNewsletterEmail("");
     } catch (error) {
-      console.error('Errore durante l\'iscrizione alla newsletter:', error);
-      
-      const errorMessage = error instanceof Error && error.message?.includes('Email già iscritta') 
-        ? "Questa email è già iscritta alla newsletter"
-        : "Si è verificato un errore. Riprova tra qualche minuto.";
-        
+      console.error("Errore durante l'iscrizione alla newsletter:", error);
+      const errorMessage =
+        error instanceof Error && error.message?.includes("Email già iscritta")
+          ? "Questa email è già iscritta alla newsletter"
+          : "Si è verificato un errore. Riprova tra qualche minuto.";
       toast({
         title: "Errore",
         description: errorMessage,
-        variant: "destructive"
+        variant: "destructive",
       });
     } finally {
       setIsSubmittingNewsletter(false);
     }
   };
-  return <div className="min-h-screen bg-background text-foreground relative overflow-hidden">
-      <Glow variant="top" className="opacity-30" />
-      
-      {/* Header */}
-      <header className="relative z-10 px-6 py-4 sm:px-4 sm:py-6">
-        <div className="container mx-auto flex justify-between items-center">
-          <div className="flex items-center space-x-3">
-            <img src="/4-elementi-logo.png" alt="4 Elementi Italia Logo" className="h-10 sm:h-12 w-auto" />
-            
+
+  const rootClasses = [
+    "landing-root",
+    "min-h-screen",
+    pageReady ? "page-ready" : "",
+    hasScrolled ? "has-scrolled" : "",
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  return (
+    <div ref={rootRef} className={rootClasses} style={IMAGE_VARS}>
+      {/* Loading intro */}
+      {!introRemoved && (
+        <div className={`landing-intro ${introHidden ? "hide" : ""}`} aria-hidden="true">
+          <div className="landing-intro-inner">
+            <div className="load-mark">4E</div>
+            <div className="load-kicker">Il metodo per estetiste</div>
+            <div className="load-brand">4 Elementi Italia</div>
+            <div className="load-line">
+              <span></span>
+            </div>
           </div>
-          <nav className="hidden md:flex space-x-8">
-            {navLinks.map((navLink) => (
-              <a key={navLink.href} href={navLink.href} className="text-muted-foreground hover:text-foreground transition-colors">
-                {navLink.label}
-              </a>
-            ))}
-          </nav>
         </div>
-      </header>
+      )}
 
-      {/* Hero Section with Aurora Background */}
-      <AuroraBackground className="h-auto py-8 sm:py-12 lg:py-16">
-        <div className="container mx-auto relative z-10 px-6 sm:px-4">
-          <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-            <div className="space-y-4 sm:space-y-6 lg:space-y-8">
-              <div className="space-y-2 sm:space-y-3 lg:space-y-4">
-                <h1 className="font-playfair text-2xl sm:text-3xl lg:text-5xl xl:text-6xl font-bold leading-tight text-white">
-                  {landingHero?.title ?? "SEI UN'ESTETISTA"}
-                  <span className="gradient-text"> {landingHero?.subtitle ?? "PROFESSIONISTA?"}</span>
-                </h1>
-                <p className="text-base sm:text-lg lg:text-xl text-gray-300 leading-relaxed">
-                  {landingHero?.body ?? "Ecco come strutturare il tuo listino in modo strategico (senza stress)"}
-                </p>
-              </div>
-              
-              <div className="space-y-4 sm:space-y-6">
-                <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
-                  {heroParagraphs[0]}
-                </p>
-                <p className="text-muted-foreground leading-relaxed text-sm sm:text-base">
-                  {heroParagraphs[1]}
-                </p>
-              </div>
+      {/* Scroll progress rail */}
+      <div ref={railRef} className="scroll-rail" aria-hidden="true">
+        <span></span>
+      </div>
 
-              <div className="w-full sm:w-auto">
-                <AnimatedButton
-                  IconLeft={Download}
-                  IconRight={ChevronDown}
-                  className="w-full sm:w-auto text-sm sm:text-base lg:text-lg px-4 sm:px-6 lg:px-8"
-                  onClick={() => document.getElementById('video-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+      {/* Floating nav */}
+      <nav
+        className="floating-nav fixed left-1/2 top-5 z-[100] flex w-[calc(100%-32px)] max-w-6xl -translate-x-1/2 items-center justify-between rounded-full border border-white/15 bg-black/35 px-4 py-3 backdrop-blur-2xl sm:px-5 md:px-6"
+        aria-label="Navigazione principale"
+      >
+        <a href="/" className="group flex items-center gap-3 text-white" aria-label="4 Elementi Italia — home">
+          <img
+            src="/4-elementi-logo.png"
+            alt="Logo 4 Elementi Italia"
+            className="h-10 w-10 object-contain transition-transform duration-300 group-hover:scale-105"
+          />
+          <span className="flex flex-col leading-none">
+            <span className="font-playfair text-xl italic tracking-tight">4 Elementi Italia</span>
+            <span className="mt-1 hidden text-[9px] font-semibold uppercase tracking-[0.28em] text-white/75 sm:block">
+              Metodo &amp; Piattaforma
+            </span>
+          </span>
+        </a>
+
+        <div
+          className="hidden items-center gap-2 rounded-full border border-white/10 bg-white/[0.04] px-2 py-2 md:flex"
+          aria-label="Sezioni della pagina"
+        >
+          {NAV_LINKS.map((link, index) => (
+            <a
+              key={link.href}
+              href={link.href}
+              onClick={(e) => scrollToAnchor(e, link.href.slice(1))}
+              className={
+                index === 0
+                  ? "rounded-full bg-white px-4 py-2 text-sm font-semibold text-black shadow-sm"
+                  : "rounded-full px-4 py-2 text-sm font-medium text-white/80 transition-colors hover:bg-white/10 hover:text-white"
+              }
+            >
+              {link.label}
+            </a>
+          ))}
+        </div>
+
+        <a
+          href="#cta"
+          onClick={(e) => scrollToAnchor(e, "cta")}
+          className="hidden rounded-full border border-white/20 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.16)] transition-all duration-300 hover:border-white/40 hover:bg-white/20 md:inline-flex"
+        >
+          Richiedi accesso
+        </a>
+        <button
+          className="flex h-11 w-11 items-center justify-center rounded-full border border-white/15 bg-white/10 text-white backdrop-blur-xl md:hidden"
+          type="button"
+          aria-label={mobileMenuOpen ? "Chiudi il menu" : "Apri il menu"}
+          aria-expanded={mobileMenuOpen}
+          onClick={() => setMobileMenuOpen((open) => !open)}
+        >
+          {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+        </button>
+      </nav>
+
+      {/* Mobile menu */}
+      {mobileMenuOpen && (
+        <div className="fixed inset-x-4 top-24 z-[99] md:hidden">
+          <div className="glass-card rounded-3xl border border-white/12 p-4">
+            <nav className="flex flex-col gap-1" aria-label="Menu mobile">
+              {NAV_LINKS.map((link) => (
+                <a
+                  key={link.href}
+                  href={link.href}
+                  onClick={(e) => scrollToAnchor(e, link.href.slice(1))}
+                  className="rounded-2xl px-4 py-3 text-sm font-medium text-white/85 transition-colors hover:bg-white/10 hover:text-white"
                 >
-                  {landingHero?.cta_label ?? "SCARICA IL MINI CORSO GRATUITO"}
-                </AnimatedButton>
-                <p className="text-xs sm:text-sm text-white/70 text-center sm:text-left mt-3">
-                  {heroExtra.cta_note ?? "✓ Nessun pagamento richiesto • Download immediato • Guarda quando vuoi"}
-                </p>
-              </div>
-            </div>
-
-            <div className="relative space-y-4 sm:space-y-6 mt-8 lg:mt-0">
-              {/* Video Anteprima */}
-              <div className="w-full aspect-video bg-card/30 backdrop-blur-sm border-white/10 border rounded-lg overflow-hidden">
-                {previewVideo ? (
-                  <VideoPlayer 
-                    video={previewVideo}
-                    className="w-full h-full"
-                  />
-                ) : (
-                  <div className="w-full h-full bg-gray-900 flex items-center justify-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white"></div>
-                  </div>
-                )}
-              </div>
-              
-              <Card id="video-form" className="bg-card/50 backdrop-blur-sm border-white/10 p-6 sm:p-8">
-                <div className="space-y-4 sm:space-y-6">
-                  <div className="text-center">
-                    <h3 className="font-playfair text-xl sm:text-2xl font-bold mb-3 sm:mb-4">{heroExtra.form_title ?? "SCARICA IL VIDEO GRATUITO"}</h3>
-                    <p className="text-muted-foreground text-sm sm:text-base">{heroExtra.form_subtitle ?? "Compila il form e ricevi subito il link per scaricare il video completo"}</p>
-                  </div>
-                  
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <Input placeholder="Il tuo nome" value={formData.name} onChange={e => setFormData({
-                    ...formData,
-                    name: e.target.value
-                  })} className="bg-background/50 border-white/20" />
-                    <Input type="email" placeholder="La tua email" value={formData.email} onChange={e => setFormData({
-                    ...formData,
-                    email: e.target.value
-                  })} className="bg-background/50 border-white/20" />
-                    {isSubmitting ? (
-                      <Button 
-                        type="submit" 
-                        disabled
-                        className="w-full bg-white hover:bg-gray-200 text-black font-medium text-sm sm:text-base py-3"
-                      >
-                        {heroExtra.submit_loading_label ?? "INVIO IN CORSO..."}
-                      </Button>
-                    ) : (
-                      <AnimatedButton
-                        type="submit"
-                        IconLeft={Download}
-                        IconRight={ChevronDown}
-                        className="text-sm sm:text-base py-3"
-                        fullWidth
-                      >
-                        {heroExtra.submit_label ?? "SCARICA IL MINI CORSO GRATUITO"}
-                      </AnimatedButton>
-                    )}
-                  </form>
-                  
-                  {/* Success message */}
-                  <div className="mt-4 p-3 bg-white/10 border border-white/20 rounded-lg">
-                    <div className="flex items-start gap-2">
-                      <div className="text-white/80 mt-0.5">✅</div>
-                      <p className="text-white/90 text-xs sm:text-sm">
-                        {heroExtra.success_note ?? "Riceverai immediatamente un'email con il link per scaricare il video completo. Controlla anche la cartella spam!"}
-                      </p>
-                    </div>
-                  </div>
-                  <p className="text-xs text-white/60 text-center">
-                    {heroExtra.form_disclaimer ?? "✓ Nessun pagamento richiesto • Download immediato • Guarda quando vuoi"}
-                  </p>
-                </div>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </AuroraBackground>
-
-      {/* What You'll Learn */}
-      <section id="video" className="relative z-10 px-6 sm:px-4 py-12 sm:py-16">
-        <div className="container mx-auto">
-          <div className="text-center mb-8 sm:mb-12">
-            <h2 className="font-playfair text-2xl sm:text-3xl lg:text-4xl font-bold mb-3 sm:mb-4">
-              COSA IMPARERAI NEL VIDEO
-            </h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto text-sm sm:text-base leading-relaxed">
-              Ti mostro, passo dopo passo, tutto quello che serve per creare un listino strategico e professionale
-            </p>
-          </div>
-
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8 items-stretch">
-            <GlowCard glowColor="orange" customSize className="w-full p-6 sm:p-8 text-center min-h-[280px] sm:h-[320px] flex flex-col items-center">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 shrink-0">
-                <Check className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-              </div>
-              <h3 className="font-playfair text-lg sm:text-xl font-bold text-white text-center leading-tight mb-2 min-h-[48px] sm:min-h-[56px] flex items-center justify-center">CALCOLO DEL<br />COSTO ORARIO</h3>
-              <p className="text-muted-foreground text-center leading-relaxed text-xs sm:text-sm max-w-[32ch] sm:max-w-[34ch] mx-auto min-h-[60px] sm:min-h-[72px] flex items-center justify-center">
-                Come organizzare il tuo listino in modo strategico (anche se non sei brava con i numeri o il marketing)
-              </p>
-            </GlowCard>
-
-            <GlowCard glowColor="blue" customSize className="w-full p-6 sm:p-8 text-center min-h-[280px] sm:h-[320px] flex flex-col items-center">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 shrink-0">
-                <Check className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-              </div>
-              <h3 className="font-playfair text-lg sm:text-xl font-bold text-white text-center leading-tight mb-2 min-h-[48px] sm:min-h-[56px] flex items-center justify-center">CALCOLO DEL<br />PRODOTTO</h3>
-              <p className="text-muted-foreground text-center leading-relaxed text-xs sm:text-sm max-w-[32ch] sm:max-w-[34ch] mx-auto min-h-[60px] sm:min-h-[72px] flex items-center justify-center">
-                Cosa scrivere per trasmettere professionalità e farti scegliere dai tuoi clienti
-              </p>
-            </GlowCard>
-
-            <GlowCard glowColor="green" customSize className="w-full p-6 sm:p-8 text-center min-h-[280px] sm:h-[320px] flex flex-col items-center sm:col-span-2 lg:col-span-1">
-              <div className="w-12 h-12 sm:w-16 sm:h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4 shrink-0">
-                <Check className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-              </div>
-              <h3 className="font-playfair text-lg sm:text-xl font-bold text-white text-center leading-tight mb-2 min-h-[48px] sm:min-h-[56px] flex items-center justify-center">CALCOLO DEL<br />MARGINE OPERATIVO</h3>
-              <p className="text-muted-foreground text-center leading-relaxed text-xs sm:text-sm max-w-[32ch] sm:max-w-[34ch] mx-auto min-h-[60px] sm:min-h-[72px] flex items-center justify-center">
-                La Formula Per Valutare Il Prezzo Giusto
-              </p>
-            </GlowCard>
-          </div>
-        </div>
-      </section>
-
-      {/* Value Proposition */}
-      <section className="relative z-10 px-4 py-16 bg-card/20">
-        <div className="container mx-auto">
-          <div className="grid lg:grid-cols-2 gap-12 items-center">
-            <div>
-              <h2 className="font-playfair text-3xl lg:text-4xl font-bold mb-6 text-white">
-                UN LISTINO BEN FATTO NON È SOLO UNA 
-                <span className="gradient-text"> TABELLA DI PREZZI</span>
-              </h2>
-              <p className="text-xl text-muted-foreground mb-8">
-                È uno strumento di marketing. Ti aiuta a:
-              </p>
-              
-              <div className="space-y-4">
-                <div className="flex items-start space-x-4">
-                  <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center mt-1">
-                    <Check className="w-4 h-4 text-black" />
-                  </div>
-                  <p className="text-muted-foreground">Farti percepire come una vera professionista</p>
-                </div>
-                <div className="flex items-start space-x-4">
-                  <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center mt-1">
-                    <Check className="w-4 h-4 text-black" />
-                  </div>
-                  <p className="text-muted-foreground">Comunicare il tuo valore senza doverlo giustificare</p>
-                </div>
-                <div className="flex items-start space-x-4">
-                  <div className="w-6 h-6 bg-white rounded-full flex items-center justify-center mt-1">
-                    <Check className="w-4 h-4 text-black" />
-                  </div>
-                  <p className="text-muted-foreground">Vendere meglio, senza svenderti</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="relative">
-              <Card className="bg-white/5 backdrop-blur-sm border-white/10 p-8 text-center">
-                <div className="space-y-6">
-                  <div className="w-20 h-20 bg-white/10 rounded-full flex items-center justify-center mx-auto">
-                    <Play className="w-10 h-10 text-white" />
-                  </div>
-                  <h3 className="font-playfair text-2xl font-bold text-white">È GRATUITO. È PRATICO.</h3>
-                  <p className="text-muted-foreground">È pensato per te.</p>
-                  <p className="text-sm text-muted-foreground">
-                    📩 Riceverai immediatamente il link per guardarlo quando vuoi, dove vuoi.
-                  </p>
-                  <AnimatedButton
-                    IconLeft={Download}
-                    IconRight={ChevronDown}
-                    onClick={() => document.getElementById('video-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
-                  >
-                    SCARICA SUBITO IL VIDEO
-                  </AnimatedButton>
-                </div>
-              </Card>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* About Section */}
-      <section id="about" className="relative z-10 px-4 py-16">
-        <div className="container mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="font-playfair text-3xl lg:text-4xl font-bold mb-4 text-white">CHI SIAMO</h2>
-            <div className="w-24 h-1 bg-white mx-auto"></div>
-          </div>
-
-          <div className="max-w-4xl mx-auto">
-            <Card className="bg-card/30 backdrop-blur-sm border-white/10 p-8 lg:p-12">
-              <div className="space-y-6 text-center">
-                <p className="text-lg text-muted-foreground leading-relaxed">
-                  <strong className="text-white">4 Elementi Italia</strong> è una realtà nata per trasformare i centri estetici e i professionisti del beauty in vere imprese consapevoli. Con oltre <strong className="text-white">10 anni di esperienza</strong> nel settore, uniamo formazione, strategia e strumenti digitali per supportare estetiste e professionisti del benessere nel loro percorso di crescita.
-                </p>
-                <p className="text-lg text-muted-foreground leading-relaxed">
-                  Il nostro metodo è <strong className="text-white">personalizzato, pratico e accessibile</strong>. Crediamo che ogni centro debba avere una visione chiara, un'identità forte e una gestione organizzata.
-                </p>
-                <p className="text-lg text-muted-foreground leading-relaxed">
-                  Collaboriamo con brand d'eccellenza come <strong className="text-white">Tokio, Nee Make Up Milano ed Everlinespa</strong>, per garantire qualità, innovazione e prestigio.
-                </p>
-              </div>
-            </Card>
-          </div>
-        </div>
-      </section>
-
-      {/* Services */}
-      <section id="services" className="relative z-10 px-4 py-16 bg-card/20">
-        <style>
-          {`
-            .service-card-fuoco [data-glow] {
-              --base: 24 !important;
-              --saturation: 100 !important;
-              --lightness: 60 !important;
-            }
-            .service-card-fuoco [data-glow]:before {
-              background-image: radial-gradient(
-                calc(var(--spotlight-size) * 0.75) calc(var(--spotlight-size) * 0.75) at
-                calc(var(--x, 0) * 1px)
-                calc(var(--y, 0) * 1px),
-                hsl(24 100% 50% / 0.8), transparent 100%
-              ) !important;
-            }
-            .service-card-fuoco [data-glow]:after {
-              background-image: radial-gradient(
-                calc(var(--spotlight-size) * 0.5) calc(var(--spotlight-size) * 0.5) at
-                calc(var(--x, 0) * 1px)
-                calc(var(--y, 0) * 1px),
-                hsl(24 100% 70% / 1), transparent 100%
-              ) !important;
-            }
-            
-            .service-card-terra [data-glow] {
-              --base: 142 !important;
-              --saturation: 70 !important;
-              --lightness: 45 !important;
-            }
-            .service-card-terra [data-glow]:before {
-              background-image: radial-gradient(
-                calc(var(--spotlight-size) * 0.75) calc(var(--spotlight-size) * 0.75) at
-                calc(var(--x, 0) * 1px)
-                calc(var(--y, 0) * 1px),
-                hsl(142 70% 40% / 0.8), transparent 100%
-              ) !important;
-            }
-            .service-card-terra [data-glow]:after {
-              background-image: radial-gradient(
-                calc(var(--spotlight-size) * 0.5) calc(var(--spotlight-size) * 0.5) at
-                calc(var(--x, 0) * 1px)
-                calc(var(--y, 0) * 1px),
-                hsl(142 70% 60% / 1), transparent 100%
-              ) !important;
-            }
-            
-            .service-card-aria [data-glow] {
-              --base: 200 !important;
-              --saturation: 80 !important;
-              --lightness: 60 !important;
-            }
-            .service-card-aria [data-glow]:before {
-              background-image: radial-gradient(
-                calc(var(--spotlight-size) * 0.75) calc(var(--spotlight-size) * 0.75) at
-                calc(var(--x, 0) * 1px)
-                calc(var(--y, 0) * 1px),
-                hsl(200 80% 55% / 0.8), transparent 100%
-              ) !important;
-            }
-            .service-card-aria [data-glow]:after {
-              background-image: radial-gradient(
-                calc(var(--spotlight-size) * 0.5) calc(var(--spotlight-size) * 0.5) at
-                calc(var(--x, 0) * 1px)
-                calc(var(--y, 0) * 1px),
-                hsl(200 80% 75% / 1), transparent 100%
-              ) !important;
-            }
-            
-            .service-card-acqua [data-glow] {
-              --base: 220 !important;
-              --saturation: 90 !important;
-              --lightness: 55 !important;
-            }
-            .service-card-acqua [data-glow]:before {
-              background-image: radial-gradient(
-                calc(var(--spotlight-size) * 0.75) calc(var(--spotlight-size) * 0.75) at
-                calc(var(--x, 0) * 1px)
-                calc(var(--y, 0) * 1px),
-                hsl(220 90% 50% / 0.8), transparent 100%
-              ) !important;
-            }
-            .service-card-acqua [data-glow]:after {
-              background-image: radial-gradient(
-                calc(var(--spotlight-size) * 0.5) calc(var(--spotlight-size) * 0.5) at
-                calc(var(--x, 0) * 1px)
-                calc(var(--y, 0) * 1px),
-                hsl(220 90% 70% / 1), transparent 100%
-              ) !important;
-            }
-
-            /* Icon Circle Glow Effects */
-            .icon-circle-fuoco {
-              border: 2px solid hsl(24 100% 60% / 0.3);
-              box-shadow: 0 0 20px hsl(24 100% 60% / 0.4), inset 0 0 20px hsl(24 100% 60% / 0.1);
-              transition: all 0.3s ease;
-            }
-            .icon-circle-fuoco:hover {
-              border-color: hsl(24 100% 60% / 0.6);
-              box-shadow: 0 0 30px hsl(24 100% 60% / 0.6), inset 0 0 30px hsl(24 100% 60% / 0.2);
-            }
-
-            .icon-circle-terra {
-              border: 2px solid hsl(142 70% 45% / 0.3);
-              box-shadow: 0 0 20px hsl(142 70% 45% / 0.4), inset 0 0 20px hsl(142 70% 45% / 0.1);
-              transition: all 0.3s ease;
-            }
-            .icon-circle-terra:hover {
-              border-color: hsl(142 70% 45% / 0.6);
-              box-shadow: 0 0 30px hsl(142 70% 45% / 0.6), inset 0 0 30px hsl(142 70% 45% / 0.2);
-            }
-
-            .icon-circle-aria {
-              border: 2px solid hsl(200 80% 60% / 0.3);
-              box-shadow: 0 0 20px hsl(200 80% 60% / 0.4), inset 0 0 20px hsl(200 80% 60% / 0.1);
-              transition: all 0.3s ease;
-            }
-            .icon-circle-aria:hover {
-              border-color: hsl(200 80% 60% / 0.6);
-              box-shadow: 0 0 30px hsl(200 80% 60% / 0.6), inset 0 0 30px hsl(200 80% 60% / 0.2);
-            }
-
-            .icon-circle-acqua {
-              border: 2px solid hsl(220 90% 55% / 0.3);
-              box-shadow: 0 0 20px hsl(220 90% 55% / 0.4), inset 0 0 20px hsl(220 90% 55% / 0.1);
-              transition: all 0.3s ease;
-            }
-            .icon-circle-acqua:hover {
-              border-color: hsl(220 90% 55% / 0.6);
-              box-shadow: 0 0 30px hsl(220 90% 55% / 0.6), inset 0 0 30px hsl(220 90% 55% / 0.2);
-            }
-          `}
-        </style>
-        <div className="container mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="font-playfair text-3xl lg:text-4xl font-bold mb-4 text-white">I NOSTRI SERVIZI</h2>
-            <p className="text-muted-foreground max-w-2xl mx-auto">
-              Tutto quello che serve per trasformare il tuo centro estetico in una vera impresa
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="service-card-fuoco">
-              <GlowCard customSize className="w-full p-8 text-center aspect-auto h-auto min-h-[320px] flex flex-col">
-                <div className="flex flex-col items-center flex-1">
-                  <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6 icon-circle-fuoco">
-                    <div className="text-white text-2xl font-bold">△</div>
-                  </div>
-                  <div className="h-16 flex items-center justify-center">
-                    <h3 className="font-playfair text-xl font-bold text-white text-center">FUOCO</h3>
-                  </div>
-                </div>
-                <div className="h-20 flex items-start justify-center mt-4">
-                  <p className="text-muted-foreground text-center text-sm leading-relaxed">Piattaforma 4 Elementi Italia Srl e consulenza.</p>
-                </div>
-              </GlowCard>
-            </div>
-
-            <div className="service-card-terra">
-              <GlowCard customSize className="w-full p-8 text-center aspect-auto h-auto min-h-[320px] flex flex-col">
-                <div className="flex flex-col items-center flex-1">
-                  <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6 icon-circle-terra">
-                    <div className="text-white text-xl font-bold relative">
-                      <div>▽</div>
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3 h-0.5 bg-white"></div>
-                    </div>
-                  </div>
-                  <div className="h-16 flex items-center justify-center">
-                    <h3 className="font-playfair text-xl font-bold text-white text-center">TERRA</h3>
-                  </div>
-                </div>
-                <div className="h-20 flex items-center justify-center mt-4">
-                  <p className="text-muted-foreground text-center text-sm leading-relaxed">Azienda riqualificazione centro estetico, restyling arredamento e sistema operativo.</p>
-                </div>
-              </GlowCard>
-            </div>
-
-            <div className="service-card-aria">
-              <GlowCard customSize className="w-full p-8 text-center aspect-auto h-auto min-h-[320px] flex flex-col">
-                <div className="flex flex-col items-center flex-1">
-                  <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6 icon-circle-aria">
-                    <div className="text-white text-xl font-bold relative">
-                      <div>△</div>
-                      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-3 h-0.5 bg-white"></div>
-                    </div>
-                  </div>
-                  <div className="h-16 flex items-center justify-center">
-                    <h3 className="font-playfair text-xl font-bold text-white text-center">ARIA</h3>
-                  </div>
-                </div>
-                <div className="h-20 flex items-start justify-center mt-4">
-                  <p className="text-muted-foreground text-center text-sm leading-relaxed">Marketing specifico per settore beauty.</p>
-                </div>
-              </GlowCard>
-            </div>
-
-            <div className="service-card-acqua">
-              <GlowCard customSize className="w-full p-8 text-center aspect-auto h-auto min-h-[320px] flex flex-col">
-                <div className="flex flex-col items-center flex-1">
-                  <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-6 icon-circle-acqua">
-                    <div className="text-white text-2xl font-bold">▽</div>
-                  </div>
-                  <div className="h-16 flex items-center justify-center">
-                    <h3 className="font-playfair text-xl font-bold text-white text-center">ACQUA</h3>
-                  </div>
-                </div>
-                <div className="h-20 flex items-center justify-center mt-4">
-                  <p className="text-muted-foreground text-center text-sm leading-relaxed">Partnership con Tokyo Top Air, Nee Make Up Milano e EvertlinerSpa.</p>
-                </div>
-              </GlowCard>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Final CTA */}
-      <section id="contact" className="relative z-10 px-4 py-16">
-        <div className="container mx-auto text-center">
-          <div className="max-w-3xl mx-auto space-y-8">
-            <h2 className="font-playfair text-3xl lg:text-4xl font-bold text-white">
-              {landingFinalCta?.title ?? "TRASFORMA IL TUO CENTRO ESTETICO IN UNA"} 
-              <span className="gradient-text"> {landingFinalCta?.subtitle ?? "VERA IMPRESA"}</span>
-            </h2>
-            <p className="text-xl text-muted-foreground">
-              {landingFinalCta?.body ?? "Se vuoi trasformare il tuo centro estetico in una vera impresa, sei nel posto giusto. ✨"}
-            </p>
-            <div className="space-y-4">
-              <p className="text-lg font-semibold">{finalCtaExtra.closing_title ?? "Ti aspetto dall'altra parte!"}</p>
-              <p className="text-muted-foreground">
-                <strong className="text-white">{finalCtaExtra.closing_subtitle ?? "Davide – Fondatore di 4 Elementi Italia"}</strong>
-              </p>
-            </div>
-            <div>
-              <AnimatedButton
-                IconLeft={Download}
-                IconRight={ChevronDown}
-                className="px-12 py-6 text-lg"
-                onClick={() => document.getElementById('video-form')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+                  {link.label}
+                </a>
+              ))}
+              <a
+                href="#cta"
+                onClick={(e) => scrollToAnchor(e, "cta")}
+                className="mt-2 rounded-full bg-white px-4 py-3 text-center text-sm font-semibold text-black"
               >
-                {landingFinalCta?.cta_label ?? "SCARICA IL VIDEO GRATUITO"}
-              </AnimatedButton>
-              <p className="text-sm text-white/70 mt-4 text-center">
-                {finalCtaExtra.cta_note ?? "✓ Nessun pagamento richiesto • Download immediato • Guarda quando vuoi"}
-              </p>
-            </div>
+                Richiedi accesso
+              </a>
+            </nav>
           </div>
         </div>
-      </section>
+      )}
 
-      {/* Newsletter Section */}
-      <section className="py-20 px-4 relative overflow-hidden bg-gradient-to-br from-gray-900 to-gray-800">
-        <Glow variant="center" />
-        
-        <div className="container mx-auto relative z-10">
-          <div className="max-w-6xl mx-auto">
-            <div className="grid md:grid-cols-2 gap-12 items-center">
-              {/* Left Column - Benefits */}
-              <div className="space-y-8">
-                <div>
-                  <h2 className="font-playfair text-3xl md:text-4xl font-bold text-white mb-6 leading-tight">
-                    {landingNewsletter?.title ?? "Sta per arrivare qualcosa di grande."}
-                  </h2>
-                  <p className="text-muted-foreground text-lg mb-8">
-                    {landingNewsletter?.body ?? "Iscriviti ora per non perderti il lancio ufficiale della piattaforma e accedere in anteprima alla community riservata ai professionisti del settore."}
-                  </p>
+      <main className="min-h-screen bg-black">
+        {/* ---------- HERO ---------- */}
+        <section
+          ref={heroRef}
+          className="relative h-screen w-full overflow-hidden bg-black"
+          style={{ height: "100dvh" }}
+          aria-label="4 Elementi Italia — piattaforma del metodo"
+        >
+          <div className="hero-base absolute inset-0 z-10"></div>
+          {/* Reveal layer — masked by the pointer spotlight; shows the product dashboard
+              (real screenshot if available, otherwise the mock) under the photo. */}
+          <div
+            ref={revealLayerRef}
+            className="hero-reveal-layer pointer-events-none absolute inset-0 z-[42]"
+            aria-hidden="true"
+          >
+            {hasDashboardShot ? (
+              <img
+                src="/images/dashboard-preview.png"
+                alt=""
+                className="h-full w-full object-cover"
+                style={{ transform: "scale(1.05)" }}
+              />
+            ) : (
+              <HeroDashboardPreview />
+            )}
+          </div>
+
+          <div className="hero-scrim pointer-events-none absolute inset-0 z-40" aria-hidden="true"></div>
+          <div
+            className="hero-bottom-mask pointer-events-none absolute inset-x-0 bottom-0 z-[45] h-[62vh]"
+            aria-hidden="true"
+          ></div>
+
+          <div className="pointer-events-none absolute inset-0 z-50 flex items-end px-5 pb-10 pt-28 sm:px-8 sm:pb-12 md:px-12 lg:pb-14">
+            <div className="w-full">
+              <div className="flex min-h-0 flex-col justify-end gap-5 lg:max-w-[660px]">
+                <div
+                  className="hero-anim hero-fade flex items-center gap-3 text-[11px] font-semibold uppercase tracking-[0.24em] text-white/80 drop-shadow-[0_2px_16px_rgba(0,0,0,0.85)]"
+                  style={{ animationDelay: ".18s" }}
+                >
+                  <span className="h-px w-14 bg-[#bfeeff]"></span>
+                  4 Elementi Italia · Metodo 4E
                 </div>
-                
-                <div className="space-y-4">
-                  {newsletterBenefits.map((benefit, index) => (
-                    <div key={index} className="flex items-center space-x-3">
-                      <div className="w-6 h-6 bg-[#6AA8B3] rounded-full flex items-center justify-center shrink-0">
-                        <Check className="w-4 h-4 text-white" />
-                      </div>
-                      <span className="text-white font-medium">{benefit}</span>
+                <h1 className="leading-[0.88] text-white drop-shadow-[0_4px_28px_rgba(0,0,0,0.85)]">
+                  <span
+                    className="hero-anim hero-reveal-text block text-5xl font-medium sm:text-6xl md:text-7xl lg:text-[6.6rem]"
+                    style={{ letterSpacing: "-.08em", animationDelay: ".25s" }}
+                  >
+                    La bellezza
+                  </span>
+                  <span
+                    className="hero-anim hero-reveal-text font-playfair -mt-1 block text-5xl font-normal italic sm:text-6xl md:text-7xl lg:text-[6.6rem]"
+                    style={{ letterSpacing: "-.06em", animationDelay: ".42s" }}
+                  >
+                    diventa impresa
+                  </span>
+                </h1>
+                <div className="hero-anim hero-fade max-w-[560px]" style={{ animationDelay: ".68s" }}>
+                  <p className="max-w-[470px] text-sm leading-relaxed text-white drop-shadow-[0_3px_22px_rgba(0,0,0,0.95)] sm:text-base md:text-lg">
+                    La piattaforma che unisce formazione, gestionale e intelligenza
+                    artificiale per estetiste e centri estetici che vogliono crescere
+                    con metodo.
+                  </p>
+                  <div className="mt-5 flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <a
+                      href="#metodo"
+                      onClick={(e) => scrollToAnchor(e, "metodo")}
+                      className="pointer-events-auto w-fit rounded-full bg-white px-7 py-3 text-sm font-semibold text-black transition-all hover:scale-[1.03] hover:bg-[#effbff] hover:shadow-lg hover:shadow-[#bfeeff]/25 active:scale-95"
+                    >
+                      Scopri il metodo
+                    </a>
+                    <button
+                      type="button"
+                      onClick={() => navigate("/login")}
+                      className="pointer-events-auto w-fit rounded-full border border-white/30 bg-transparent px-7 py-3 text-sm font-semibold text-white backdrop-blur transition-all hover:border-white/55 hover:bg-white/10 active:scale-95"
+                    >
+                      Entra in piattaforma
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <aside
+            className="hero-anim hero-fade pointer-events-auto absolute bottom-8 right-5 z-50 hidden max-w-[330px] border-r border-white/25 pr-5 text-right text-white drop-shadow-[0_2px_18px_rgba(0,0,0,0.8)] sm:bottom-10 sm:right-8 md:bottom-12 md:right-12 lg:block"
+            style={{ animationDelay: ".82s" }}
+          >
+            <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.24em] text-[#bfeeff]">
+              Agenda intelligente
+            </p>
+            <p className="ml-auto text-sm leading-relaxed text-white/80">
+              Servizi, appuntamenti e scorte in un'unica vista, senza fogli sparsi.
+            </p>
+            <div className="ml-auto mt-5 grid max-w-[260px] grid-cols-2 gap-4 border-t border-white/15 pt-4">
+              <div>
+                <p className="text-2xl font-semibold text-white">4</p>
+                <p className="mt-1 text-xs text-white/50">elementi, un solo metodo</p>
+              </div>
+              <div>
+                <p className="text-2xl font-semibold text-white">7</p>
+                <p className="mt-1 text-xs text-white/50">passi da estetista a imprenditrice</p>
+              </div>
+            </div>
+          </aside>
+          <div
+            className="vertical-label hero-anim hero-fade pointer-events-none absolute bottom-10 left-4 z-50 hidden text-[10px] font-semibold uppercase tracking-[0.26em] text-white/50 md:block"
+            style={{ animationDelay: ".95s" }}
+          >
+            4 ELEMENTI ITALIA / METODO 4E
+          </div>
+        </section>
+
+        <div className="site-bg text-white">
+          <div className="content-layer">
+            {/* ---------- STORY SCROLL ---------- */}
+            <section ref={storyRef} className="story-scroll" aria-label="I capitoli della piattaforma">
+              <div className="story-sticky">
+                <div className="story-bg" aria-hidden="true"></div>
+                <div className="story-bg-reveal" aria-hidden="true"></div>
+                <div className="story-vignette" aria-hidden="true"></div>
+                <div className="story-grid" aria-hidden="true"></div>
+                <div className="story-orbit" aria-hidden="true"></div>
+
+                <div className="story-shell">
+                  <div className="story-kicker">Sequenza capitoli</div>
+                  <div className="story-count">
+                    <span ref={storyIndexRef}>01</span> / 05
+                  </div>
+                  <h2 className="story-title">
+                    <span className="story-word">Il</span>{" "}
+                    <span className="story-word">centro</span>{" "}
+                    <em className="story-word">cresce</em>{" "}
+                    <span className="story-word">con</span>{" "}
+                    <span className="story-word">metodo.</span>
+                  </h2>
+
+                  <div
+                    className="story-stage"
+                    tabIndex={0}
+                    role="group"
+                    aria-label="Capitoli della piattaforma — scorri orizzontalmente"
+                  >
+                    <div ref={storyTrackRef} className="story-track">
+                      {STORY_CHAPTERS.map((chapter, index) => (
+                        <article key={chapter.title} className={`story-card ${index % 2 === 1 ? "alt" : ""}`}>
+                          <div className="story-card-content">
+                            <small>{chapter.chapter}</small>
+                            <h3>{chapter.title}</h3>
+                            <p>{chapter.copy}</p>
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="story-progress" aria-hidden="true">
+                    <span></span>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <div className="section-line mx-auto h-px max-w-6xl"></div>
+
+            {/* ---------- LA PIATTAFORMA ---------- */}
+            <section id="piattaforma" className="relative mx-auto max-w-6xl px-5 py-28 sm:px-8 md:py-40">
+              <div className="grid gap-12 lg:grid-cols-[.95fr_1.05fr] lg:items-end">
+                <div>
+                  <p className="eyebrow reveal">
+                    <span className="eyebrow-line"></span> La piattaforma
+                  </p>
+                  <h2
+                    className="mt-8 max-w-4xl text-4xl font-medium leading-[1.02] tracking-tight sm:text-5xl md:text-6xl lg:text-[4.6rem]"
+                    style={{ letterSpacing: "-.055em" }}
+                  >
+                    <span className="text-mask">
+                      <span>Costruiamo strumenti</span>
+                    </span>
+                    <span className="text-mask">
+                      <span>per far crescere</span>
+                    </span>
+                    <span className="text-mask font-playfair font-normal italic text-white/90">
+                      <span>il tuo centro.</span>
+                    </span>
+                  </h2>
+                </div>
+                <div className="reveal glass-card rounded-[2rem] border border-white/10 p-6 sm:p-8">
+                  <p className="text-base leading-relaxed text-white/65 md:text-lg">
+                    4 Elementi Italia è pensata per i centri estetici moderni: ogni funzione nasce
+                    per farti risparmiare tempo, dalla gestione dell'agenda alla
+                    fidelizzazione delle clienti, e per rimettere te al centro
+                    dell'impresa.
+                  </p>
+                  <div className="mt-8 grid grid-cols-3 gap-3 border-t border-white/10 pt-6">
+                    <div>
+                      <p className="font-playfair text-4xl italic">04</p>
+                      <p className="mt-2 text-xs uppercase tracking-[.18em] text-white/40">Elementi</p>
+                    </div>
+                    <div>
+                      <p className="font-playfair text-4xl italic">07</p>
+                      <p className="mt-2 text-xs uppercase tracking-[.18em] text-white/40">Passi</p>
+                    </div>
+                    <div>
+                      <p className="font-playfair text-4xl italic">24/7</p>
+                      <p className="mt-2 text-xs uppercase tracking-[.18em] text-white/40">Assistente AI</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* ---------- SCROLL CINEMA ---------- */}
+            <section ref={cinemaRef} className="scroll-cinema" aria-label="Dalla diagnosi alla crescita">
+              <div className="cinema-sticky">
+                <div className="cinema-bg" aria-hidden="true"></div>
+                <div className="cinema-grid" aria-hidden="true"></div>
+                <div className="cinema-shell">
+                  <div className="cinema-copy">
+                    <p className="cinema-kicker">Sequenza in scorrimento</p>
+                    <h2 className="cinema-title">
+                      Dalla diagnosi <em>alla crescita.</em>
+                    </h2>
+                    <p className="cinema-desc">
+                      Un percorso completo: 4 Elementi Italia accompagna tutto il ciclo di vita del
+                      tuo centro, così tu puoi concentrarti sulla cabina e sulle clienti.
+                    </p>
+                  </div>
+                  <div className="cinema-stage">
+                    <div className="cinema-frame one">
+                      <span>Check-up del centro</span>
+                    </div>
+                    <div className="cinema-frame two">
+                      <span>Metodo 4E</span>
+                    </div>
+                    <div className="cinema-frame three">
+                      <span>Crescita misurabile</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="cinema-steps" aria-hidden="true">
+                  {CINEMA_STEPS.map((step, index) => (
+                    <div key={step} className={`cinema-step ${index === 0 ? "is-active" : ""}`}>
+                      {step}
                     </div>
                   ))}
                 </div>
               </div>
+            </section>
 
-              {/* Right Column - Newsletter Form */}
-              <div className="bg-white/5 backdrop-blur-sm border border-white/10 rounded-2xl p-8">
-                <div className="text-center mb-8">
-                  <div className="w-16 h-16 bg-[#6AA8B3]/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <User className="w-8 h-8 text-[#6AA8B3]" />
-                  </div>
-                  <h3 className="font-playfair text-2xl font-bold text-white mb-2">
-                    {newsletterExtra.form_title ?? "👉 Iscriviti oggi. Sii tra i primi a entrare."}
-                  </h3>
+            {/* ---------- GATHER ---------- */}
+            <section ref={gatherRef} className="gather-scroll" aria-label="Una sola piattaforma">
+              <div className="gather-sticky">
+                <div className="gather-ghost" aria-hidden="true">
+                  FORMAZIONE GESTIONALE AI COMMUNITY AGENDA KPI TEAM
                 </div>
+                <div className="gather-glow" aria-hidden="true"></div>
+                <div className="gather-cursor-dot" aria-hidden="true"></div>
+                <div className="gather-content">
+                  <p className="gather-kicker">Sistema completo</p>
+                  <h2 className="gather-line" aria-label="Ogni strumento riunito in una sola piattaforma">
+                    {GATHER_WORDS.map(({ word, x, y, r }) => (
+                      <span key={word} data-x={x} data-y={y} data-r={r}>
+                        {word}
+                      </span>
+                    ))}
+                  </h2>
+                  <p className="gather-support">
+                    Tutto ciò che serve per gestire il tuo centro estetico o la tua spa,
+                    unito in un'unica suite semplice da usare.
+                  </p>
+                </div>
+              </div>
+            </section>
 
-                <form onSubmit={handleNewsletterSubmit} className="space-y-6">
-                  <div>
-                    <Label htmlFor="newsletter-name" className="text-white mb-2 block">
-                      {newsletterExtra.name_label ?? "Nome *"}
-                    </Label>
-                    <Input
-                      id="newsletter-name"
-                      type="text"
-                      value={newsletterData.name}
-                      onChange={(e) => setNewsletterData(prev => ({ ...prev, name: e.target.value }))}
-                      placeholder={newsletterExtra.name_placeholder ?? "Il tuo nome"}
-                      required
-                      disabled={isSubmittingNewsletter}
-                      className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:bg-white/20 transition-all duration-200"
-                    />
-                  </div>
+            <div className="section-line mx-auto h-px max-w-6xl"></div>
 
-                  <div>
-                    <Label htmlFor="newsletter-email" className="text-white mb-2 block">
-                      {newsletterExtra.email_label ?? "Email *"}
-                    </Label>
-                    <Input
-                      id="newsletter-email"
-                      type="email"
-                      value={newsletterData.email}
-                      onChange={(e) => setNewsletterData(prev => ({ ...prev, email: e.target.value }))}
-                      placeholder={newsletterExtra.email_placeholder ?? "la.tua.email@esempio.com"}
-                      required
-                      disabled={isSubmittingNewsletter}
-                      className="bg-white/10 border-white/20 text-white placeholder:text-gray-400 focus:bg-white/20 transition-all duration-200"
-                    />
-                  </div>
-
-                  <Button 
-                    type="submit" 
-                    disabled={isSubmittingNewsletter}
-                    className="w-full bg-gradient-to-r from-[#6AA8B3] to-[#E46A39] hover:from-[#5a97a2] hover:to-[#d45f32] text-white font-semibold py-3 transition-all duration-300 hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            {/* ---------- I PERCORSI ---------- */}
+            <section id="percorsi" className="relative mx-auto max-w-6xl px-5 py-24 sm:px-8 md:py-32">
+              <div className="reveal flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="eyebrow">
+                    <span className="eyebrow-line"></span> I percorsi
+                  </p>
+                  <h2
+                    className="mt-6 text-4xl font-medium tracking-tight sm:text-5xl md:text-6xl"
+                    style={{ letterSpacing: "-.055em" }}
                   >
-                    {isSubmittingNewsletter ? (
-                      <div className="flex items-center justify-center space-x-2">
-                        <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                        <span>{newsletterExtra.loading_label ?? "Iscrizione in corso..."}</span>
-                      </div>
-                    ) : (
-                      landingNewsletter?.cta_label ?? 'ISCRIVITI ALLA NEWSLETTER'
-                    )}
-                  </Button>
-                </form>
-
-                <p className="text-xs text-gray-400 text-center mt-4">
-                  {newsletterExtra.privacy_note ?? "Rispettiamo la tua privacy. Nessuno spam, solo contenuti di valore."}
+                    Tre strade, <span className="font-playfair font-normal italic">un metodo</span>
+                  </h2>
+                </div>
+                <p className="max-w-sm text-sm leading-relaxed text-white/55">
+                  Percorsi numerati dentro un unico metodo: scegli da dove iniziare, la
+                  direzione è la stessa.
                 </p>
               </div>
-            </div>
-          </div>
-        </div>
-      </section>
 
-      {/* Footer */}
-      <footer className="relative z-10 px-4 py-8 border-t border-white/10">
-        <div className="container mx-auto text-center">
-          <div className="flex items-center justify-center space-x-3 mb-4">
-            <img src="/4-elementi-logo.png" alt="4 Elementi Italia Logo" className="h-10 w-auto" />
-          </div>
-          <p className="text-muted-foreground mb-2">
-            {landingFooter?.body ?? "© 2024 4 Elementi Italia. Tutti i diritti riservati."}
-          </p>
-          <p className="text-muted-foreground text-sm">
-            {landingFooterExtra.recovery_text ?? "Hai perso l'email di accesso?"}{' '}
-            <Button 
-              variant="link" 
-              onClick={() => navigate('/recupera-accesso')}
-              className="p-0 h-auto text-[#6AA8B3] hover:text-[#6AA8B3]/80 text-sm"
-            >
-              {landingFooterExtra.recovery_cta ?? "Recupera qui"}
-            </Button>
-          </p>
-          <div className="mt-4 flex flex-wrap justify-center gap-x-4 gap-y-2 text-sm">
-            {landingLegalLinks.map((link, index) => (
-              <div key={`${link.location}-${link.link_key}`} className="flex items-center gap-2">
-                {index > 0 && <span className="text-muted-foreground">•</span>}
-                <a 
-                  href={link.url}
-                  className="iubenda-white iubenda-noiframe iubenda-embed hover:underline"
-                  title={link.label}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                >
-                  {link.label}
-                </a>
+              <div className="mt-14 grid grid-cols-1 gap-5 md:grid-cols-3">
+                {PERCORSI.map(({ number, title, copy, visualClass, Icon }, index) => (
+                  <article
+                    key={number}
+                    className={`reveal stagger magnetic-card glass-card group overflow-hidden rounded-[2rem] border border-white/10 p-3 ${
+                      index === 1 ? "md:translate-y-10" : ""
+                    }`}
+                  >
+                    <div
+                      className={`${visualClass} image-mask h-72 rounded-[1.55rem] border border-white/10`}
+                      role="img"
+                      aria-label={`Percorso ${title} del metodo 4 Elementi`}
+                    ></div>
+                    <div className="p-5">
+                      <div className="mb-5 flex items-center justify-between">
+                        <span className="text-[10px] font-bold uppercase tracking-[.26em] text-white/40">
+                          {number}
+                        </span>
+                        <Icon className="h-6 w-6 text-[#bfeeff]" aria-hidden="true" />
+                      </div>
+                      <h3 className="font-playfair text-4xl italic">{title}</h3>
+                      <p className="mt-3 text-sm leading-relaxed text-white/55">{copy}</p>
+                      <div className="mt-7 flex items-center justify-between border-t border-white/10 pt-5">
+                        <span className="text-[10px] font-bold uppercase tracking-[.2em] text-white/40">
+                          Percorso 4E
+                        </span>
+                        <a
+                          href="#cta"
+                          onClick={(e) => scrollToAnchor(e, "cta")}
+                          className="text-sm text-white/55 transition-colors group-hover:text-[#bfeeff]"
+                        >
+                          Scopri →
+                        </a>
+                      </div>
+                    </div>
+                  </article>
+                ))}
               </div>
-            ))}
+            </section>
+
+            {/* ---------- IL METODO ---------- */}
+            <section id="metodo" className="relative mx-auto max-w-6xl px-5 py-24 sm:px-8 md:py-36">
+              <div className="grid grid-cols-1 gap-12 lg:grid-cols-[1.08fr_.92fr] lg:items-center lg:gap-16">
+                <div className="relative overflow-hidden rounded-[2rem] border border-white/10">
+                  <img
+                    src={LANDING_IMAGES.metodoEquilibrio}
+                    alt="Equilibrio tra corpo, mente e natura — il metodo 4 Elementi"
+                    className="parallax-media image-mask h-[520px] w-full object-cover object-center md:h-[680px]"
+                  />
+                  <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-transparent"></div>
+                  <div className="absolute bottom-5 left-5 right-5 flex items-center justify-between text-[10px] font-bold uppercase tracking-[.24em] text-white/70">
+                    <span>Metodo 4 Elementi</span>
+                    <span>Diagnosi · Crescita</span>
+                  </div>
+                </div>
+                <div>
+                  <p className="eyebrow reveal">
+                    <span className="eyebrow-line"></span> Il metodo
+                  </p>
+                  <h2
+                    className="mt-7 text-4xl font-medium leading-[1.05] tracking-tight sm:text-5xl md:text-6xl"
+                    style={{ letterSpacing: "-.055em" }}
+                  >
+                    <span className="text-mask">
+                      <span>Pensato come un</span>
+                    </span>
+                    <span className="text-mask font-playfair font-normal italic">
+                      <span>equilibrio</span>
+                    </span>
+                    <span className="text-mask">
+                      <span>tra corpo, mente e natura.</span>
+                    </span>
+                  </h2>
+                  <p className="reveal mt-7 text-base leading-relaxed text-white/60 md:text-lg">
+                    Ogni percorso 4 Elementi parte da una diagnosi reale del centro:
+                    numeri, organizzazione, posizionamento. Da lì il metodo costruisce,
+                    strato dopo strato, un'impresa che ti somiglia e che funziona anche
+                    quando non sei in cabina.
+                  </p>
+                  <div className="mt-9 space-y-5">
+                    <div className="reveal flex gap-4">
+                      <Droplets className="mt-0.5 h-6 w-6 shrink-0 text-[#bfeeff]" aria-hidden="true" />
+                      <div>
+                        <p className="font-semibold">Quattro elementi</p>
+                        <p className="mt-1 text-sm text-white/55">
+                          Acqua, Aria, Fuoco e Terra: le quattro dimensioni del tuo centro.
+                        </p>
+                      </div>
+                    </div>
+                    <div className="reveal flex gap-4">
+                      <Footprints className="mt-0.5 h-6 w-6 shrink-0 text-[#bfeeff]" aria-hidden="true" />
+                      <div>
+                        <p className="font-semibold">Sette passi</p>
+                        <p className="mt-1 text-sm text-white/55">
+                          Un percorso numerato, dalla diagnosi allo sviluppo.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <div className="section-line mx-auto h-px max-w-6xl"></div>
+
+            {/* ---------- ARCHITETTURA DEL PERCORSO ---------- */}
+            <section className="relative mx-auto max-w-6xl px-5 py-24 sm:px-8 md:py-36">
+              <div className="grid gap-10 lg:grid-cols-[.9fr_1.1fr] lg:items-start">
+                <div className="lg:sticky lg:top-32">
+                  <p className="eyebrow reveal">
+                    <span className="eyebrow-line"></span> Architettura del percorso
+                  </p>
+                  <h2
+                    className="mt-7 text-4xl font-medium leading-[1.04] tracking-tight sm:text-5xl md:text-6xl"
+                    style={{ letterSpacing: "-.055em" }}
+                  >
+                    Un percorso perfetto in{" "}
+                    <span className="font-playfair font-normal italic">tre atti.</span>
+                  </h2>
+                  <p className="reveal mt-6 max-w-md text-sm leading-relaxed text-white/60">
+                    Abbiamo strutturato l'intero ciclo di crescita, così nessun passaggio
+                    va perso.
+                  </p>
+                </div>
+                <div className="space-y-5">
+                  {ACTS.map((act) => (
+                    <div key={act.label} className="reveal glass-card rounded-[2rem] border border-white/10 p-7 md:p-9">
+                      <p className="text-[10px] font-bold uppercase tracking-[.26em] text-[#bfeeff]">
+                        {act.label}
+                      </p>
+                      <h3 className="mt-5 text-3xl font-medium tracking-tight">{act.title}</h3>
+                      <p className="mt-4 text-sm leading-relaxed text-white/55">{act.copy}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            <div className="section-line mx-auto h-px max-w-6xl"></div>
+
+            {/* ---------- DIARIO 4E ---------- */}
+            <section className="field-notes-premium relative mx-auto max-w-6xl px-5 py-24 sm:px-8 md:py-36">
+              <div className="reveal flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+                <div>
+                  <p className="eyebrow">
+                    <span className="eyebrow-line"></span> Diario 4E
+                  </p>
+                  <h2
+                    className="mt-7 max-w-4xl text-4xl font-medium leading-[1.02] tracking-tight sm:text-5xl md:text-7xl"
+                    style={{ letterSpacing: "-.065em" }}
+                  >
+                    Dal <span className="font-playfair font-normal italic">diario</span> del metodo
+                  </h2>
+                </div>
+                <p className="max-w-sm text-sm leading-relaxed text-white/60">
+                  Appunti, strumenti e riflessioni dal lavoro quotidiano con i centri
+                  estetici.
+                </p>
+              </div>
+
+              <div className="field-editorial-grid mt-14">
+                <a
+                  href="#cta"
+                  onClick={(e) => scrollToAnchor(e, "cta")}
+                  className="field-feature-card reveal group"
+                  aria-label="Leggi la nota in evidenza: il prezzo giusto non è un numero, è un metodo"
+                >
+                  <div className="field-feature-media" aria-hidden="true"></div>
+                  <div className="field-feature-content">
+                    <div className="field-tag-row">
+                      <span className="field-tag">In evidenza</span>
+                      <span className="field-tag">Listino · 6 min</span>
+                    </div>
+                    <h3 className="field-feature-title">
+                      Il prezzo giusto non è un numero, è <em>un metodo</em>
+                    </h3>
+                    <p className="field-feature-copy">
+                      Come costruire un listino che valorizza il tuo lavoro senza
+                      rincorrere gli sconti.
+                    </p>
+                    <div className="field-feature-footer">
+                      <span className="text-[10px] font-bold uppercase tracking-[.24em] text-white/50">
+                        Diario 4E / 2026
+                      </span>
+                      <span className="field-read-link">
+                        Leggi la nota
+                        <span aria-hidden="true">
+                          <ArrowRight className="h-4 w-4" />
+                        </span>
+                      </span>
+                    </div>
+                  </div>
+                </a>
+
+                <div className="field-side-stack">
+                  <a
+                    href="#cta"
+                    onClick={(e) => scrollToAnchor(e, "cta")}
+                    className="field-note-card reveal group"
+                  >
+                    <div className="field-note-meta">
+                      <span>Team · 4 min</span>
+                      <span className="field-note-number">02</span>
+                    </div>
+                    <h3 className="field-note-title">Da sola non si scala: organizzare il centro</h3>
+                    <p className="field-note-copy">
+                      Ruoli, regole e organigramma per un team che funziona.
+                    </p>
+                    <div className="mt-6">
+                      <span className="field-read-link">
+                        Leggi la nota
+                        <span aria-hidden="true">
+                          <ArrowRight className="h-4 w-4" />
+                        </span>
+                      </span>
+                    </div>
+                  </a>
+
+                  <a
+                    href="#cta"
+                    onClick={(e) => scrollToAnchor(e, "cta")}
+                    className="field-note-card reveal group"
+                  >
+                    <div className="field-note-meta">
+                      <span>Visione · 8 min</span>
+                      <span className="field-note-number">03</span>
+                    </div>
+                    <h3 className="field-note-title">L'estetista che diventa imprenditrice</h3>
+                    <p className="field-note-copy">
+                      Il salto di mentalità dietro i sette passi del metodo.
+                    </p>
+                    <div className="mt-6">
+                      <span className="field-read-link">
+                        Leggi la nota
+                        <span aria-hidden="true">
+                          <ArrowRight className="h-4 w-4" />
+                        </span>
+                      </span>
+                    </div>
+                  </a>
+
+                  <div className="field-mini-grid reveal">
+                    <div className="field-mini-card">
+                      <strong>04</strong>
+                      <span>Elementi</span>
+                    </div>
+                    <div className="field-mini-card">
+                      <strong>07</strong>
+                      <span>Passi</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="field-marquee reveal" aria-hidden="true">
+                <div className="field-marquee-track">
+                  {[...MARQUEE_TAGS, ...MARQUEE_TAGS].map((tag, index) => (
+                    <span key={`${tag}-${index}`}>{tag}</span>
+                  ))}
+                </div>
+              </div>
+            </section>
+
+            {/* ---------- FINAL CTA ---------- */}
+            <section id="cta" className="relative mx-auto max-w-6xl px-5 py-28 sm:px-8 md:py-40">
+              <div className="reveal soft-panel relative overflow-hidden rounded-[2.4rem] border border-white/10 px-7 py-16 text-center shadow-[0_40px_120px_rgba(0,0,0,.55)] sm:px-12 md:py-28">
+                <div className="absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-[#bfeeff]/60 to-transparent"></div>
+                <div className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-[#bfeeff]/10 blur-3xl"></div>
+                <p className="text-[11px] font-bold uppercase tracking-[.26em] text-[#bfeeff]">
+                  4 Elementi Italia · Inizia ora
+                </p>
+                <h2
+                  className="mx-auto mt-7 max-w-4xl text-4xl font-medium leading-[1.02] tracking-tight sm:text-5xl md:text-7xl"
+                  style={{ letterSpacing: "-.06em" }}
+                >
+                  Porta il tuo centro <span className="font-playfair font-normal italic">oltre</span>
+                </h2>
+                <p className="mx-auto mt-6 max-w-xl text-base leading-relaxed text-white/60">
+                  Richiedi il check-up gratuito del tuo centro o entra nella community 4E.
+                </p>
+
+                <form
+                  onSubmit={handleLeadSubmit}
+                  className="mx-auto mt-10 flex max-w-xl flex-col gap-3"
+                  aria-label="Richiedi il check-up gratuito"
+                >
+                  <input
+                    type="text"
+                    name="company"
+                    className="honeypot-field"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    aria-hidden="true"
+                    value={honeypot}
+                    onChange={(e) => setHoneypot(e.target.value)}
+                  />
+                  <div className="flex flex-col gap-3 sm:flex-row">
+                    <input
+                      type="text"
+                      className="lead-input"
+                      placeholder="Il tuo nome"
+                      aria-label="Il tuo nome"
+                      autoComplete="name"
+                      value={leadData.name}
+                      onChange={(e) => setLeadData((prev) => ({ ...prev, name: e.target.value }))}
+                      disabled={isSubmittingLead}
+                    />
+                    <input
+                      type="email"
+                      className="lead-input"
+                      placeholder="La tua email"
+                      aria-label="La tua email"
+                      autoComplete="email"
+                      value={leadData.email}
+                      onChange={(e) => setLeadData((prev) => ({ ...prev, email: e.target.value }))}
+                      disabled={isSubmittingLead}
+                    />
+                  </div>
+                  <div className="mt-2 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                    <button
+                      type="submit"
+                      disabled={isSubmittingLead}
+                      className="w-fit rounded-full bg-white px-8 py-3.5 text-sm font-semibold text-black transition-all hover:scale-[1.03] hover:bg-[#effbff] hover:shadow-lg hover:shadow-[#bfeeff]/25 active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isSubmittingLead ? "Invio in corso..." : "Richiedi il check-up"}
+                    </button>
+                    <a
+                      href="#newsletter"
+                      onClick={(e) => scrollToAnchor(e, "newsletter")}
+                      className="w-fit rounded-full border border-white/30 bg-transparent px-8 py-3.5 text-sm font-semibold text-white backdrop-blur transition-all hover:border-white/55 hover:bg-white/10 active:scale-95"
+                    >
+                      Iscriviti alla newsletter
+                    </a>
+                  </div>
+                  <p className="mt-3 text-xs text-white/45">
+                    ✓ Gratuito e senza impegno · Riceverai subito il link di accesso via email
+                  </p>
+                </form>
+              </div>
+            </section>
+
+            <div className="section-line mx-auto h-px max-w-6xl"></div>
+
+            {/* ---------- FAQ ---------- */}
+            <section id="faq" className="relative mx-auto max-w-3xl px-5 py-24 sm:px-8 md:py-32">
+              <p className="eyebrow reveal">
+                <span className="eyebrow-line"></span> Domande
+              </p>
+              <h2
+                className="reveal mt-7 text-4xl font-medium tracking-tight sm:text-5xl md:text-6xl"
+                style={{ letterSpacing: "-.055em" }}
+              >
+                Domande <span className="font-playfair font-normal italic">frequenti</span>
+              </h2>
+              <div className="mt-12 divide-y divide-white/10 border-y border-white/10">
+                {FAQ_ITEMS.map((item, index) => (
+                  <div key={item.question} className={`faq-item ${openFaq === index ? "open" : ""}`}>
+                    <button
+                      className="faq-toggle flex w-full items-center justify-between gap-6 py-7 text-left"
+                      type="button"
+                      aria-expanded={openFaq === index}
+                      onClick={() => setOpenFaq(openFaq === index ? null : index)}
+                    >
+                      <span className="text-lg font-medium tracking-tight">{item.question}</span>
+                      <Plus className="faq-icon h-6 w-6 shrink-0 text-[#bfeeff]" aria-hidden="true" />
+                    </button>
+                    <div className="faq-body">
+                      <p className="pb-7 pr-10 text-sm leading-relaxed text-white/60">{item.answer}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            {/* ---------- FOOTER ---------- */}
+            <footer className="border-t border-white/10">
+              <div className="mx-auto max-w-6xl px-5 py-16 sm:px-8 md:py-20">
+                <div className="mb-14 overflow-hidden">
+                  <p className="font-playfair text-[13vw] italic leading-none tracking-[-.06em] text-white/90 md:text-[7rem]">
+                    4 Elementi Italia
+                  </p>
+                </div>
+                <div className="flex flex-col gap-12 md:flex-row md:items-start md:justify-between">
+                  <div className="max-w-sm">
+                    <p className="text-sm leading-relaxed text-white/55">
+                      La piattaforma 4 Elementi Italia per estetiste, centri estetici e
+                      spa: formazione, gestionale, AI e community in un unico luogo.
+                    </p>
+                    {(landingNewsletter?.title || landingNewsletter?.body) && (
+                      <div className="mt-8">
+                        {landingNewsletter?.title && (
+                          <p className="text-sm font-semibold text-white/90">
+                            {landingNewsletter.title}
+                          </p>
+                        )}
+                        {landingNewsletter?.body && (
+                          <p className="mt-1 text-xs leading-relaxed text-white/55">
+                            {landingNewsletter.body}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    <form
+                      id="newsletter"
+                      onSubmit={handleNewsletterSubmit}
+                      className="mt-4 flex flex-col gap-3 sm:flex-row"
+                      aria-label="Iscriviti alla newsletter"
+                    >
+                      <input
+                        type="text"
+                        name="company"
+                        className="honeypot-field"
+                        tabIndex={-1}
+                        autoComplete="off"
+                        aria-hidden="true"
+                        value={honeypot}
+                        onChange={(e) => setHoneypot(e.target.value)}
+                      />
+                      <input
+                        type="email"
+                        className="lead-input"
+                        placeholder="la.tua.email@esempio.com"
+                        aria-label="Email per la newsletter"
+                        autoComplete="email"
+                        value={newsletterEmail}
+                        onChange={(e) => setNewsletterEmail(e.target.value)}
+                        required
+                        disabled={isSubmittingNewsletter}
+                      />
+                      <button
+                        type="submit"
+                        disabled={isSubmittingNewsletter}
+                        className="shrink-0 rounded-full bg-white px-6 py-3 text-sm font-semibold text-black transition-all hover:scale-[1.03] hover:bg-[#effbff] active:scale-95 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {isSubmittingNewsletter
+                          ? "Invio..."
+                          : landingNewsletter?.cta_label ?? "Iscriviti"}
+                      </button>
+                    </form>
+                    <p className="mt-3 text-xs text-white/40">
+                      {newsletterExtra.privacy_note ??
+                        "Rispettiamo la tua privacy. Nessuno spam, solo contenuti di valore."}
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-12 sm:grid-cols-3">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[.26em] text-white/40">
+                        Piattaforma
+                      </p>
+                      <ul className="mt-5 space-y-3 text-sm text-white/60">
+                        <li>
+                          <a href="#metodo" onClick={(e) => scrollToAnchor(e, "metodo")} className="hover:text-white">
+                            Metodo
+                          </a>
+                        </li>
+                        <li>
+                          <a href="#percorsi" onClick={(e) => scrollToAnchor(e, "percorsi")} className="hover:text-white">
+                            Percorsi
+                          </a>
+                        </li>
+                        <li>
+                          <a href="#faq" onClick={(e) => scrollToAnchor(e, "faq")} className="hover:text-white">
+                            FAQ
+                          </a>
+                        </li>
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[.26em] text-white/40">
+                        Azienda
+                      </p>
+                      <ul className="mt-5 space-y-3 text-sm text-white/60">
+                        <li>
+                          <a href="#metodo" onClick={(e) => scrollToAnchor(e, "metodo")} className="hover:text-white">
+                            Chi siamo
+                          </a>
+                        </li>
+                        <li>
+                          <a href="#cta" onClick={(e) => scrollToAnchor(e, "cta")} className="hover:text-white">
+                            Contatti
+                          </a>
+                        </li>
+                        {landingFooterExtra.recovery_text && (
+                          <li className="text-xs text-white/45">
+                            {landingFooterExtra.recovery_text}
+                          </li>
+                        )}
+                        <li>
+                          <button
+                            type="button"
+                            onClick={() => navigate("/recupera-accesso")}
+                            className="hover:text-white"
+                          >
+                            {landingFooterExtra.recovery_cta ?? "Recupera accesso"}
+                          </button>
+                        </li>
+                      </ul>
+                    </div>
+                    <div>
+                      <p className="text-[10px] font-bold uppercase tracking-[.26em] text-white/40">
+                        Social
+                      </p>
+                      <ul className="mt-5 space-y-3 text-sm text-white/60">
+                        <li>
+                          <a
+                            href="https://www.instagram.com"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:text-white"
+                          >
+                            Instagram
+                          </a>
+                        </li>
+                        <li>
+                          <a
+                            href="https://www.linkedin.com"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="hover:text-white"
+                          >
+                            LinkedIn
+                          </a>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-14 flex flex-col gap-3 border-t border-white/10 pt-7 text-xs text-white/60 sm:flex-row sm:items-center sm:justify-between">
+                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+                    <p>
+                      {landingFooter?.body ??
+                        "© 2026 4 Elementi Italia. Equilibrio, metodo, impresa."}
+                    </p>
+                    {landingLegalLinks.map((link) => (
+                      <a
+                        key={`${link.location}-${link.link_key}`}
+                        href={link.url}
+                        className="iubenda-white iubenda-noiframe iubenda-embed hover:text-white hover:underline"
+                        title={link.label}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {link.label}
+                      </a>
+                    ))}
+                  </div>
+                  <p className="uppercase tracking-[.24em]">Corpo · Mente · Natura</p>
+                </div>
+              </div>
+            </footer>
           </div>
         </div>
-      </footer>
-    </div>;
+      </main>
+    </div>
+  );
 };
 export default LandingPage;
