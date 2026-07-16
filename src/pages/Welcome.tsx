@@ -17,6 +17,18 @@ interface MailingListData {
   email?: string;
 }
 
+// Narrow the untyped RPC result (Json) instead of casting it blindly.
+const parseValidation = (
+  value: unknown,
+): { valid: boolean; data: MailingListData | null } | null => {
+  if (!value || typeof value !== "object") return null;
+  const record = value as Record<string, unknown>;
+  if (typeof record.valid !== "boolean") return null;
+  const data =
+    record.data && typeof record.data === "object" ? (record.data as MailingListData) : null;
+  return { valid: record.valid, data };
+};
+
 const Welcome = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -50,7 +62,7 @@ const Welcome = () => {
         const { data: validationResult, error } = await supabase
           .rpc('validate_access_token', { token_to_validate: token });
 
-        const result = validationResult as { valid: boolean; data: MailingListData | null };
+        const result = parseValidation(validationResult);
 
         if (error || !result || !result.valid) {
           toast({

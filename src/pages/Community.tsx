@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 import DashboardLayout from "@/components/Dashboard/DashboardLayout";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CommunityForum } from "@/components/Community/CommunityForum";
@@ -54,28 +54,28 @@ const sectionDescriptions = {
   }
 };
 
-const tabVariants = {
-  initial: { 
-    opacity: 0, 
+const tabVariants: Variants = {
+  initial: {
+    opacity: 0,
     y: 10,
     scale: 0.98
   },
-  animate: { 
-    opacity: 1, 
+  animate: {
+    opacity: 1,
     y: 0,
     scale: 1,
     transition: {
       duration: 0.3,
-      ease: [0.4, 0, 0.2, 1]
+      ease: [0.4, 0, 0.2, 1] as [number, number, number, number]
     }
   },
-  exit: { 
-    opacity: 0, 
+  exit: {
+    opacity: 0,
     y: -10,
     scale: 0.98,
     transition: {
       duration: 0.2,
-      ease: [0.4, 0, 1, 1]
+      ease: [0.4, 0, 1, 1] as [number, number, number, number]
     }
   }
 };
