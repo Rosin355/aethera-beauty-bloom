@@ -1,6 +1,6 @@
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { User, Building2, Briefcase, GraduationCap, Sparkles, Crown, Scissors } from "lucide-react";
+import { User, Building2, Briefcase, GraduationCap, Sparkles, Crown, Scissors, Check } from "lucide-react";
 
 interface UserTypeStepProps {
   userType: string;
@@ -12,8 +12,6 @@ const userTypeOptions = [
     value: "owner",
     id: "owner",
     icon: Building2,
-    iconColor: "text-fire",
-    bgColor: "bg-fire/10",
     title: "Titolare / Spa Manager",
     description: "Proprietario o gestore di centro estetico, spa o salone"
   },
@@ -21,8 +19,6 @@ const userTypeOptions = [
     value: "senior_esthetician",
     id: "senior_esthetician",
     icon: Crown,
-    iconColor: "text-earth",
-    bgColor: "bg-earth/10",
     title: "Estetista Senior",
     description: "Professionista con oltre 5 anni di esperienza nel settore"
   },
@@ -30,8 +26,6 @@ const userTypeOptions = [
     value: "esthetician",
     id: "esthetician",
     icon: Sparkles,
-    iconColor: "text-water",
-    bgColor: "bg-water/10",
     title: "Estetista",
     description: "Professionista dell'estetica con esperienza"
   },
@@ -39,8 +33,6 @@ const userTypeOptions = [
     value: "hairdresser",
     id: "hairdresser",
     icon: Scissors,
-    iconColor: "text-air",
-    bgColor: "bg-air/10",
     title: "Parrucchiere / Hair Stylist",
     description: "Professionista del settore capelli e acconciature"
   },
@@ -48,8 +40,6 @@ const userTypeOptions = [
     value: "employee",
     id: "employee",
     icon: Briefcase,
-    iconColor: "text-water",
-    bgColor: "bg-water/10",
     title: "Dipendente / Collaboratore",
     description: "Lavori presso un centro estetico o salone"
   },
@@ -57,8 +47,6 @@ const userTypeOptions = [
     value: "freelance",
     id: "freelance",
     icon: User,
-    iconColor: "text-air",
-    bgColor: "bg-air/10",
     title: "Freelance",
     description: "Professionista autonomo che lavora in proprio"
   },
@@ -66,8 +54,6 @@ const userTypeOptions = [
     value: "student",
     id: "student",
     icon: GraduationCap,
-    iconColor: "text-earth",
-    bgColor: "bg-earth/10",
     title: "Studente / Neolaureato",
     description: "Stai studiando o hai appena completato la formazione"
   },
@@ -75,12 +61,13 @@ const userTypeOptions = [
     value: "user",
     id: "user",
     icon: User,
-    iconColor: "text-muted-foreground",
-    bgColor: "bg-muted",
     title: "Appassionato Beauty",
     description: "Interessato a corsi e contenuti formativi del settore"
   }
 ];
+
+/** Values a user can actually select — used by the parent to enable "Continua". */
+export const USER_TYPE_VALUES = userTypeOptions.map((option) => option.value);
 
 const UserTypeStep = ({ userType, onUserTypeChange }: UserTypeStepProps) => {
   return (
@@ -91,27 +78,38 @@ const UserTypeStep = ({ userType, onUserTypeChange }: UserTypeStepProps) => {
           Seleziona il ruolo che meglio ti descrive per personalizzare la tua esperienza
         </p>
       </div>
-      
-      <RadioGroup 
-        value={userType} 
+
+      <RadioGroup
+        value={userType}
         onValueChange={onUserTypeChange}
         className="grid gap-3 md:grid-cols-2"
       >
         {userTypeOptions.map((option) => {
           const Icon = option.icon;
+          // Radix radio items expose data-state, not :checked — compute the
+          // selected state from the controlled value so it is ALWAYS visible.
+          const isSelected = userType === option.value;
           return (
             <div key={option.value} className="relative">
-              <RadioGroupItem 
-                value={option.value} 
-                id={option.id} 
-                className="peer sr-only" 
+              <RadioGroupItem
+                value={option.value}
+                id={option.id}
+                className="peer sr-only"
               />
-              <Label 
-                htmlFor={option.id} 
-                className="flex items-center gap-3 p-3 border-2 rounded-lg cursor-pointer transition-all peer-checked:border-primary peer-checked:bg-primary/5 hover:bg-muted/50"
+              <Label
+                htmlFor={option.id}
+                className={`relative flex items-center gap-3 p-3 pr-10 border-2 rounded-2xl cursor-pointer transition-all peer-focus-visible:ring-2 peer-focus-visible:ring-ring peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-background ${
+                  isSelected
+                    ? "border-ice/70 bg-ice/[.06] shadow-[0_0_34px_rgba(191,238,255,0.14)]"
+                    : "border-white/10 bg-white/[.02] hover:border-white/25 hover:bg-white/[.05]"
+                }`}
               >
-                <div className={`flex items-center justify-center w-10 h-10 rounded-full ${option.bgColor}`}>
-                  <Icon className={`h-5 w-5 ${option.iconColor}`} />
+                <div
+                  className={`flex items-center justify-center w-10 h-10 rounded-full transition-colors ${
+                    isSelected ? "bg-ice/15 text-ice" : "bg-white/5 text-white/60"
+                  }`}
+                >
+                  <Icon className="h-5 w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-foreground text-sm">{option.title}</p>
@@ -119,6 +117,14 @@ const UserTypeStep = ({ userType, onUserTypeChange }: UserTypeStepProps) => {
                     {option.description}
                   </p>
                 </div>
+                {isSelected && (
+                  <span
+                    className="absolute top-3 right-3 flex h-5 w-5 items-center justify-center rounded-full bg-ice text-[#050505]"
+                    aria-hidden="true"
+                  >
+                    <Check className="h-3 w-3" strokeWidth={3} />
+                  </span>
+                )}
               </Label>
             </div>
           );

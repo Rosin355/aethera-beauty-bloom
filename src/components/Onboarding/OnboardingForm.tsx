@@ -1,6 +1,6 @@
 import React, { useEffect } from "react";
 import { useOnboardingForm } from "./hooks/useOnboardingForm";
-import UserTypeStep from "./Steps/UserTypeStep";
+import UserTypeStep, { USER_TYPE_VALUES } from "./Steps/UserTypeStep";
 import PersonalInfoStep from "./Steps/PersonalInfoStep";
 import ProfessionalExperienceStep from "./Steps/ProfessionalExperienceStep";
 import BusinessGoalsStep from "./Steps/BusinessGoalsStep";
@@ -37,8 +37,9 @@ const OnboardingForm = ({ step, onValidate, setSaveHandler }: OnboardingFormProp
       let isValid = true;
       
       if (step === 0) {
-        // User type step is always valid (has default value)
-        isValid = true;
+        // "Continua" stays disabled until one of the selectable cards is chosen
+        // (the initial value is not among the cards, so nothing looks selected).
+        isValid = USER_TYPE_VALUES.includes(userType);
       } else if (step === 1) {
         // Personal info step
         isValid = !!personalInfo.fullName && 

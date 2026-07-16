@@ -1,13 +1,14 @@
 import { useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardFooter, 
-  CardHeader, 
-  CardTitle 
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import Logo from "@/components/Layout/Logo";
@@ -51,7 +52,7 @@ const Onboarding = () => {
   ];
   
   const handleNext = async () => {
-    if (currentStep === 1 && !isStepValid) {
+    if ((currentStep === 0 || currentStep === 1) && !isStepValid) {
       toast({
         title: "Compila tutti i campi",
         description: "Per favore compila tutti i campi obbligatori per continuare.",
@@ -139,30 +140,34 @@ const Onboarding = () => {
   const progress = ((currentStep + 1) / steps.length) * 100;
   
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <div className="p-4">
+    <div className="min-h-screen bg-background flex flex-col relative">
+      <div className="page-glow" aria-hidden="true" />
+      <div className="p-4 relative z-[1]">
         <Logo />
       </div>
-      <div className="flex-1 flex flex-col items-center justify-center px-4 py-8">
-        <Card className="w-full max-w-3xl">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-8 relative z-[1]">
+        <Card className="w-full max-w-3xl glass-card rounded-[28px] border-white/10 bg-transparent">
           <CardHeader>
-            <div className="flex justify-between items-center mb-2">
-              <CardTitle className="text-2xl font-playfair">
-                {steps[currentStep].title}
-              </CardTitle>
-              <span className="text-sm text-muted-foreground">
-                Passaggio {currentStep + 1} di {steps.length}
+            <div className="flex justify-between items-center mb-3">
+              <span className="inline-flex items-center gap-3">
+                <span className="eyebrow-line" aria-hidden="true" />
+                <span className="eyebrow">
+                  Passaggio {currentStep + 1} di {steps.length}
+                </span>
               </span>
             </div>
-            <CardDescription>
+            <CardTitle className="font-playfair text-3xl">
+              {steps[currentStep].title}
+            </CardTitle>
+            <CardDescription className="pt-1">
               {steps[currentStep].description}
             </CardDescription>
           </CardHeader>
-          
-          {/* Progress bar */}
-          <div className="w-full bg-muted h-1">
-            <div 
-              className="bg-accent h-1 transition-all duration-300 ease-in-out" 
+
+          {/* Progress line */}
+          <div className="w-full bg-white/10 h-px" role="presentation">
+            <div
+              className="bg-ice h-px shadow-[0_0_12px_rgba(191,238,255,0.65)] transition-all duration-300 ease-in-out"
               style={{ width: `${progress}%` }}
             />
           </div>
@@ -175,11 +180,12 @@ const Onboarding = () => {
             />
           </CardContent>
           
-          <CardFooter className="flex justify-between border-t pt-6">
+          <CardFooter className="flex justify-between border-t border-white/10 pt-6">
             <div>
               {currentStep > 0 ? (
                 <Button
-                  variant="outline"
+                  variant="secondary"
+                  size="pill"
                   onClick={handlePrevious}
                   disabled={isCompleting || isSkipping}
                 >
@@ -187,32 +193,14 @@ const Onboarding = () => {
                 </Button>
               ) : (
                 <Button
-                  variant="outline"
+                  variant="secondary"
+                  size="pill"
                   onClick={handleSkip}
                   disabled={isCompleting || isSkipping}
                 >
                   {isSkipping ? (
                     <>
-                      <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
+                      <Loader2 className="animate-spin" aria-hidden="true" />
                       Salto...
                     </>
                   ) : (
@@ -221,33 +209,14 @@ const Onboarding = () => {
                 </Button>
               )}
             </div>
-            <Button 
+            <Button
+              size="pill"
               onClick={handleNext}
-              className={`bg-accent hover:bg-accent/90 ${currentStep === 1 && !isStepValid ? 'opacity-70' : ''}`}
-              disabled={(currentStep === 1 && !isStepValid) || isCompleting || isSkipping}
+              disabled={((currentStep === 0 || currentStep === 1) && !isStepValid) || isCompleting || isSkipping}
             >
               {isCompleting ? (
                 <>
-                  <svg
-                    className="animate-spin -ml-1 mr-2 h-4 w-4"
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle
-                      className="opacity-25"
-                      cx="12"
-                      cy="12"
-                      r="10"
-                      stroke="currentColor"
-                      strokeWidth="4"
-                    ></circle>
-                    <path
-                      className="opacity-75"
-                      fill="currentColor"
-                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    ></path>
-                  </svg>
+                  <Loader2 className="animate-spin" aria-hidden="true" />
                   Salvataggio...
                 </>
               ) : currentStep === steps.length - 1 ? (

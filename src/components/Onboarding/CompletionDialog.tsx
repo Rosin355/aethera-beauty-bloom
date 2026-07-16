@@ -82,7 +82,7 @@ const CompletionDialog = ({ open, onOpenChange }: CompletionDialogProps) => {
         
         <DialogHeader className="text-center">
           <DialogTitle className="text-2xl font-playfair flex justify-center gap-2 items-center">
-            <PartyPopper className="h-6 w-6 text-brand-fire" />
+            <PartyPopper className="h-6 w-6 text-ice" />
             Profilo Completato!
           </DialogTitle>
           <DialogDescription className="pt-4 text-base">
@@ -93,7 +93,7 @@ const CompletionDialog = ({ open, onOpenChange }: CompletionDialogProps) => {
           </DialogDescription>
         </DialogHeader>
         
-        <div className="p-4 my-2 bg-brand-cream/30 rounded-md border border-brand-cream">
+        <div className="p-4 my-2 soft-panel rounded-2xl border border-white/10">
           <p className="text-sm">
             La nostra AI utilizzerà questi dati per:
           </p>
@@ -106,9 +106,10 @@ const CompletionDialog = ({ open, onOpenChange }: CompletionDialogProps) => {
         </div>
         
         <DialogFooter className="sm:justify-center mt-4">
-          <Button 
+          <Button
             onClick={handleGoToDashboard}
-            className="bg-brand-fire hover:bg-brand-fire/90 px-8"
+            size="pill"
+            className="px-8"
           >
             Vai alla tua Dashboard
           </Button>
