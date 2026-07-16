@@ -63,7 +63,7 @@ const ClientNotes = ({ clientId }: ClientNotesProps) => {
       case "opportunità":
         return <Badge className="bg-green-500">Opportunità</Badge>;
       case "supporto":
-        return <Badge className="bg-brand-water">Supporto</Badge>;
+        return <Badge className="bg-white/10 text-white/80 border border-white/15">Supporto</Badge>;
       case "attenzione":
         return <Badge className="bg-red-500">Attenzione</Badge>;
       case "followup":
@@ -123,7 +123,7 @@ const ClientNotes = ({ clientId }: ClientNotesProps) => {
           
           <Dialog open={isAddingNote} onOpenChange={setIsAddingNote}>
             <DialogTrigger asChild>
-              <Button className="bg-brand-fire hover:bg-brand-fire/90">
+              <Button>
                 <PlusCircle className="mr-2 h-4 w-4" /> Aggiungi Nota
               </Button>
             </DialogTrigger>
@@ -208,18 +208,18 @@ const ClientNotes = ({ clientId }: ClientNotesProps) => {
                       <span className="font-medium text-sm">
                         {format(new Date(note.note_date), "dd MMM yyyy", { locale: it })}
                       </span>
-                      <span className="mx-2 text-gray-400">•</span>
-                      <span className="text-sm text-gray-600">{note.created_by_name || "Admin"}</span>
+                      <span className="mx-2 text-white/45">•</span>
+                      <span className="text-sm text-muted-foreground">{note.created_by_name || "Admin"}</span>
                     </div>
                     {getCategoryBadge(note.category)}
                   </div>
-                  <p className="text-gray-800">{note.note_text}</p>
+                  <p className="text-foreground/90">{note.note_text}</p>
                 </div>
               ))}
             </div>
           ) : (
             <div className="text-center py-8">
-              <p className="text-gray-500">
+              <p className="text-muted-foreground">
                 {isLoading ? "Caricamento note..." : "Nessuna nota trovata per questo cliente."}
               </p>
             </div>

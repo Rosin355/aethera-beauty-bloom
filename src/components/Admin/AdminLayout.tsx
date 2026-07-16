@@ -63,17 +63,17 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
   };
 
   return (
-    <div className="min-h-screen bg-black flex">
+    <div className="min-h-screen bg-background flex">
       {/* Sidebar */}
       <aside
         className={cn(
-          "bg-black border-r border-neutral-800 text-white w-64 transition-all duration-300 ease-in-out fixed inset-y-0 left-0 z-30 md:relative",
+          "bg-background/95 backdrop-blur-xl border-r border-white/10 text-white w-64 transition-all duration-300 ease-in-out fixed inset-y-0 left-0 z-30 md:relative",
           isSidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0 md:w-20"
         )}
       >
         <div className="h-full flex flex-col">
           {/* Logo */}
-          <div className="p-4 flex items-center justify-between border-b border-neutral-800">
+          <div className="p-4 flex items-center justify-between border-b border-white/10">
             <Link to="/admin/dashboard" className="flex items-center">
               {isSidebarOpen ? (
                 <Logo variant="white" />
@@ -99,8 +99,8 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
                   className={cn(
                     "flex items-center px-4 py-3 rounded-lg transition-colors",
                     location.pathname === "/admin/dashboard" && !searchParams.get("tab")
-                      ? "bg-neutral-800 text-white border border-neutral-700"
-                      : "text-neutral-400 hover:bg-neutral-900 hover:text-white"
+                      ? "bg-white/[.06] text-white border border-white/10"
+                      : "text-white/60 hover:bg-white/[.04] hover:text-white"
                   )}
                 >
                   <ChartPie size={20} />
@@ -116,8 +116,8 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
                     className={cn(
                       "flex items-center px-4 py-3 rounded-lg transition-colors",
                       isActiveTab(item.tab)
-                        ? "bg-neutral-800 text-white border border-neutral-700"
-                        : "text-neutral-400 hover:bg-neutral-900 hover:text-white"
+                        ? "bg-white/[.06] text-white border border-white/10"
+                        : "text-white/60 hover:bg-white/[.04] hover:text-white"
                     )}
                   >
                     <item.icon size={20} />
@@ -127,14 +127,14 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
               ))}
 
               {/* Video Management - Separate Page */}
-              <li className="mt-4 pt-4 border-t border-neutral-800">
+              <li className="mt-4 pt-4 border-t border-white/10">
                 <Link
                   to="/admin/video-management"
                   className={cn(
                     "flex items-center px-4 py-3 rounded-lg transition-colors",
                     isVideoPage
-                      ? "bg-neutral-800 text-white border border-neutral-700"
-                      : "text-neutral-400 hover:bg-neutral-900 hover:text-white"
+                      ? "bg-white/[.06] text-white border border-white/10"
+                      : "text-white/60 hover:bg-white/[.04] hover:text-white"
                   )}
                 >
                   <Video size={20} />
@@ -145,35 +145,35 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
           </nav>
 
           {/* User Profile */}
-          <div className="p-4 border-t border-neutral-800">
+          <div className="p-4 border-t border-white/10">
             {isSidebarOpen ? (
               <div className="flex items-center">
-                <div className="w-10 h-10 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-ice/10 border border-ice/25 flex items-center justify-center">
                   <span className="text-white font-bold">AM</span>
                 </div>
                 <div className="ml-3">
                   <div className="flex items-center gap-2">
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-brand-fire text-white">
+                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-ice/15 text-ice border border-ice/30">
                       Admin
                     </span>
                   </div>
-                  <p className="text-xs text-neutral-500">Amministratore</p>
+                  <p className="text-xs text-white/50">Amministratore</p>
                 </div>
               </div>
             ) : (
               <div className="flex justify-center">
-                <div className="w-10 h-10 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center">
+                <div className="w-10 h-10 rounded-full bg-ice/10 border border-ice/25 flex items-center justify-center">
                   <span className="text-white font-bold">AM</span>
                 </div>
               </div>
             )}
             <Button 
               variant="ghost" 
-              className="mt-4 text-neutral-400 hover:text-white hover:bg-neutral-900 w-full justify-start"
+              className="mt-4 text-white/60 hover:text-red-200 hover:bg-destructive/10 w-full justify-start"
               onClick={handleLogout}
             >
               <LogOut size={18} />
-              {isSidebarOpen && <span className="ml-2">Logout</span>}
+              {isSidebarOpen && <span className="ml-2">Esci</span>}
             </Button>
           </div>
         </div>
@@ -182,12 +182,12 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
       {/* Main Content */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
-        <header className="bg-black border-b border-neutral-800 p-4 flex items-center justify-between">
+        <header className="bg-background/80 backdrop-blur-xl border-b border-white/10 p-4 flex items-center justify-between">
           <div className="flex items-center">
             <Button
               variant="ghost"
               size="icon"
-              className="md:hidden mr-2 text-neutral-400 hover:text-white hover:bg-neutral-900"
+              className="md:hidden mr-2 text-white/60 hover:bg-white/[.04] hover:text-white"
               onClick={toggleSidebar}
             >
               <Menu />
@@ -195,7 +195,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
             <Button
               variant="ghost"
               size="icon"
-              className="hidden md:flex text-neutral-400 hover:text-white hover:bg-neutral-900"
+              className="hidden md:flex text-white/60 hover:bg-white/[.04] hover:text-white"
               onClick={toggleSidebar}
             >
               <Menu />
@@ -204,10 +204,10 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
               <Input
                 type="text"
                 placeholder="Cerca..."
-                className="pl-10 pr-4 py-2 bg-neutral-900 border-neutral-700 text-white placeholder:text-neutral-500 focus:border-neutral-600"
+                className="input-glass pl-10 pr-4 py-2 rounded-full text-white"
               />
               <Search
-                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-neutral-500"
+                className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/50"
                 size={18}
               />
             </div>
@@ -215,21 +215,21 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
 
           <div className="flex items-center space-x-4">
             <Link to="/dashboard">
-              <Button variant="outline" size="sm" className="gap-2 border-neutral-700 bg-neutral-900 text-white hover:bg-neutral-800">
+              <Button variant="outline" size="sm" className="gap-2">
                 <Home size={16} />
                 <span className="hidden md:inline">Dashboard Utente</span>
               </Button>
             </Link>
-            <Button variant="ghost" size="icon" className="relative text-neutral-400 hover:text-white hover:bg-neutral-900">
+            <Button variant="ghost" size="icon" className="relative text-white/60 hover:bg-white/[.04] hover:text-white">
               <Bell size={20} />
-              <span className="absolute top-0 right-0 w-2 h-2 bg-brand-fire rounded-full"></span>
+              <span className="absolute top-0 right-0 w-2 h-2 bg-ice rounded-full"></span>
             </Button>
-            <div className="hidden md:block h-8 w-px bg-neutral-800"></div>
+            <div className="hidden md:block h-8 w-px bg-white/10"></div>
             <div className="hidden md:flex items-center space-x-2">
-              <div className="w-8 h-8 rounded-full bg-neutral-800 border border-neutral-700 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-ice/10 border border-ice/25 flex items-center justify-center">
                 <span className="text-white font-bold text-sm">AM</span>
               </div>
-              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-brand-fire text-white">
+              <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-ice/15 text-ice border border-ice/30">
                 Admin
               </span>
             </div>
@@ -237,7 +237,7 @@ const AdminLayout = ({ children }: AdminLayoutProps) => {
         </header>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-black">
+        <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-background">
           {children}
         </main>
       </div>

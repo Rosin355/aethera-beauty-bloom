@@ -104,7 +104,7 @@ const ClientMonitoring = () => {
     } else if (growth < 0) {
       return <span className="text-red-600 flex items-center"><ArrowDown className="h-3.5 w-3.5 mr-1" />{Math.abs(growth)}%</span>;
     }
-    return <span className="text-gray-500">0%</span>;
+    return <span className="text-muted-foreground">0%</span>;
   };
 
   return (
@@ -123,7 +123,7 @@ const ClientMonitoring = () => {
                   <div className="flex justify-between items-start mb-4">
                     <div>
                       <h4 className="font-medium">{client.name}</h4>
-                      <p className="text-sm text-gray-500">{client.businessName}</p>
+                      <p className="text-sm text-muted-foreground">{client.businessName}</p>
                     </div>
                     <Link to={`/admin/clients/${client.id}`}>
                       <Button variant="outline" size="sm">Dettagli</Button>
@@ -131,21 +131,21 @@ const ClientMonitoring = () => {
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <p className="text-sm text-gray-500">Ricavi</p>
+                      <p className="text-sm text-muted-foreground">Ricavi</p>
                       <div className="flex items-center mt-1">
                         <span className="font-medium">€{client.revenue}</span>
                         <span className="ml-2">{getGrowthIndicator(client.growth)}</span>
                       </div>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Formazione</p>
+                      <p className="text-sm text-muted-foreground">Formazione</p>
                       <div className="flex items-center space-x-2 mt-1">
                         <Progress value={client.trainingProgress} className="h-2" />
                         <span className="text-sm font-medium">{client.trainingProgress}%</span>
                       </div>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Engagement</p>
+                      <p className="text-sm text-muted-foreground">Engagement</p>
                       <div className="flex items-center space-x-2 mt-1">
                         <Progress value={client.engagement} className="h-2" />
                         <span className="text-sm font-medium">{client.engagement}%</span>
@@ -176,7 +176,7 @@ const ClientMonitoring = () => {
                           {getIssueLabel(client.issue)}
                         </div>
                       </div>
-                      <p className="text-sm text-gray-500">{client.businessName}</p>
+                      <p className="text-sm text-muted-foreground">{client.businessName}</p>
                     </div>
                     <div className="flex space-x-2">
                       <Button size="sm" variant="outline" className="flex items-center">
@@ -190,21 +190,21 @@ const ClientMonitoring = () => {
                   </div>
                   <div className="grid grid-cols-3 gap-2">
                     <div>
-                      <p className="text-sm text-gray-500">Ricavi</p>
+                      <p className="text-sm text-muted-foreground">Ricavi</p>
                       <div className="flex items-center mt-1">
                         <span className="font-medium">€{client.revenue}</span>
                         <span className="ml-2">{getGrowthIndicator(client.growth)}</span>
                       </div>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Formazione</p>
+                      <p className="text-sm text-muted-foreground">Formazione</p>
                       <div className="flex items-center space-x-2 mt-1">
                         <Progress value={client.trainingProgress} className="h-2" />
                         <span className="text-sm font-medium">{client.trainingProgress}%</span>
                       </div>
                     </div>
                     <div>
-                      <p className="text-sm text-gray-500">Engagement</p>
+                      <p className="text-sm text-muted-foreground">Engagement</p>
                       <div className="flex items-center space-x-2 mt-1">
                         <Progress value={client.engagement} className="h-2" />
                         <span className="text-sm font-medium">{client.engagement}%</span>

@@ -247,7 +247,7 @@ const RecentFilesList = ({ refreshTrigger }: RecentFilesListProps) => {
               size="sm" 
               onClick={generateAllMissingEmbeddings}
               disabled={generatingAll}
-              className="text-brand-water border-brand-water/30 hover:bg-brand-water/10"
+              className="text-ice border-ice/30 hover:bg-ice/10"
             >
               {generatingAll ? (
                 <>
@@ -332,7 +332,7 @@ const RecentFilesList = ({ refreshTrigger }: RecentFilesListProps) => {
                     size="sm"
                     onClick={() => generateEmbedding(item)}
                     disabled={generatingEmbedding === item.id}
-                    className="text-brand-water hover:text-brand-water/80"
+                    className="text-ice hover:text-ice/80"
                     title="Genera embedding"
                   >
                     {generatingEmbedding === item.id ? (
@@ -348,7 +348,7 @@ const RecentFilesList = ({ refreshTrigger }: RecentFilesListProps) => {
                     size="sm"
                     onClick={() => generateEmbedding(item)}
                     disabled={generatingEmbedding === item.id}
-                    className="text-muted-foreground hover:text-brand-water"
+                    className="text-muted-foreground hover:text-ice"
                     title="Rigenera embedding"
                   >
                     {generatingEmbedding === item.id ? (

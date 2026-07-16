@@ -117,11 +117,11 @@ const Training = () => {
                   <div className="aspect-video bg-neutral-900 border border-neutral-800 rounded-lg flex items-center justify-center relative overflow-hidden">
                     {course.video ? (
                       <div className="flex flex-col items-center gap-3">
-                        <div className="w-16 h-16 bg-brand-fire rounded-full flex items-center justify-center">
+                        <div className="w-16 h-16 bg-ice/15 border border-ice/30 rounded-full flex items-center justify-center">
                           {course.video.source_type === 'youtube' ? (
-                            <Youtube className="w-8 h-8 text-white" />
+                            <Youtube className="w-8 h-8 text-ice" />
                           ) : (
-                            <Play className="w-8 h-8 text-white ml-1" />
+                            <Play className="w-8 h-8 text-ice ml-1" />
                           )}
                         </div>
                         <p className="text-white text-sm">

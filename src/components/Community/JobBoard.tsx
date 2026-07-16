@@ -218,7 +218,7 @@ export function JobBoard() {
       case 'part-time': return 'bg-blue-500';
       case 'freelance': return 'bg-purple-500';
       case 'internship': return 'bg-orange-500';
-      default: return 'bg-gray-500';
+      default: return 'bg-white/[.03]0';
     }
   };
 

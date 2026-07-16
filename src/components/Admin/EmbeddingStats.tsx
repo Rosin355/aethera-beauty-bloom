@@ -91,7 +91,7 @@ const EmbeddingStats = () => {
     <Card className="bg-neutral-900 border-neutral-800 mb-6">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg flex items-center gap-2">
-          <Search className="h-5 w-5 text-brand-water" />
+          <Search className="h-5 w-5 text-ice" />
           Statistiche Ricerca Semantica
         </CardTitle>
       </CardHeader>
@@ -115,18 +115,18 @@ const EmbeddingStats = () => {
           
           <div className="bg-neutral-800/50 rounded-lg p-4">
             <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
-              <TrendingUp className="h-4 w-4 text-brand-water" />
+              <TrendingUp className="h-4 w-4 text-ice" />
               Ricerche AI
             </div>
-            <p className="text-2xl font-bold text-brand-water">{stats.totalSearches}</p>
+            <p className="text-2xl font-bold text-ice">{stats.totalSearches}</p>
           </div>
           
           <div className="bg-neutral-800/50 rounded-lg p-4">
             <div className="flex items-center gap-2 text-muted-foreground text-sm mb-1">
-              <Search className="h-4 w-4 text-brand-fire" />
+              <Search className="h-4 w-4 text-ice" />
               Tempo Medio
             </div>
-            <p className="text-2xl font-bold text-brand-fire">
+            <p className="text-2xl font-bold text-ice">
               {stats.avgResponseTime > 0 ? `${stats.avgResponseTime}ms` : 'N/A'}
             </p>
           </div>

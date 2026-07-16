@@ -105,10 +105,10 @@ const Navbar = () => {
                 className={cn(
                   "font-medium text-sm transition-colors",
                   isActive(link.path)
-                    ? "text-accent font-semibold"
+                    ? "text-ice font-semibold"
                     : scrolled 
-                      ? "text-muted-foreground hover:text-accent" 
-                      : "text-white hover:text-accent"
+                      ? "text-muted-foreground hover:text-ice" 
+                      : "text-white hover:text-ice"
                 )}
               >
                 {link.name}
@@ -155,7 +155,7 @@ const Navbar = () => {
             <button
               onClick={toggleMenu}
               className={cn(
-                "hover:text-accent",
+                "hover:text-ice",
                 scrolled ? "text-muted-foreground" : "text-white"
               )}
             >
@@ -174,9 +174,9 @@ const Navbar = () => {
                 key={link.name}
                 to={link.path}
                 className={cn(
-                  "block py-2 text-base font-medium hover:text-accent transition-colors",
+                  "block py-2 text-base font-medium hover:text-ice transition-colors",
                   isActive(link.path)
-                    ? "text-accent font-semibold"
+                    ? "text-ice font-semibold"
                     : "text-muted-foreground"
                 )}
                 onClick={() => setIsMenuOpen(false)}

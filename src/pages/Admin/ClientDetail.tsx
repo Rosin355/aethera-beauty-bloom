@@ -80,7 +80,7 @@ const ClientDetail = () => {
     return (
       <AdminLayout>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-brand-earth"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-ice"></div>
         </div>
       </AdminLayout>
     );
@@ -111,27 +111,27 @@ const ClientDetail = () => {
             <h1 className="text-2xl font-playfair">{client?.name}</h1>
           </div>
 
-          <Button className="bg-brand-fire hover:bg-brand-fire/90">
+          <Button>
             Pianifica Chiamata di Supporto
           </Button>
         </div>
 
-        <Card className="bg-white">
+        <Card>
           <CardHeader className="border-b pb-3">
             <CardTitle className="text-xl">{client?.businessName}</CardTitle>
           </CardHeader>
           <CardContent className="pt-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="bg-gray-50 p-4 rounded-md">
-                <div className="text-sm text-gray-500">Ricavi Totali</div>
+              <div className="bg-white/[.03] p-4 rounded-md">
+                <div className="text-sm text-muted-foreground">Ricavi Totali</div>
                 <div className="text-2xl font-medium">€{client?.totalRevenue}</div>
               </div>
-              <div className="bg-gray-50 p-4 rounded-md">
-                <div className="text-sm text-gray-500">Progresso Corsi</div>
+              <div className="bg-white/[.03] p-4 rounded-md">
+                <div className="text-sm text-muted-foreground">Progresso Corsi</div>
                 <div className="text-2xl font-medium">{client?.courseProgress}%</div>
               </div>
-              <div className="bg-gray-50 p-4 rounded-md">
-                <div className="text-sm text-gray-500">Clienti Totali</div>
+              <div className="bg-white/[.03] p-4 rounded-md">
+                <div className="text-sm text-muted-foreground">Clienti Totali</div>
                 <div className="text-2xl font-medium">{client?.clientCount}</div>
               </div>
             </div>

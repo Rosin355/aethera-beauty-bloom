@@ -32,7 +32,7 @@ const Home = () => {
         {/* Floating Dashboard Link for Authenticated Users */}
         {user && (
           <Link to="/dashboard" className="fixed bottom-6 right-6 z-50">
-            <Button className="bg-accent text-white shadow-lg hover:bg-accent/90 transition-all">
+            <Button className="shadow-lg transition-all">
               <ArrowRight className="mr-2" size={20} />
               Vai alla Dashboard
             </Button>

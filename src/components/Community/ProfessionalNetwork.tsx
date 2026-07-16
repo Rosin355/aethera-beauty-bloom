@@ -91,7 +91,7 @@ export function ProfessionalNetwork() {
   };
 
   const getExperienceColor = (years?: number) => {
-    if (!years) return "bg-gray-500";
+    if (!years) return "bg-white/[.03]0";
     if (years < 2) return "bg-green-500";
     if (years < 5) return "bg-blue-500";
     if (years < 10) return "bg-purple-500";

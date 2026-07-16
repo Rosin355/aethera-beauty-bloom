@@ -112,10 +112,10 @@ const ClientPerformance = ({ clientId }: ClientPerformanceProps) => {
           kpis.map((kpi, index) => (
             <Card key={index}>
               <CardContent className="p-4">
-                <p className="text-sm text-gray-500">{kpi.label}</p>
+                <p className="text-sm text-muted-foreground">{kpi.label}</p>
                 <div className="flex items-center justify-between mt-1">
                   <span className="text-2xl font-semibold">{kpi.value}</span>
-                  <Badge className={kpi.trend === "up" ? "bg-green-500" : kpi.trend === "down" ? "bg-red-500" : "bg-gray-500"}>
+                  <Badge className={kpi.trend === "up" ? "bg-green-500" : kpi.trend === "down" ? "bg-red-500" : "bg-white/[.03]0"}>
                     {kpi.change}
                   </Badge>
                 </div>
@@ -124,7 +124,7 @@ const ClientPerformance = ({ clientId }: ClientPerformanceProps) => {
           ))
         ) : (
           <Card className="col-span-full">
-            <CardContent className="p-6 text-center text-sm text-gray-500">
+            <CardContent className="p-6 text-center text-sm text-muted-foreground">
               {isLoading ? "Caricamento KPI..." : "Nessuna metrica KPI disponibile"}
             </CardContent>
           </Card>
@@ -154,7 +154,7 @@ const ClientPerformance = ({ clientId }: ClientPerformanceProps) => {
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-full flex items-center justify-center text-sm text-gray-500">
+              <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
                 {isLoading ? "Caricamento andamento..." : "Nessuna serie storica disponibile"}
               </div>
             )}
@@ -192,7 +192,7 @@ const ClientPerformance = ({ clientId }: ClientPerformanceProps) => {
                   </PieChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-full flex items-center justify-center text-sm text-gray-500">
+                <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
                   Nessun dato fidelizzazione disponibile
                 </div>
               )}
@@ -221,7 +221,7 @@ const ClientPerformance = ({ clientId }: ClientPerformanceProps) => {
       </div>
 
       {!isLoading && performanceTrendData.length === 0 && (
-        <div className="text-center text-sm text-gray-500">
+        <div className="text-center text-sm text-muted-foreground">
           Nessuna metrica disponibile per mostrare la performance.
         </div>
       )}

@@ -31,7 +31,7 @@ interface UserStats {
   requests: number;
 }
 
-const COLORS = ['hsl(var(--primary))', 'hsl(var(--brand-water))', 'hsl(var(--brand-fire))', 'hsl(var(--brand-earth))', 'hsl(var(--brand-air))'];
+const COLORS = ['#bfeeff', '#8fd0e8', '#619fb8', '#3f7089', '#2a4a5c'];
 
 export function AIUsageStats() {
   const [logs, setLogs] = useState<UsageLog[]>([]);
@@ -176,8 +176,8 @@ export function AIUsageStats() {
         <Card className="bg-neutral-800 border-neutral-700">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-brand-water/10">
-                <Bot className="h-5 w-5 text-brand-water" />
+              <div className="p-2 rounded-lg bg-ice/10">
+                <Bot className="h-5 w-5 text-ice" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-white">{totalConversations}</p>
@@ -190,8 +190,8 @@ export function AIUsageStats() {
         <Card className="bg-neutral-800 border-neutral-700">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-brand-fire/10">
-                <Users className="h-5 w-5 text-brand-fire" />
+              <div className="p-2 rounded-lg bg-ice/10">
+                <Users className="h-5 w-5 text-ice" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-white">{activeUsers}</p>
@@ -204,8 +204,8 @@ export function AIUsageStats() {
         <Card className="bg-neutral-800 border-neutral-700">
           <CardContent className="p-4">
             <div className="flex items-center gap-3">
-              <div className="p-2 rounded-lg bg-brand-earth/10">
-                <Clock className="h-5 w-5 text-brand-earth" />
+              <div className="p-2 rounded-lg bg-white/[.06]">
+                <Clock className="h-5 w-5 text-white/70" />
               </div>
               <div>
                 <p className="text-2xl font-bold text-white">{avgResponseTime}ms</p>
@@ -257,9 +257,9 @@ export function AIUsageStats() {
                 <Line 
                   type="monotone" 
                   dataKey="avgResponseTime" 
-                  stroke="hsl(var(--brand-water))" 
+                  stroke="#bfeeff" 
                   strokeWidth={2}
-                  dot={{ fill: 'hsl(var(--brand-water))' }}
+                  dot={{ fill: '#bfeeff' }}
                 />
               </LineChart>
             </ResponsiveContainer>
@@ -317,7 +317,7 @@ export function AIUsageStats() {
                   contentStyle={{ backgroundColor: '#1a1a1a', border: '1px solid #333' }}
                   labelStyle={{ color: '#fff' }}
                 />
-                <Bar dataKey="tokens" fill="hsl(var(--brand-fire))" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="tokens" fill="#8fd0e8" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </CardContent>

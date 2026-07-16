@@ -88,7 +88,7 @@ const ClientsList = () => {
   const getUserTypeBadge = (userType: string | null) => {
     switch(userType) {
       case "professional":
-        return <Badge className="bg-brand-fire">Professionista</Badge>;
+        return <Badge className="bg-ice/15 text-ice border border-ice/30">Professionista</Badge>;
       case "user":
         return <Badge variant="outline" className="bg-muted text-muted-foreground">Utente</Badge>;
       default:

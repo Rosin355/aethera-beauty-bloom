@@ -156,7 +156,7 @@ const ManualDataInput = ({ onSaveComplete }: ManualDataInputProps) => {
             </Button>
             <Button 
               type="submit" 
-              className="bg-brand-fire hover:bg-brand-fire/90"
+             
               disabled={isSaving}
             >
               {isSaving ? (

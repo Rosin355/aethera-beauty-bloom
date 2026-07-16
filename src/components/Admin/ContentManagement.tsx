@@ -94,15 +94,15 @@ const ContentManagement = () => {
   const getTypeIcon = (type: string) => {
     switch(type) {
       case "video":
-        return <Video className="h-5 w-5 text-brand-fire" />;
+        return <Video className="h-5 w-5 text-ice" />;
       case "course":
-        return <BookOpen className="h-5 w-5 text-brand-water" />;
+        return <BookOpen className="h-5 w-5 text-ice" />;
       case "document":
-        return <FileText className="h-5 w-5 text-brand-earth" />;
+        return <FileText className="h-5 w-5 text-white/70" />;
       case "webinar":
-        return <Video className="h-5 w-5 text-brand-air" />;
+        return <Video className="h-5 w-5 text-white/50" />;
       default:
-        return <FileText className="h-5 w-5 text-gray-400" />;
+        return <FileText className="h-5 w-5 text-white/45" />;
     }
   };
 
@@ -111,9 +111,9 @@ const ContentManagement = () => {
       case "all":
         return <Badge className="bg-green-500">Tutti</Badge>;
       case "premium":
-        return <Badge className="bg-brand-fire">Premium</Badge>;
+        return <Badge className="bg-ice/15 text-ice border border-ice/30">Premium</Badge>;
       case "specific":
-        return <Badge className="bg-brand-water">Specifico</Badge>;
+        return <Badge className="bg-white/10 text-white/80 border border-white/15">Specifico</Badge>;
       default:
         return <Badge variant="outline">Sconosciuto</Badge>;
     }
@@ -165,7 +165,7 @@ const ContentManagement = () => {
           <CardTitle className="text-xl">Gestione Contenuti</CardTitle>
           <Dialog open={isAddingContent} onOpenChange={setIsAddingContent}>
             <DialogTrigger asChild>
-              <Button className="bg-brand-fire hover:bg-brand-fire/90">
+              <Button>
                 <Plus className="mr-2 h-4 w-4" /> Aggiungi Contenuto
               </Button>
             </DialogTrigger>
@@ -243,9 +243,9 @@ const ContentManagement = () => {
                 
                 <div className="grid gap-2">
                   <Label>Carica File</Label>
-                  <div className="border-2 border-dashed border-gray-300 rounded-md p-6 flex flex-col items-center justify-center">
-                    <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                    <p className="text-sm text-gray-500">Trascina il file qui o</p>
+                  <div className="border-2 border-dashed border-white/15 rounded-md p-6 flex flex-col items-center justify-center">
+                    <Upload className="h-8 w-8 text-white/45 mb-2" />
+                    <p className="text-sm text-muted-foreground">Trascina il file qui o</p>
                     <Button variant="outline" size="sm" className="mt-2">
                       Seleziona File
                     </Button>
@@ -271,7 +271,7 @@ const ContentManagement = () => {
               </TabsList>
               
               <div className="relative w-64">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/45" size={18} />
                 <Input
                   placeholder="Cerca contenuti..."
                   className="pl-10"

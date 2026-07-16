@@ -106,7 +106,7 @@ const ClientOverview = ({ clientId }: ClientOverviewProps) => {
                 </LineChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-full flex items-center justify-center text-sm text-gray-500">
+              <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
                 Nessun dato ricavi disponibile
               </div>
             )}
@@ -143,7 +143,7 @@ const ClientOverview = ({ clientId }: ClientOverviewProps) => {
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
-                <div className="h-full flex items-center justify-center text-sm text-gray-500">
+                <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
                   Nessun servizio disponibile
                 </div>
               )}
@@ -159,26 +159,26 @@ const ClientOverview = ({ clientId }: ClientOverviewProps) => {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <h4 className="text-sm font-medium text-gray-500">Business Health Score</h4>
+                  <h4 className="text-sm font-medium text-muted-foreground">Business Health Score</h4>
                   <div className="mt-1 flex items-center">
-                    <div className="w-16 h-16 rounded-full bg-brand-water text-white flex items-center justify-center text-xl font-bold">
+                    <div className="w-16 h-16 rounded-full bg-ice/15 text-ice border border-ice/25 flex items-center justify-center text-xl font-bold">
                       {details.healthScore}
                     </div>
                     <div className="ml-4">
                       <span className="text-sm font-medium">{details.healthLabel}</span>
-                      <p className="text-xs text-gray-500">{details.healthDelta}</p>
+                      <p className="text-xs text-muted-foreground">{details.healthDelta}</p>
                     </div>
                   </div>
                 </div>
                 <div>
-                  <h4 className="text-sm font-medium text-gray-500">Numero di Sessioni</h4>
+                  <h4 className="text-sm font-medium text-muted-foreground">Numero di Sessioni</h4>
                   <p className="text-2xl font-semibold mt-1">{details.sessionsCount}</p>
-                  <p className="text-xs text-gray-500">Ultimo accesso: {details.lastAccess}</p>
+                  <p className="text-xs text-muted-foreground">Ultimo accesso: {details.lastAccess}</p>
                 </div>
               </div>
               
               <div className="border-t pt-4">
-                <h4 className="text-sm font-medium text-gray-500 mb-2">Risorse Completate</h4>
+                <h4 className="text-sm font-medium text-muted-foreground mb-2">Risorse Completate</h4>
                 <div className="space-y-2">
                   {details.resources.length > 0 ? (
                     details.resources.map((resource, index) => (
@@ -188,7 +188,7 @@ const ClientOverview = ({ clientId }: ClientOverviewProps) => {
                       </div>
                     ))
                   ) : (
-                    <div className="text-sm text-gray-500">Nessun progresso formazione disponibile</div>
+                    <div className="text-sm text-muted-foreground">Nessun progresso formazione disponibile</div>
                   )}
                 </div>
               </div>
@@ -198,7 +198,7 @@ const ClientOverview = ({ clientId }: ClientOverviewProps) => {
       </div>
 
       {!isLoading && !hasData && (
-        <div className="text-center text-sm text-gray-500">
+        <div className="text-center text-sm text-muted-foreground">
           Nessuna metrica disponibile per questo cliente.
         </div>
       )}

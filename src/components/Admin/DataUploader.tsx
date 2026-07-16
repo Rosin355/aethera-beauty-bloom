@@ -261,7 +261,7 @@ const DataUploader = ({
                         {(selectedFile.size / 1024).toFixed(2)} KB
                       </p>
                       {isDocumentFile(selectedFile.name) && (
-                        <p className="text-xs text-brand-water mt-1">
+                        <p className="text-xs text-ice mt-1">
                           Il testo verrà estratto automaticamente
                         </p>
                       )}
@@ -284,7 +284,7 @@ const DataUploader = ({
                     </Button>
                     <Button 
                       onClick={handleUpload} 
-                      className="bg-brand-water hover:bg-brand-water/90"
+                     
                       disabled={isUploading}
                     >
                       {isUploading ? (
@@ -307,7 +307,7 @@ const DataUploader = ({
               <p className="text-sm text-muted-foreground mb-2">
                 Supporta: CSV, XLSX, JSON, TXT
               </p>
-              <p className="text-sm text-brand-water mb-4">
+              <p className="text-sm text-ice mb-4">
                 + ODT, DOCX, DOC, PDF (estrazione testo automatica)
               </p>
               <div className="flex space-x-2">
