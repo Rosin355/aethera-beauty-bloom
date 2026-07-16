@@ -33,7 +33,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import { Plus, Search, Archive, ArchiveRestore, Edit, Trash } from "lucide-react";
+import { Plus, Search, Archive, ArchiveRestore, Edit, Trash, TriangleAlert } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   archiveInventoryItem,
@@ -194,7 +194,7 @@ const InventoryManager = () => {
           <CardTitle className="text-xl font-medium">Gestione Inventario</CardTitle>
           <Dialog open={isAddingProduct} onOpenChange={(open) => (open ? setIsAddingProduct(true) : closeDialog())}>
             <DialogTrigger asChild>
-              <Button className="bg-brand-fire hover:bg-brand-fire/90">
+              <Button size="pill">
                 <Plus className="mr-2 h-4 w-4" /> Nuovo prodotto
               </Button>
             </DialogTrigger>
@@ -276,10 +276,10 @@ const InventoryManager = () => {
         <CardContent>
           <div className="flex items-center gap-3 mb-6">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-white/45" size={18} />
               <Input
                 placeholder="Cerca per nome, categoria o fornitore..."
-                className="pl-10"
+                className="input-glass pl-10 rounded-full"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
@@ -294,7 +294,7 @@ const InventoryManager = () => {
             </Button>
           </div>
           
-          <div className="border rounded-md">
+          <div className="border border-white/10 rounded-xl overflow-hidden">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -312,14 +312,19 @@ const InventoryManager = () => {
                     <TableRow key={product.id}>
                       <TableCell className="font-medium">{product.name}</TableCell>
                       <TableCell>
-                        <Badge variant="outline" className="bg-gray-100">
+                        <Badge variant="outline" className="bg-white/5 border-white/15 text-white/80">
                           {product.category}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <span className={product.quantity <= 5 ? "text-red-500 font-semibold" : ""}>
-                          {product.quantity}
-                        </span>
+                        {product.quantity <= 5 ? (
+                          <span className="inline-flex items-center gap-1 rounded-full border border-red-400/40 bg-red-500/10 px-2.5 py-0.5 text-xs font-semibold text-red-200">
+                            <TriangleAlert className="h-3 w-3" aria-hidden="true" />
+                            {product.quantity} — scorte basse
+                          </span>
+                        ) : (
+                          <span>{product.quantity}</span>
+                        )}
                       </TableCell>
                       <TableCell>{product.supplier}</TableCell>
                       <TableCell>€{product.price.toFixed(2)}</TableCell>
@@ -373,7 +378,7 @@ const InventoryManager = () => {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-8 w-8 hover:bg-red-50 hover:text-red-500"
+                              className="h-8 w-8 hover:bg-destructive/10 hover:text-red-300"
                               aria-label="Elimina prodotto"
                             >
                               <Trash className="h-4 w-4" />
@@ -388,7 +393,10 @@ const InventoryManager = () => {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Annulla</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteProduct(product.id)}>
+                              <AlertDialogAction
+                                className="border border-destructive/40 bg-destructive/10 text-red-300 hover:bg-destructive/20 hover:text-red-200"
+                                onClick={() => handleDeleteProduct(product.id)}
+                              >
                                 Elimina
                               </AlertDialogAction>
                             </AlertDialogFooter>
@@ -399,8 +407,27 @@ const InventoryManager = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="h-24 text-center">
-                      {isLoading ? "Caricamento inventario..." : "Nessun prodotto"}
+                    <TableCell colSpan={6} className="py-12 text-center">
+                      {isLoading ? (
+                        <span className="text-sm text-muted-foreground">Caricamento inventario...</span>
+                      ) : (
+                        <div className="flex flex-col items-center justify-center">
+                          <p className="eyebrow">Inventario</p>
+                          <h3 className="mt-2 text-lg font-medium font-playfair text-foreground">
+                            {showArchived ? "Nessun prodotto archiviato" : "Nessun prodotto"}
+                          </h3>
+                          <p className="mt-2 text-sm text-muted-foreground">
+                            {showArchived
+                              ? "I prodotti archiviati compariranno qui."
+                              : "Aggiungi il primo prodotto per tenere sotto controllo le scorte."}
+                          </p>
+                          {!showArchived && (
+                            <Button size="pill" className="mt-6" onClick={() => setIsAddingProduct(true)}>
+                              <Plus className="mr-2 h-4 w-4" /> Nuovo prodotto
+                            </Button>
+                          )}
+                        </div>
+                      )}
                     </TableCell>
                   </TableRow>
                 )}

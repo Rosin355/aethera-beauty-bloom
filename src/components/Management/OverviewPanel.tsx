@@ -45,59 +45,46 @@ const OverviewPanel = () => {
   const totalRevenue = kpis.revenue;
   const hasAnyData = kpis.totalBookings > 0 || kpis.productsTracked > 0 || series.topServices.length > 0;
 
-  const COLORS = ["#6AA8B3", "#E46A39", "#C2977E", "#CBD8D4", "#1B1B1B"];
+  // Palette icy monocromatica coerente con il design system.
+  const COLORS = ["#bfeeff", "#8fd0e8", "#619fb8", "#3f7089", "#2a4a5c"];
+  const AXIS_TICK = { fill: "rgba(255,255,255,0.55)", fontSize: 12 };
+  const TOOLTIP_STYLE = {
+    background: "#0a0a0a",
+    border: "1px solid rgba(255,255,255,0.12)",
+    borderRadius: 12,
+    color: "#fff",
+  };
+
+  const kpiCards = [
+    { label: "Appuntamenti Totali", value: String(kpis.totalBookings), note: "Ultimi 7 giorni", Icon: Calendar },
+    { label: "Fatturato", value: `€${kpis.revenue.toFixed(2)}`, note: "Ricavi appuntamenti", Icon: ChartPie },
+    { label: "Prodotti Tracciati", value: String(kpis.productsTracked), note: "Prodotti in inventario", Icon: ShoppingBag },
+    { label: "Valore Medio Servizio", value: `€${kpis.avgServiceValue.toFixed(2)}`, note: "Per appuntamento", Icon: ChartPie },
+  ];
 
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between py-4">
-            <CardTitle className="text-sm font-medium">Total Bookings</CardTitle>
-            <Calendar className="h-4 w-4 text-gray-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-baseline space-x-2">
-              <div className="text-3xl font-bold">{kpis.totalBookings}</div>
-            </div>
-            <p className="text-xs text-gray-500 mt-1">Ultimi 7 giorni</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between py-4">
-            <CardTitle className="text-sm font-medium">Revenue</CardTitle>
-            <ChartPie className="h-4 w-4 text-gray-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">€{kpis.revenue.toFixed(2)}</div>
-            <p className="text-xs text-gray-500 mt-1">Ricavi appuntamenti</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between py-4">
-            <CardTitle className="text-sm font-medium">Products Sold</CardTitle>
-            <ShoppingBag className="h-4 w-4 text-gray-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">{kpis.productsTracked}</div>
-            <p className="text-xs text-gray-500 mt-1">Prodotti in inventario</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between py-4">
-            <CardTitle className="text-sm font-medium">Avg. Service Value</CardTitle>
-            <ChartPie className="h-4 w-4 text-gray-500" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-3xl font-bold">€{kpis.avgServiceValue.toFixed(2)}</div>
-            <p className="text-xs text-gray-500 mt-1">Valore medio servizio</p>
-          </CardContent>
-        </Card>
+        {kpiCards.map(({ label, value, note, Icon }) => (
+          <Card key={label} className="border-white/10 bg-white/[0.03]">
+            <CardHeader className="flex flex-row items-center justify-between py-4">
+              <CardTitle className="text-[11px] uppercase tracking-[0.18em] text-white/45 font-medium">
+                {label}
+              </CardTitle>
+              <Icon className="h-4 w-4 text-white/45" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-semibold text-white">{value}</div>
+              <p className="text-xs text-muted-foreground mt-1">{note}</p>
+            </CardContent>
+          </Card>
+        ))}
       </div>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
+        <Card className="border-white/10 bg-white/[0.03]">
           <CardHeader>
-            <CardTitle className="text-lg font-medium">Weekly Bookings</CardTitle>
+            <CardTitle className="text-lg font-medium">Appuntamenti Settimanali</CardTitle>
           </CardHeader>
           <CardContent className="h-80">
             {series.weeklyBookings.length > 0 ? (
@@ -111,24 +98,24 @@ const OverviewPanel = () => {
                     bottom: 5,
                   }}
                 >
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="name" />
-                  <YAxis />
-                  <Tooltip />
-                  <Bar dataKey="bookings" fill="#6AA8B3" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.08)" />
+                  <XAxis dataKey="name" tick={AXIS_TICK} axisLine={{ stroke: "rgba(255,255,255,0.12)" }} tickLine={{ stroke: "rgba(255,255,255,0.12)" }} />
+                  <YAxis tick={AXIS_TICK} axisLine={{ stroke: "rgba(255,255,255,0.12)" }} tickLine={{ stroke: "rgba(255,255,255,0.12)" }} />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} cursor={{ fill: "rgba(255,255,255,0.06)" }} />
+                  <Bar dataKey="bookings" fill="#bfeeff" radius={[6, 6, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-full flex items-center justify-center text-sm text-gray-500">
+              <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
                 Nessun appuntamento disponibile
               </div>
             )}
           </CardContent>
         </Card>
-        
-        <Card>
+
+        <Card className="border-white/10 bg-white/[0.03]">
           <CardHeader>
-            <CardTitle className="text-lg font-medium">Product Usage by Category</CardTitle>
+            <CardTitle className="text-lg font-medium">Prodotti per Categoria</CardTitle>
           </CardHeader>
           <CardContent className="h-80">
             {series.productUsage.length > 0 ? (
@@ -139,20 +126,24 @@ const OverviewPanel = () => {
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    label={({ name, percent, x, y, textAnchor }) => (
+                      <text x={x} y={y} textAnchor={textAnchor} fill="rgba(255,255,255,0.75)" fontSize={12}>
+                        {`${name} ${(percent * 100).toFixed(0)}%`}
+                      </text>
+                    )}
                     outerRadius={80}
-                    fill="#8884d8"
+                    fill="#bfeeff"
                     dataKey="value"
                   >
                     {series.productUsage.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="rgba(0,0,0,0.4)" />
                     ))}
                   </Pie>
-                  <Tooltip />
+                  <Tooltip contentStyle={TOOLTIP_STYLE} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-full flex items-center justify-center text-sm text-gray-500">
+              <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
                 Nessun dato inventario disponibile
               </div>
             )}
@@ -160,36 +151,36 @@ const OverviewPanel = () => {
         </Card>
       </div>
       
-      <Card>
+      <Card className="border-white/10 bg-white/[0.03]">
         <CardHeader>
-          <CardTitle className="text-lg font-medium">Top Performing Services</CardTitle>
+          <CardTitle className="text-lg font-medium">Servizi più Performanti</CardTitle>
         </CardHeader>
         <CardContent>
           {series.topServices.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               {series.topServices.map((service, index) => (
-                <Card key={index} className="hover:shadow-md transition-shadow">
+                <Card key={index} className="border-white/10 bg-white/[.02] transition-colors hover:border-ice/30">
                   <CardContent className="p-4 space-y-2">
                     <div className="flex items-center justify-between">
                       <h3 className="font-semibold truncate">{service.name}</h3>
-                      <Badge variant="outline" className="bg-brand-cream text-brand-black">
+                      <Badge variant="outline" className="bg-ice/10 text-ice border-ice/30">
                         #{index + 1}
                       </Badge>
                     </div>
                     <div className="space-y-1 text-sm">
                       <div className="flex justify-between">
-                        <span className="text-gray-500">Bookings:</span>
+                        <span className="text-muted-foreground">Prenotazioni:</span>
                         <span className="font-medium">{service.count}</span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-gray-500">Revenue:</span>
+                        <span className="text-muted-foreground">Fatturato:</span>
                         <span className="font-medium">€{service.revenue.toFixed(2)}</span>
                       </div>
                     </div>
-                    <div className="mt-2 pt-2 border-t border-gray-100">
+                    <div className="mt-2 pt-2 border-t border-white/10">
                       <div className="flex justify-between items-center text-xs">
-                        <span className="text-gray-500">% of total revenue</span>
-                        <span className="text-brand-fire font-semibold">
+                        <span className="text-muted-foreground">% del fatturato totale</span>
+                        <span className="text-ice font-semibold">
                           {totalRevenue > 0 ? Math.round((service.revenue / totalRevenue) * 100) : 0}%
                         </span>
                       </div>
@@ -199,7 +190,7 @@ const OverviewPanel = () => {
               ))}
             </div>
           ) : (
-            <div className="py-8 text-center text-sm text-gray-500">
+            <div className="py-8 text-center text-sm text-muted-foreground">
               Nessun servizio con performance disponibile
             </div>
           )}
@@ -207,7 +198,7 @@ const OverviewPanel = () => {
       </Card>
 
       {!isLoading && !hasAnyData && (
-        <div className="text-center text-sm text-gray-500">
+        <div className="text-center text-sm text-muted-foreground">
           Nessun dato disponibile. Aggiungi servizi, prodotti e appuntamenti per visualizzare la panoramica.
         </div>
       )}

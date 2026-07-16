@@ -43,11 +43,13 @@ import {
 import { useCenter } from "@/contexts/CenterContext";
 import { toast } from "sonner";
 
+// Stati sempre leggibili a riposo su fondo scuro: confermato ciano, in attesa
+// ambra, completato verde, annullato rosso attenuato.
 const STATUS_META: Record<AppointmentStatus, { label: string; className: string }> = {
-  confermato: { label: "Confermato", className: "bg-blue-100 text-blue-700" },
-  in_attesa: { label: "In attesa", className: "bg-amber-100 text-amber-700" },
-  completato: { label: "Completato", className: "bg-green-100 text-green-700" },
-  annullato: { label: "Annullato", className: "bg-red-100 text-red-600" },
+  confermato: { label: "Confermato", className: "border border-ice/40 bg-ice/10 text-ice" },
+  in_attesa: { label: "In attesa", className: "border border-amber-300/40 bg-amber-400/10 text-amber-200" },
+  completato: { label: "Completato", className: "border border-emerald-300/40 bg-emerald-400/10 text-emerald-200" },
+  annullato: { label: "Annullato", className: "border border-red-300/25 bg-red-400/[.07] text-red-200/75" },
 };
 const STATUS_ORDER: AppointmentStatus[] = ["in_attesa", "confermato", "completato", "annullato"];
 
@@ -232,7 +234,7 @@ const AppointmentScheduler = () => {
           <div className="mt-6">
             <Dialog open={isAddingAppointment} onOpenChange={(open) => (open ? setIsAddingAppointment(true) : closeDialog())}>
               <DialogTrigger asChild>
-                <Button className="w-full bg-brand-water hover:bg-brand-water/90">
+                <Button size="pill" className="w-full">
                   <Plus className="mr-2 h-4 w-4" /> Nuovo appuntamento
                 </Button>
               </DialogTrigger>
@@ -249,7 +251,7 @@ const AppointmentScheduler = () => {
                       Cliente
                     </Label>
                     <div className="col-span-3 flex items-center border rounded-md">
-                      <User className="ml-2 h-4 w-4 text-gray-400" />
+                      <User className="ml-2 h-4 w-4 text-white/45" />
                       <Input
                         id="clientName"
                         value={newAppointment.clientName}
@@ -270,7 +272,7 @@ const AppointmentScheduler = () => {
                       >
                         <SelectTrigger className="w-full">
                           <div className="flex items-center">
-                            <Scissors className="mr-2 h-4 w-4 text-gray-400" />
+                            <Scissors className="mr-2 h-4 w-4 text-white/45" />
                             <SelectValue placeholder="Seleziona servizio" />
                           </div>
                         </SelectTrigger>
@@ -295,7 +297,7 @@ const AppointmentScheduler = () => {
                       >
                         <SelectTrigger className="w-full">
                           <div className="flex items-center">
-                            <Clock className="mr-2 h-4 w-4 text-gray-400" />
+                            <Clock className="mr-2 h-4 w-4 text-white/45" />
                             <SelectValue placeholder="Seleziona orario" />
                           </div>
                         </SelectTrigger>
@@ -375,25 +377,25 @@ const AppointmentScheduler = () => {
                 return (
                   <div
                     key={appointment.id}
-                    className={`flex flex-wrap justify-between items-center gap-3 p-4 border rounded-lg transition-colors ${
-                      status === "annullato" ? "opacity-60 border-dashed" : "hover:bg-gray-50"
+                    className={`flex flex-wrap justify-between items-center gap-3 p-4 border border-white/10 bg-white/[.02] rounded-xl transition-colors ${
+                      status === "annullato" ? "opacity-60 border-dashed" : "hover:bg-white/[.05]"
                     }`}
                   >
                     <div className="flex items-center">
-                      <div className="h-10 w-10 rounded-full bg-brand-water flex items-center justify-center text-white">
+                      <div className="h-10 w-10 rounded-full bg-ice/15 border border-ice/25 flex items-center justify-center text-ice font-semibold">
                         {appointment.client_name.charAt(0)}
                       </div>
                       <div className="ml-4">
                         <h4 className={`font-medium ${status === "annullato" ? "line-through" : ""}`}>
                           {appointment.client_name}
                         </h4>
-                        <p className="text-sm text-gray-500">{appointment.service_name}</p>
+                        <p className="text-sm text-muted-foreground">{appointment.service_name}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <Badge className={meta.className}>{meta.label}</Badge>
-                      <div className="flex items-center text-sm text-gray-500">
-                        <Clock className="h-4 w-4 text-gray-400 mr-1" />
+                      <div className="flex items-center text-sm text-muted-foreground">
+                        <Clock className="h-4 w-4 text-white/45 mr-1" />
                         {formatTimeFromDate(appointment.appointment_at)}
                       </div>
                       <Select value={status} onValueChange={(v) => handleStatusChange(appointment.id, v as AppointmentStatus)}>
@@ -433,7 +435,10 @@ const AppointmentScheduler = () => {
                             </AlertDialogHeader>
                             <AlertDialogFooter>
                               <AlertDialogCancel>Annulla</AlertDialogCancel>
-                              <AlertDialogAction onClick={() => handleDeleteAppointment(appointment.id)}>
+                              <AlertDialogAction
+                                className="border border-destructive/40 bg-destructive/10 text-red-300 hover:bg-destructive/20 hover:text-red-200"
+                                onClick={() => handleDeleteAppointment(appointment.id)}
+                              >
                                 Elimina
                               </AlertDialogAction>
                             </AlertDialogFooter>
@@ -446,16 +451,18 @@ const AppointmentScheduler = () => {
               })}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-12">
-              <CalendarIcon className="h-12 w-12 text-gray-300" />
-              <h3 className="mt-4 text-lg font-medium text-gray-900">
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <CalendarIcon className="h-12 w-12 text-white/20" />
+              <p className="eyebrow mt-5">Agenda</p>
+              <h3 className="mt-2 text-lg font-medium font-playfair text-foreground">
                 {isLoading ? "Caricamento appuntamenti..." : "Nessun appuntamento"}
               </h3>
-              <p className="mt-2 text-sm text-gray-500">
+              <p className="mt-2 text-sm text-muted-foreground">
                 Non ci sono appuntamenti per questo giorno.
               </p>
               <Button
-                className="mt-6 bg-brand-water hover:bg-brand-water/90"
+                size="pill"
+                className="mt-6"
                 onClick={() => setIsAddingAppointment(true)}
               >
                 <Plus className="mr-2 h-4 w-4" /> Nuovo appuntamento

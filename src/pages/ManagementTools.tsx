@@ -19,14 +19,15 @@ const ManagementTools = () => {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <Card className="bg-gradient-to-r from-brand-water to-brand-water/70 text-white">
+        <Card className="glass-card rounded-[28px] border-white/10 text-white">
           <CardHeader>
+            <p className="eyebrow mb-2">Gestionale</p>
             <CardTitle className="text-2xl font-playfair">
               Strumenti di Gestione
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-white/90">
+            <p className="text-muted-foreground">
               Organizza le operazioni del tuo business in modo efficiente con questi strumenti di gestione.
             </p>
           </CardContent>

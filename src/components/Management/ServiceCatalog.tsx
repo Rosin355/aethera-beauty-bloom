@@ -160,7 +160,7 @@ const ServiceCatalog = () => {
           <CardTitle className="text-xl font-medium">Catalogo Servizi</CardTitle>
           <Dialog open={isAddingService} onOpenChange={(open) => (open ? setIsAddingService(true) : closeDialog())}>
             <DialogTrigger asChild>
-              <Button className="bg-brand-earth hover:bg-brand-earth/90">
+              <Button size="pill">
                 <Plus className="mr-2 h-4 w-4" /> Nuovo servizio
               </Button>
             </DialogTrigger>
@@ -261,8 +261,8 @@ const ServiceCatalog = () => {
             <TabsContent value={activeCategory} className="mt-0">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {filteredServices.map((service) => (
-                  <Card key={service.id} className="overflow-hidden border hover:shadow-md transition-shadow">
-                    <div className="bg-gray-50 p-4 flex justify-between items-start border-b">
+                  <Card key={service.id} className="overflow-hidden border border-white/10 bg-white/[.02] transition-colors hover:border-ice/30">
+                    <div className="bg-white/[.03] p-4 flex justify-between items-start border-b border-white/10">
                       <div>
                         <h3 className="font-semibold text-lg">{service.name}</h3>
                         <Badge variant="outline" className="mt-1">
@@ -295,7 +295,10 @@ const ServiceCatalog = () => {
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Annulla</AlertDialogCancel>
-                                <AlertDialogAction onClick={() => handleDeleteService(service.id)}>
+                                <AlertDialogAction
+                                  className="border border-destructive/40 bg-destructive/10 text-red-300 hover:bg-destructive/20 hover:text-red-200"
+                                  onClick={() => handleDeleteService(service.id)}
+                                >
                                   Elimina
                                 </AlertDialogAction>
                               </AlertDialogFooter>
@@ -305,15 +308,15 @@ const ServiceCatalog = () => {
                       </div>
                     </div>
                     <CardContent className="p-4">
-                      <p className="text-gray-600 text-sm mb-4">{service.description}</p>
+                      <p className="text-muted-foreground text-sm mb-4">{service.description}</p>
                       <div className="flex justify-between items-center mt-2">
-                        <div className="flex items-center text-sm text-gray-500">
+                        <div className="flex items-center text-sm text-muted-foreground">
                           <Clock className="h-4 w-4 mr-1" />
                           <span>
                             {formatDuration(service.duration_minutes)}
                           </span>
                         </div>
-                        <div className="flex items-center font-semibold">
+                        <div className="flex items-center font-semibold text-ice">
                           <Euro className="h-4 w-4 mr-1" />
                           <span>{Number(service.price).toFixed(2)}</span>
                         </div>
@@ -323,20 +326,22 @@ const ServiceCatalog = () => {
                 ))}
               </div>
               {isLoading && (
-                <div className="text-center py-8 text-sm text-gray-500">Caricamento servizi...</div>
+                <div className="text-center py-8 text-sm text-muted-foreground">Caricamento servizi...</div>
               )}
-              
+
               {filteredServices.length === 0 && (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <List className="h-12 w-12 text-gray-300" />
-                  <h3 className="mt-4 text-lg font-medium text-gray-900">Nessun servizio</h3>
-                  <p className="mt-2 text-sm text-gray-500">
+                  <List className="h-12 w-12 text-white/20" />
+                  <p className="eyebrow mt-5">Listino</p>
+                  <h3 className="mt-2 text-lg font-medium font-playfair text-foreground">Nessun servizio</h3>
+                  <p className="mt-2 text-sm text-muted-foreground">
                     {activeCategory === "all"
                       ? "Non hai ancora aggiunto servizi."
                       : "Non hai ancora servizi in questa categoria."}
                   </p>
                   <Button
-                    className="mt-6 bg-brand-earth hover:bg-brand-earth/90"
+                    size="pill"
+                    className="mt-6"
                     onClick={() => setIsAddingService(true)}
                   >
                     <Plus className="mr-2 h-4 w-4" /> Nuovo servizio
