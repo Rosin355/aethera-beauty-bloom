@@ -521,6 +521,7 @@ export type Database = {
       }
       business_appointments: {
         Row: {
+          notes: string | null
           center_id: string
           appointment_at: string
           client_name: string
@@ -535,6 +536,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          notes?: string | null
           center_id: string
           appointment_at: string
           client_name: string
@@ -549,6 +551,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          notes?: string | null
           center_id?: string
           appointment_at?: string
           client_name?: string
@@ -718,6 +721,7 @@ export type Database = {
       }
       inventory_items: {
         Row: {
+          archived_at: string | null
           center_id: string
           category: string
           created_at: string
@@ -731,6 +735,7 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          archived_at?: string | null
           center_id: string
           category: string
           created_at?: string
@@ -744,6 +749,7 @@ export type Database = {
           user_id: string
         }
         Update: {
+          archived_at?: string | null
           center_id?: string
           category?: string
           created_at?: string
@@ -1158,6 +1164,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          email: string
           avatar_url: string | null
           bio: string | null
           business_name: string | null
@@ -1186,6 +1193,7 @@ export type Database = {
           website_url: string | null
         }
         Insert: {
+          email?: string
           avatar_url?: string | null
           bio?: string | null
           business_name?: string | null
@@ -1214,6 +1222,7 @@ export type Database = {
           website_url?: string | null
         }
         Update: {
+          email?: string
           avatar_url?: string | null
           bio?: string | null
           business_name?: string | null

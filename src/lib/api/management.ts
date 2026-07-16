@@ -9,6 +9,8 @@ export type BusinessService = ServiceRow;
 export type InventoryItem = InventoryRow;
 export type BusinessAppointment = AppointmentRow;
 
+export type AppointmentStatus = "confermato" | "in_attesa" | "completato" | "annullato";
+
 export type OverviewKpis = {
   totalBookings: number;
   revenue: number;
@@ -67,12 +69,45 @@ export const createBusinessService = async (
   return data;
 };
 
+export const updateBusinessService = async (
+  centerId: string,
+  id: string,
+  payload: Partial<{
+    name: string;
+    category: string;
+    duration_minutes: number;
+    price: number;
+    description: string;
+    is_active: boolean;
+  }>,
+): Promise<BusinessService> => {
+  const { data, error } = await supabase
+    .from("business_services")
+    .update(payload)
+    .eq("id", id)
+    .eq("center_id", centerId)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
+};
+
+// Owner-only per RLS (center_role='owner'); non-owners get a permission error.
+export const deleteBusinessService = async (centerId: string, id: string): Promise<void> => {
+  const { error } = await supabase
+    .from("business_services")
+    .delete()
+    .eq("id", id)
+    .eq("center_id", centerId);
+  if (error) throw error;
+};
+
 export const fetchInventoryItems = async (centerId: string): Promise<InventoryItem[]> => {
   const { data, error } = await supabase
     .from("inventory_items")
     .select("*")
     .eq("center_id", centerId)
-    .eq("is_archived", false)
+    .is("archived_at", null)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
@@ -107,6 +142,52 @@ export const deleteInventoryItem = async (centerId: string, id: string): Promise
     .eq("id", id)
     .eq("center_id", centerId);
   if (error) throw error;
+};
+
+export const updateInventoryItem = async (
+  centerId: string,
+  id: string,
+  payload: Partial<{ name: string; category: string; quantity: number; supplier: string; price: number }>,
+): Promise<InventoryItem> => {
+  const { data, error } = await supabase
+    .from("inventory_items")
+    .update(payload)
+    .eq("id", id)
+    .eq("center_id", centerId)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
+};
+
+// Soft archive: keeps historical appointment/report references valid.
+export const archiveInventoryItem = async (centerId: string, id: string): Promise<void> => {
+  const { error } = await supabase
+    .from("inventory_items")
+    .update({ archived_at: new Date().toISOString(), is_archived: true })
+    .eq("id", id)
+    .eq("center_id", centerId);
+  if (error) throw error;
+};
+
+export const unarchiveInventoryItem = async (centerId: string, id: string): Promise<void> => {
+  const { error } = await supabase
+    .from("inventory_items")
+    .update({ archived_at: null, is_archived: false })
+    .eq("id", id)
+    .eq("center_id", centerId);
+  if (error) throw error;
+};
+
+export const fetchArchivedInventoryItems = async (centerId: string): Promise<InventoryItem[]> => {
+  const { data, error } = await supabase
+    .from("inventory_items")
+    .select("*")
+    .eq("center_id", centerId)
+    .not("archived_at", "is", null)
+    .order("archived_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
 };
 
 export const fetchAppointmentsByDate = async (
@@ -161,6 +242,41 @@ export const createAppointment = async (
   return data;
 };
 
+export const updateAppointment = async (
+  centerId: string,
+  id: string,
+  payload: Partial<{
+    client_name: string;
+    service_id: string | null;
+    service_name: string;
+    appointment_at: string;
+    duration_minutes: number;
+    price: number;
+    status: AppointmentStatus;
+    notes: string | null;
+  }>,
+): Promise<BusinessAppointment> => {
+  const { data, error } = await supabase
+    .from("business_appointments")
+    .update(payload)
+    .eq("id", id)
+    .eq("center_id", centerId)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
+};
+
+// Owner-only per RLS (center_role='owner').
+export const deleteAppointment = async (centerId: string, id: string): Promise<void> => {
+  const { error } = await supabase
+    .from("business_appointments")
+    .delete()
+    .eq("id", id)
+    .eq("center_id", centerId);
+  if (error) throw error;
+};
+
 export const fetchOverviewData = async (
   centerId: string,
 ): Promise<{ kpis: OverviewKpis; series: OverviewSeries }> => {
@@ -179,7 +295,7 @@ export const fetchOverviewData = async (
       .from("inventory_items")
       .select("category")
       .eq("center_id", centerId)
-      .eq("is_archived", false),
+      .is("archived_at", null),
   ]);
 
   if (appointmentsRes.error) throw appointmentsRes.error;
