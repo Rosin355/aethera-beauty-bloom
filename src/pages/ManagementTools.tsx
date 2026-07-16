@@ -7,10 +7,15 @@ import AppointmentScheduler from "@/components/Management/AppointmentScheduler";
 import InventoryManager from "@/components/Management/InventoryManager";
 import ServiceCatalog from "@/components/Management/ServiceCatalog";
 import OverviewPanel from "@/components/Management/OverviewPanel";
+import CenterMembersCard from "@/components/Management/CenterMembersCard";
+import CategorySettings from "@/components/Management/CategorySettings";
+import { useCenter } from "@/contexts/CenterContext";
 
 const ManagementTools = () => {
   const [activeTab, setActiveTab] = useState("appointments");
-  
+  const { role } = useCenter();
+  const isOwner = role === "owner";
+
   return (
     <DashboardLayout>
       <div className="space-y-6">
@@ -28,11 +33,13 @@ const ManagementTools = () => {
         </Card>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid grid-cols-4 mb-8">
+          <TabsList className={`grid ${isOwner ? "grid-cols-6" : "grid-cols-4"} mb-8`}>
             <TabsTrigger value="appointments">Appuntamenti</TabsTrigger>
             <TabsTrigger value="inventory">Inventario</TabsTrigger>
             <TabsTrigger value="services">Servizi</TabsTrigger>
             <TabsTrigger value="overview">Panoramica</TabsTrigger>
+            {isOwner && <TabsTrigger value="team">Team</TabsTrigger>}
+            {isOwner && <TabsTrigger value="settings">Impostazioni</TabsTrigger>}
           </TabsList>
           
           <TabsContent value="appointments" className="space-y-4">
@@ -50,6 +57,18 @@ const ManagementTools = () => {
           <TabsContent value="overview" className="space-y-4">
             <OverviewPanel />
           </TabsContent>
+
+          {isOwner && (
+            <TabsContent value="team" className="space-y-4">
+              <CenterMembersCard />
+            </TabsContent>
+          )}
+
+          {isOwner && (
+            <TabsContent value="settings" className="space-y-4">
+              <CategorySettings />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </DashboardLayout>

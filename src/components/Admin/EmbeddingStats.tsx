@@ -150,8 +150,8 @@ const EmbeddingStats = () => {
           {stats.documentsWithoutEmbedding > 0 && (
             <div className="bg-amber-500/10 border border-amber-500/30 rounded-lg p-3">
               <p className="text-sm text-amber-500">
-                ⚠️ {stats.documentsWithoutEmbedding} documenti non hanno embedding. 
-                Usa "Indicizza tutti" per abilitare la ricerca semantica su tutti i contenuti.
+                ⚠️ {stats.documentsWithoutEmbedding} documenti non hanno embedding.
+                La ricerca attuale è lessicale (full-text) e copre già tutti i contenuti; gli embedding serviranno per la ricerca semantica (fase 2).
               </p>
             </div>
           )}
@@ -159,7 +159,7 @@ const EmbeddingStats = () => {
           {stats.coveragePercentage === 100 && stats.totalDocuments > 0 && (
             <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3">
               <p className="text-sm text-green-500">
-                ✓ Tutti i documenti sono indicizzati! La ricerca semantica è completamente operativa.
+                ✓ Ricerca lessicale (full-text) attiva su tutti i contenuti. Gli embedding sono pronti per la ricerca semantica (fase 2).
               </p>
             </div>
           )}

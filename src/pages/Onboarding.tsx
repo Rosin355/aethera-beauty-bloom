@@ -14,6 +14,7 @@ import Logo from "@/components/Layout/Logo";
 import OnboardingForm from "@/components/Onboarding/OnboardingForm";
 import CompletionDialog from "@/components/Onboarding/CompletionDialog";
 import { supabase } from "@/integrations/supabase/client";
+import { ensureCenterForUser } from "@/lib/api/centers";
 import { toast as sonnerToast } from "sonner";
 
 const Onboarding = () => {
@@ -68,6 +69,12 @@ const Onboarding = () => {
       if (saveHandler) {
         const success = await saveHandler();
         if (success) {
+          // Every owner gets a center (idempotent: reuses an existing membership).
+          try {
+            await ensureCenterForUser();
+          } catch (centerError) {
+            console.error("Errore nella creazione del centro:", centerError);
+          }
           setShowCompletionDialog(true);
         }
       } else {
@@ -99,8 +106,14 @@ const Onboarding = () => {
         if (error) {
           console.error('Error marking onboarding as skipped:', error);
         }
+
+        try {
+          await ensureCenterForUser();
+        } catch (centerError) {
+          console.error("Errore nella creazione del centro:", centerError);
+        }
       }
-      
+
       toast({
         title: "Onboarding saltato",
         description: "Puoi completare il processo di onboarding più tardi nelle impostazioni del profilo."

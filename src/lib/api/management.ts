@@ -9,6 +9,8 @@ export type BusinessService = ServiceRow;
 export type InventoryItem = InventoryRow;
 export type BusinessAppointment = AppointmentRow;
 
+export type AppointmentStatus = "confermato" | "in_attesa" | "completato" | "annullato";
+
 export type OverviewKpis = {
   totalBookings: number;
   revenue: number;
@@ -24,6 +26,8 @@ export type OverviewSeries = {
 
 const dayNames = ["Dom", "Lun", "Mar", "Mer", "Gio", "Ven", "Sab"];
 
+// Business data is isolated per CENTER (RLS enforces it). user_id is still recorded on
+// inserts for audit ("who created this row"), but the tenant key is center_id.
 const getCurrentUserId = async (): Promise<string> => {
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) {
@@ -32,12 +36,11 @@ const getCurrentUserId = async (): Promise<string> => {
   return data.user.id;
 };
 
-export const fetchBusinessServices = async (): Promise<BusinessService[]> => {
-  const userId = await getCurrentUserId();
+export const fetchBusinessServices = async (centerId: string): Promise<BusinessService[]> => {
   const { data, error } = await supabase
     .from("business_services")
     .select("*")
-    .eq("user_id", userId)
+    .eq("center_id", centerId)
     .eq("is_active", true)
     .order("created_at", { ascending: false });
 
@@ -45,17 +48,20 @@ export const fetchBusinessServices = async (): Promise<BusinessService[]> => {
   return data ?? [];
 };
 
-export const createBusinessService = async (payload: {
-  name: string;
-  category: string;
-  duration_minutes: number;
-  price: number;
-  description: string;
-}): Promise<BusinessService> => {
+export const createBusinessService = async (
+  centerId: string,
+  payload: {
+    name: string;
+    category: string;
+    duration_minutes: number;
+    price: number;
+    description: string;
+  },
+): Promise<BusinessService> => {
   const userId = await getCurrentUserId();
   const { data, error } = await supabase
     .from("business_services")
-    .insert({ ...payload, user_id: userId })
+    .insert({ ...payload, center_id: centerId, user_id: userId })
     .select("*")
     .single();
 
@@ -63,30 +69,65 @@ export const createBusinessService = async (payload: {
   return data;
 };
 
-export const fetchInventoryItems = async (): Promise<InventoryItem[]> => {
-  const userId = await getCurrentUserId();
+export const updateBusinessService = async (
+  centerId: string,
+  id: string,
+  payload: Partial<{
+    name: string;
+    category: string;
+    duration_minutes: number;
+    price: number;
+    description: string;
+    is_active: boolean;
+  }>,
+): Promise<BusinessService> => {
+  const { data, error } = await supabase
+    .from("business_services")
+    .update(payload)
+    .eq("id", id)
+    .eq("center_id", centerId)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
+};
+
+// Owner-only per RLS (center_role='owner'); non-owners get a permission error.
+export const deleteBusinessService = async (centerId: string, id: string): Promise<void> => {
+  const { error } = await supabase
+    .from("business_services")
+    .delete()
+    .eq("id", id)
+    .eq("center_id", centerId);
+  if (error) throw error;
+};
+
+export const fetchInventoryItems = async (centerId: string): Promise<InventoryItem[]> => {
   const { data, error } = await supabase
     .from("inventory_items")
     .select("*")
-    .eq("user_id", userId)
-    .eq("is_archived", false)
+    .eq("center_id", centerId)
+    .is("archived_at", null)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
   return data ?? [];
 };
 
-export const createInventoryItem = async (payload: {
-  name: string;
-  category: string;
-  quantity: number;
-  supplier: string;
-  price: number;
-}): Promise<InventoryItem> => {
+export const createInventoryItem = async (
+  centerId: string,
+  payload: {
+    name: string;
+    category: string;
+    quantity: number;
+    supplier: string;
+    price: number;
+  },
+): Promise<InventoryItem> => {
   const userId = await getCurrentUserId();
   const { data, error } = await supabase
     .from("inventory_items")
-    .insert({ ...payload, user_id: userId })
+    .insert({ ...payload, center_id: centerId, user_id: userId })
     .select("*")
     .single();
 
@@ -94,18 +135,65 @@ export const createInventoryItem = async (payload: {
   return data;
 };
 
-export const deleteInventoryItem = async (id: string): Promise<void> => {
-  const userId = await getCurrentUserId();
+export const deleteInventoryItem = async (centerId: string, id: string): Promise<void> => {
   const { error } = await supabase
     .from("inventory_items")
     .delete()
     .eq("id", id)
-    .eq("user_id", userId);
+    .eq("center_id", centerId);
   if (error) throw error;
 };
 
-export const fetchAppointmentsByDate = async (date: Date): Promise<BusinessAppointment[]> => {
-  const userId = await getCurrentUserId();
+export const updateInventoryItem = async (
+  centerId: string,
+  id: string,
+  payload: Partial<{ name: string; category: string; quantity: number; supplier: string; price: number }>,
+): Promise<InventoryItem> => {
+  const { data, error } = await supabase
+    .from("inventory_items")
+    .update(payload)
+    .eq("id", id)
+    .eq("center_id", centerId)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
+};
+
+// Soft archive: keeps historical appointment/report references valid.
+export const archiveInventoryItem = async (centerId: string, id: string): Promise<void> => {
+  const { error } = await supabase
+    .from("inventory_items")
+    .update({ archived_at: new Date().toISOString(), is_archived: true })
+    .eq("id", id)
+    .eq("center_id", centerId);
+  if (error) throw error;
+};
+
+export const unarchiveInventoryItem = async (centerId: string, id: string): Promise<void> => {
+  const { error } = await supabase
+    .from("inventory_items")
+    .update({ archived_at: null, is_archived: false })
+    .eq("id", id)
+    .eq("center_id", centerId);
+  if (error) throw error;
+};
+
+export const fetchArchivedInventoryItems = async (centerId: string): Promise<InventoryItem[]> => {
+  const { data, error } = await supabase
+    .from("inventory_items")
+    .select("*")
+    .eq("center_id", centerId)
+    .not("archived_at", "is", null)
+    .order("archived_at", { ascending: false });
+  if (error) throw error;
+  return data ?? [];
+};
+
+export const fetchAppointmentsByDate = async (
+  centerId: string,
+  date: Date,
+): Promise<BusinessAppointment[]> => {
   const from = new Date(date);
   from.setHours(0, 0, 0, 0);
   const to = new Date(date);
@@ -114,7 +202,7 @@ export const fetchAppointmentsByDate = async (date: Date): Promise<BusinessAppoi
   const { data, error } = await supabase
     .from("business_appointments")
     .select("*")
-    .eq("user_id", userId)
+    .eq("center_id", centerId)
     .gte("appointment_at", from.toISOString())
     .lte("appointment_at", to.toISOString())
     .order("appointment_at", { ascending: true });
@@ -123,18 +211,22 @@ export const fetchAppointmentsByDate = async (date: Date): Promise<BusinessAppoi
   return data ?? [];
 };
 
-export const createAppointment = async (payload: {
-  client_name: string;
-  service_id?: string | null;
-  service_name: string;
-  appointment_at: string;
-  duration_minutes?: number;
-  price?: number;
-}): Promise<BusinessAppointment> => {
+export const createAppointment = async (
+  centerId: string,
+  payload: {
+    client_name: string;
+    service_id?: string | null;
+    service_name: string;
+    appointment_at: string;
+    duration_minutes?: number;
+    price?: number;
+  },
+): Promise<BusinessAppointment> => {
   const userId = await getCurrentUserId();
   const { data, error } = await supabase
     .from("business_appointments")
     .insert({
+      center_id: centerId,
       user_id: userId,
       client_name: payload.client_name,
       service_id: payload.service_id ?? null,
@@ -150,9 +242,44 @@ export const createAppointment = async (payload: {
   return data;
 };
 
-export const fetchOverviewData = async (): Promise<{ kpis: OverviewKpis; series: OverviewSeries }> => {
-  const userId = await getCurrentUserId();
+export const updateAppointment = async (
+  centerId: string,
+  id: string,
+  payload: Partial<{
+    client_name: string;
+    service_id: string | null;
+    service_name: string;
+    appointment_at: string;
+    duration_minutes: number;
+    price: number;
+    status: AppointmentStatus;
+    notes: string | null;
+  }>,
+): Promise<BusinessAppointment> => {
+  const { data, error } = await supabase
+    .from("business_appointments")
+    .update(payload)
+    .eq("id", id)
+    .eq("center_id", centerId)
+    .select("*")
+    .single();
+  if (error) throw error;
+  return data;
+};
 
+// Owner-only per RLS (center_role='owner').
+export const deleteAppointment = async (centerId: string, id: string): Promise<void> => {
+  const { error } = await supabase
+    .from("business_appointments")
+    .delete()
+    .eq("id", id)
+    .eq("center_id", centerId);
+  if (error) throw error;
+};
+
+export const fetchOverviewData = async (
+  centerId: string,
+): Promise<{ kpis: OverviewKpis; series: OverviewSeries }> => {
   const now = new Date();
   const weekStart = new Date(now);
   weekStart.setDate(now.getDate() - 6);
@@ -162,13 +289,13 @@ export const fetchOverviewData = async (): Promise<{ kpis: OverviewKpis; series:
     supabase
       .from("business_appointments")
       .select("appointment_at, service_name, price")
-      .eq("user_id", userId)
+      .eq("center_id", centerId)
       .gte("appointment_at", weekStart.toISOString()),
     supabase
       .from("inventory_items")
       .select("category")
-      .eq("user_id", userId)
-      .eq("is_archived", false),
+      .eq("center_id", centerId)
+      .is("archived_at", null),
   ]);
 
   if (appointmentsRes.error) throw appointmentsRes.error;

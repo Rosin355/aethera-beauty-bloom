@@ -45,6 +45,10 @@ const ClientDetail = () => {
         }
 
         const metric = summary.latestMetric;
+        // training_progress is a Json column; narrow to a typed array before averaging.
+        const progressPoints: ProgressPoint[] = Array.isArray(metric?.training_progress)
+          ? (metric.training_progress as unknown as ProgressPoint[])
+          : [];
         setClient({
           id: summary.profile.user_id,
           name: summary.profile.display_name,
@@ -53,12 +57,10 @@ const ClientDetail = () => {
           signupDate: summary.profile.created_at,
           totalRevenue: Number(metric?.revenue ?? 0),
           courseProgress:
-            Array.isArray(metric?.training_progress) && metric.training_progress.length > 0
+            progressPoints.length > 0
               ? Math.round(
-                  metric.training_progress.reduce(
-                    (sum: number, item: ProgressPoint) => sum + Number(item.value || 0),
-                    0
-                  ) / metric.training_progress.length
+                  progressPoints.reduce((sum, item) => sum + Number(item?.value ?? 0), 0) /
+                    progressPoints.length
                 )
               : 0,
           clientCount: metric?.active_clients ?? 0,

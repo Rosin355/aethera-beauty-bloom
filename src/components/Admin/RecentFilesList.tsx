@@ -297,7 +297,7 @@ const RecentFilesList = ({ refreshTrigger }: RecentFilesListProps) => {
                   <div className="flex items-center gap-2">
                     <p className="font-medium text-foreground truncate">{item.title}</p>
                     {item.embedding ? (
-                      <span className="flex items-center gap-1 text-xs text-green-500" title="Indicizzato per ricerca semantica">
+                      <span className="flex items-center gap-1 text-xs text-green-500" title="Ricerca lessicale (full-text) attiva su questo documento">
                         <Zap className="h-3 w-3" />
                       </span>
                     ) : (

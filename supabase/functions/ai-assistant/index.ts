@@ -10,6 +10,31 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Fallback base prompt used only when ai_system_config has no active 'system_prompt' row.
+const DEFAULT_SYSTEM_PROMPT = `Sei l'assistente AI di 4 Elementi Italia, una piattaforma completa dedicata ai professionisti del settore estetica e bellezza.
+
+IDENTITÀ E MISSIONE:
+Sei un consulente esperto e affidabile che supporta titolari di centri estetici, estetiste e operatori del settore fornendo consulenza operativa, strategica e formativa. Il tuo obiettivo è aiutare i professionisti a far crescere la loro attività, ottimizzare i processi e raggiungere i loro obiettivi di business.
+
+LINEE GUIDA DI COMUNICAZIONE:
+- Rispondi SEMPRE in italiano
+- Sii professionale ma cordiale, empatico e incoraggiante
+- Fornisci consigli pratici, specifici e immediatamente attuabili
+- Usa esempi concreti dal settore estetica quando possibile
+- Se non conosci la risposta, ammettilo e suggerisci come l'utente può trovare l'informazione
+- Quando appropriato, fai riferimento ai moduli e funzionalità della piattaforma 4 Elementi
+- Struttura le risposte lunghe con elenchi puntati o numerati per chiarezza
+
+AREE DI COMPETENZA SPECIFICHE:
+1. Gestione operativa del centro estetico
+2. Marketing e comunicazione (social media, contenuti, promozioni)
+3. Gestione clienti, fidelizzazione e CRM
+4. Analisi KPI e performance finanziaria
+5. Gestione team, formazione e incentivi
+6. Protocolli trattamenti e best practices
+7. Pricing, listini e marginalità
+8. Ottimizzazione magazzino e inventario`;
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -25,7 +50,27 @@ serve(async (req) => {
     if (!Array.isArray(messages) || messages.length === 0) {
       throw new HttpError(400, "Messaggi non validi");
     }
-    
+
+    // Input hardening: cap conversation size, reject oversized payloads, and only
+    // accept user/assistant roles (a client must never inject a "system" message,
+    // nor malformed roles/content).
+    const MAX_MESSAGES = 30;
+    const MAX_MESSAGES_BYTES = 32 * 1024;
+    if (messages.length > MAX_MESSAGES) {
+      throw new HttpError(400, "Troppi messaggi nella conversazione");
+    }
+    if (new TextEncoder().encode(JSON.stringify(messages)).length > MAX_MESSAGES_BYTES) {
+      throw new HttpError(413, "Payload dei messaggi troppo grande");
+    }
+    const sanitizedMessages = messages.map((message: unknown) => {
+      const role = (message as { role?: unknown })?.role;
+      const content = (message as { content?: unknown })?.content;
+      if (typeof content !== "string" || (role !== "user" && role !== "assistant")) {
+        throw new HttpError(400, "Formato messaggio non valido");
+      }
+      return { role, content };
+    });
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       throw new Error('LOVABLE_API_KEY non configurata');
@@ -81,96 +126,67 @@ IMPORTANTE: Personalizza le tue risposte in base a questo profilo. Se l'utente �
       .eq('is_active', true)
       .order('sort_order', { ascending: true });
 
+    // Base system prompt comes from ai_system_config ('system_prompt'); fall back to default.
+    const systemPromptRow = systemConfig?.find((c) => c.config_key === 'system_prompt');
+    const baseSystemPrompt = systemPromptRow?.config_value?.trim()
+      ? systemPromptRow.config_value
+      : DEFAULT_SYSTEM_PROMPT;
+
     let systemInstructions = '';
     if (systemConfig && systemConfig.length > 0) {
       systemInstructions = '\n\nCAPACITÀ OPERATIVE E MODULI DISPONIBILI:\n';
       systemConfig.forEach((config) => {
-        if (config.config_key !== 'general_context') {
+        if (config.config_key !== 'general_context' && config.config_key !== 'system_prompt') {
           systemInstructions += `\n${config.config_value}\n`;
         }
       });
-      
+
       const generalContext = systemConfig.find(c => c.config_key === 'general_context');
       if (generalContext) {
         systemInstructions = `\n${generalContext.config_value}\n` + systemInstructions;
       }
     }
 
-    // Generate embedding for user's query for semantic search
-    const lastUserMessage = messages[messages.length - 1]?.content || '';
-    const queryEmbedding = generateSimpleEmbedding(lastUserMessage);
-    const embeddingStr = `[${queryEmbedding.join(',')}]`;
+    // Lightweight keyword retrieval (full-text) over the 4E knowledge base — no embeddings.
+    const lastUserMessage = sanitizedMessages[sanitizedMessages.length - 1]?.content || '';
 
-    // Semantic search for relevant training data
-    const { data: semanticResults, error: semanticError } = await supabase
-      .rpc('search_training_data', {
-        query_embedding: embeddingStr,
-        match_threshold: 0.3,
-        match_count: 5
-      });
+    let docs: Array<{ title: string; description?: string | null; content: string }> = [];
+    const { data: matches, error: matchError } = await supabase.rpc('match_training_data_fts', {
+      query_text: lastUserMessage,
+      match_count: 4,
+    });
 
-    let trainingContext = '';
-    if (semanticError) {
-      // Fallback to standard fetch if semantic search fails
-      const { data: trainingData, error: trainingError } = await supabase
+    if (!matchError && Array.isArray(matches) && matches.length > 0) {
+      docs = matches as typeof docs;
+    } else {
+      // Fallback: most recent active documents when full-text finds nothing (or errors).
+      const { data: recent } = await supabase
         .from('ai_training_data')
-        .select('title, description, content, data_type')
+        .select('title, description, content')
         .eq('is_active', true)
         .order('created_at', { ascending: false })
-        .limit(5);
+        .limit(4);
+      if (recent) docs = recent;
+    }
 
-      if (!trainingError && trainingData && trainingData.length > 0) {
-        trainingContext = '\n\nBASE DI CONOSCENZA:\n';
-        trainingData.forEach((item, index) => {
-          trainingContext += `\n--- Documento ${index + 1}: ${item.title} ---\n`;
-          if (item.description) {
-            trainingContext += `Descrizione: ${item.description}\n`;
-          }
-          const contentPreview = item.content.length > 4000 
-            ? item.content.substring(0, 4000) + '... [contenuto troncato]'
-            : item.content;
-          trainingContext += `Contenuto:\n${contentPreview}\n`;
-        });
-      }
-    } else if (semanticResults && semanticResults.length > 0) {
-      trainingContext = '\n\nDOCUMENTI PERTINENTI (selezionati in base alla tua domanda):\n';
-      semanticResults.forEach((item: { title: string; similarity: number; description?: string | null; content: string }, index: number) => {
-        trainingContext += `\n--- Documento ${index + 1}: ${item.title} (rilevanza: ${Math.round(item.similarity * 100)}%) ---\n`;
+    let trainingContext = '';
+    if (docs.length > 0) {
+      trainingContext = '\n\nMATERIALE DI RIFERIMENTO (basa la risposta su questi contenuti del metodo 4 Elementi):\n';
+      docs.forEach((item, index) => {
+        trainingContext += `\n--- Documento ${index + 1}: ${item.title} ---\n`;
         if (item.description) {
           trainingContext += `Descrizione: ${item.description}\n`;
         }
-        const contentPreview = item.content.length > 5000 
-          ? item.content.substring(0, 5000) + '... [contenuto troncato]'
+        const contentPreview = item.content.length > 4000
+          ? item.content.substring(0, 4000) + '... [contenuto troncato]'
           : item.content;
         trainingContext += `Contenuto:\n${contentPreview}\n`;
       });
     }
 
-    const systemPrompt = `Sei l'assistente AI di 4 Elementi Italia, una piattaforma completa dedicata ai professionisti del settore estetica e bellezza.
-
-IDENTITÀ E MISSIONE:
-Sei un consulente esperto e affidabile che supporta titolari di centri estetici, estetiste e operatori del settore fornendo consulenza operativa, strategica e formativa. Il tuo obiettivo è aiutare i professionisti a far crescere la loro attività, ottimizzare i processi e raggiungere i loro obiettivi di business.
+    const systemPrompt = `${baseSystemPrompt}
 ${systemInstructions}
 ${userContext}
-
-LINEE GUIDA DI COMUNICAZIONE:
-- Rispondi SEMPRE in italiano
-- Sii professionale ma cordiale, empatico e incoraggiante
-- Fornisci consigli pratici, specifici e immediatamente attuabili
-- Usa esempi concreti dal settore estetica quando possibile
-- Se non conosci la risposta, ammettilo e suggerisci come l'utente può trovare l'informazione
-- Quando appropriato, fai riferimento ai moduli e funzionalità della piattaforma 4 Elementi
-- Struttura le risposte lunghe con elenchi puntati o numerati per chiarezza
-
-AREE DI COMPETENZA SPECIFICHE:
-1. Gestione operativa del centro estetico
-2. Marketing e comunicazione (social media, contenuti, promozioni)
-3. Gestione clienti, fidelizzazione e CRM
-4. Analisi KPI e performance finanziaria
-5. Gestione team, formazione e incentivi
-6. Protocolli trattamenti e best practices
-7. Pricing, listini e marginalità
-8. Ottimizzazione magazzino e inventario
 ${trainingContext}`;
 
     const modelName = 'google/gemini-2.5-flash';
@@ -184,7 +200,7 @@ ${trainingContext}`;
         model: modelName,
         messages: [
           { role: 'system', content: systemPrompt },
-          ...messages,
+          ...sanitizedMessages,
         ],
         stream: true,
       }),
@@ -215,7 +231,7 @@ ${trainingContext}`;
     EdgeRuntime.waitUntil((async () => {
       try {
         // Estimate token counts (rough approximation)
-        const inputTokens = Math.ceil((systemPrompt.length + messages.reduce((acc: number, m: { content?: string }) => acc + (m.content?.length ?? 0), 0)) / 4);
+        const inputTokens = Math.ceil((systemPrompt.length + sanitizedMessages.reduce((acc: number, m: { content?: string }) => acc + (m.content?.length ?? 0), 0)) / 4);
         
         await supabase.from('ai_usage_logs').insert({
           user_id: authenticatedUserId,
@@ -246,71 +262,3 @@ ${trainingContext}`;
     return toErrorResponse(error, corsHeaders);
   }
 });
-
-// Simple embedding function using TF-IDF-like approach
-// Creates a 768-dimension vector from text content
-function generateSimpleEmbedding(text: string): number[] {
-  const dimension = 768;
-  const embedding = new Array(dimension).fill(0);
-  
-  // Normalize and tokenize
-  const normalized = text.toLowerCase().replace(/[^a-zàèéìòù0-9\s]/g, ' ');
-  const words = normalized.split(/\s+/).filter(w => w.length > 2);
-  
-  if (words.length === 0) {
-    for (let i = 0; i < dimension; i++) {
-      embedding[i] = (Math.random() - 0.5) * 0.1;
-    }
-    return normalizeVector(embedding);
-  }
-  
-  // Word frequency map
-  const wordFreq: { [key: string]: number } = {};
-  words.forEach(word => {
-    wordFreq[word] = (wordFreq[word] || 0) + 1;
-  });
-  
-  // Hash each word to specific dimensions
-  Object.entries(wordFreq).forEach(([word, freq]) => {
-    for (let h = 0; h < 3; h++) {
-      const hash = hashString(word + h.toString());
-      const pos = Math.abs(hash) % dimension;
-      const sign = hash > 0 ? 1 : -1;
-      embedding[pos] += sign * Math.log(1 + freq) / words.length;
-    }
-    
-    // Character n-gram features
-    for (let i = 0; i < word.length - 1; i++) {
-      const bigram = word.substring(i, i + 2);
-      const bigramHash = hashString('bg_' + bigram);
-      const bigramPos = Math.abs(bigramHash) % dimension;
-      embedding[bigramPos] += (bigramHash > 0 ? 1 : -1) * 0.1 / words.length;
-    }
-  });
-  
-  // Structural features
-  const uniqueWordRatio = Object.keys(wordFreq).length / words.length;
-  embedding[0] = uniqueWordRatio;
-  embedding[1] = Math.log(1 + words.length) / 10;
-  embedding[2] = text.split(/[.!?]/).length / 100;
-  
-  return normalizeVector(embedding);
-}
-
-function hashString(str: string): number {
-  let hash = 0;
-  for (let i = 0; i < str.length; i++) {
-    const char = str.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash;
-  }
-  return hash;
-}
-
-function normalizeVector(vec: number[]): number[] {
-  const magnitude = Math.sqrt(vec.reduce((sum, val) => sum + val * val, 0));
-  if (magnitude === 0) {
-    return vec.map(() => 1 / Math.sqrt(vec.length));
-  }
-  return vec.map(val => val / magnitude);
-}

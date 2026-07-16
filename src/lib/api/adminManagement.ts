@@ -92,10 +92,21 @@ export const createClientNote = async (payload: {
     createdByName = profile?.display_name || createdByName;
   }
 
+  // client_notes is tenant-scoped (center_id NOT NULL); resolve the client's own center.
+  const { data: center } = await supabase
+    .from("centers")
+    .select("id")
+    .eq("owner_user_id", payload.client_user_id)
+    .maybeSingle();
+  if (!center) {
+    throw new Error("Nessun centro trovato per questo cliente");
+  }
+
   const { data, error } = await supabase
     .from("client_notes")
     .insert({
       ...payload,
+      center_id: center.id,
       created_by: user?.id ?? null,
       created_by_name: createdByName,
     })

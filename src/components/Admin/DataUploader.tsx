@@ -150,8 +150,9 @@ const DataUploader = ({
         throw dbError;
       }
 
-      // Generate embedding for the document
-      setUploadProgress('Generazione embedding per ricerca semantica...');
+      // Generate embedding for the document (kept for phase-2 semantic search; current
+      // retrieval is lexical/full-text and needs no embedding step).
+      setUploadProgress('Preparazione embedding (fase 2); contenuto già ricercabile via full-text...');
       try {
         const { data: sessionData } = await supabase.auth.getSession();
         const token = sessionData?.session?.access_token;
