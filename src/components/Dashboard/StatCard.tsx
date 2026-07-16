@@ -1,5 +1,6 @@
 
 import { ReactNode } from "react";
+import { TrendingDown, TrendingUp } from "lucide-react";
 
 interface StatCardProps {
   title: string;
@@ -11,54 +12,35 @@ interface StatCardProps {
   };
 }
 
+/** KPI card in the same visual language as the hero dashboard preview:
+    eyebrow label, big number, cyan delta. */
 const StatCard = ({ title, value, icon, change }: StatCardProps) => {
   return (
-    <div className="glass rounded-xl p-6 transition-all hover:shadow-md border border-neutral-800">
+    <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition-colors hover:border-white/20">
       <div className="flex justify-between items-start">
         <div>
-          <p className="text-sm text-muted-foreground mb-1">{title}</p>
-          <h3 className="text-2xl font-bold font-playfair text-white">{value}</h3>
-          
+          <p className="text-[11px] uppercase tracking-[0.18em] text-white/45 mb-2">{title}</p>
+          <h3 className="text-2xl font-semibold text-white">{value}</h3>
+
           {change && (
-            <div className="flex items-center mt-2">
+            <div className="flex items-center gap-1 mt-2">
+              {change.isPositive ? (
+                <TrendingUp className="h-3 w-3 text-ice" aria-hidden="true" />
+              ) : (
+                <TrendingDown className="h-3 w-3 text-red-300" aria-hidden="true" />
+              )}
               <span
                 className={`text-xs font-medium ${
-                  change.isPositive ? "text-neutral-300" : "text-neutral-400"
+                  change.isPositive ? "text-ice" : "text-red-300"
                 }`}
               >
                 {change.isPositive ? "+" : ""}{change.value}
               </span>
-              <svg
-                className={`w-3 h-3 ml-1 ${
-                  change.isPositive ? "text-neutral-300" : "text-neutral-400"
-                }`}
-                viewBox="0 0 24 24"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                {change.isPositive ? (
-                  <path
-                    d="M18 15L12 9L6 15"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                ) : (
-                  <path
-                    d="M6 9L12 15L18 9"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                )}
-              </svg>
-              <span className="text-xs text-muted-foreground ml-1">vs last month</span>
+              <span className="text-xs text-white/45 ml-1">vs mese scorso</span>
             </div>
           )}
         </div>
-        <div className="bg-neutral-800 p-2 rounded-lg border border-neutral-700">{icon}</div>
+        <div className="bg-white/5 p-2 rounded-xl border border-white/10">{icon}</div>
       </div>
     </div>
   );

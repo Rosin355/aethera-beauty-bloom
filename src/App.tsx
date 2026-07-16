@@ -37,7 +37,7 @@ const queryClient = new QueryClient();
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Helmet titleTemplate="%s | 4 elementi Italia" defaultTitle="4 elementi Italia - Piattaforma di Crescita per Business Beauty" />
+      <Helmet titleTemplate="%s | 4 Elementi Italia" defaultTitle="4 Elementi Italia - Piattaforma di Crescita per Business Beauty" />
       <Toaster />
       <Sonner />
       <CookieBanner />

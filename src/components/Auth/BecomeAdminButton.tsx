@@ -114,22 +114,21 @@ const BecomeAdminButton = () => {
   }
 
   return (
-    <div className="bg-accent/10 border border-accent/20 rounded-lg p-4 mb-6">
+    <div className="bg-ice/[.06] border border-ice/20 rounded-2xl p-4 mb-6">
       <div className="flex items-start gap-3">
-        <Shield className="text-accent mt-1" size={20} />
+        <Shield className="text-ice mt-1" size={20} />
         <div className="flex-1">
-          <h3 className="font-semibold text-accent mb-1">
+          <h3 className="font-semibold text-ice mb-1">
             Nessun amministratore configurato
           </h3>
           <p className="text-sm text-muted-foreground mb-3">
-            Sembra che non ci siano ancora amministratori nel sistema. 
+            Sembra che non ci siano ancora amministratori nel sistema.
             Puoi diventare il primo amministratore per gestire la piattaforma.
           </p>
           <Button
             onClick={becomeAdmin}
             disabled={loading}
             size="sm"
-            className="bg-accent hover:bg-accent/90"
           >
             {loading ? "Assegnazione..." : "Diventa Amministratore"}
           </Button>
