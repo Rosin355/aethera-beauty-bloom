@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import Logo from "@/components/Layout/Logo";
-import { Lock, Eye, EyeOff } from "lucide-react";
+import { Lock, Eye, EyeOff, Loader2 } from "lucide-react";
 
 const ResetPassword = () => {
   const [password, setPassword] = useState("");
@@ -131,35 +131,17 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <div className="p-4">
+    <div className="min-h-screen bg-background flex flex-col relative">
+      <div className="page-glow" aria-hidden="true" />
+      <div className="p-4 relative z-[1]">
         <Logo />
       </div>
-      <div className="flex-1 flex flex-col items-center justify-center px-4">
-        <div className="glass-strong rounded-lg p-8 w-full max-w-md">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-10 relative z-[1]">
+        <div className="glass-card rounded-[28px] border border-white/10 p-8 sm:p-10 w-full max-w-[440px]">
           {sessionLoading ? (
             <div className="text-center">
-              <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <svg
-                  className="animate-spin h-8 w-8 text-accent"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
+              <div className="w-16 h-16 bg-ice/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Loader2 className="animate-spin h-8 w-8 text-ice" aria-hidden="true" />
               </div>
               <h1 className="text-2xl font-bold font-playfair">Verificando il link...</h1>
               <p className="text-muted-foreground mt-2">Attendere prego</p>
@@ -167,14 +149,14 @@ const ResetPassword = () => {
           ) : !validSession ? (
             <div className="text-center">
               <div className="w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Lock className="text-destructive" size={32} />
+                <Lock className="text-red-300" size={32} />
               </div>
               <h1 className="text-2xl font-bold font-playfair">Link non valido</h1>
               <p className="text-muted-foreground mt-2 mb-6">
                 Il link di reset è scaduto o non valido. Richiedi un nuovo link di reset.
               </p>
               <Link to="/forgot-password">
-                <Button className="w-full bg-accent hover:bg-accent/90 text-accent-foreground">
+                <Button size="pill" className="w-full">
                   Torna al Reset Password
                 </Button>
               </Link>
@@ -182,11 +164,11 @@ const ResetPassword = () => {
           ) : (
             <>
               <div className="text-center mb-8">
-                <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Lock className="text-accent" size={32} />
+                <div className="w-16 h-16 bg-ice/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Lock className="text-ice" size={32} />
                 </div>
-                <h1 className="text-3xl font-bold font-playfair">Nuova Password</h1>
-                <p className="text-muted-foreground mt-2">
+                <h1 className="font-playfair text-3xl font-bold">Nuova Password</h1>
+                <p className="text-muted-foreground text-sm mt-3">
                   Inserisci la tua nuova password per completare il recupero
                 </p>
               </div>
@@ -203,6 +185,8 @@ const ResetPassword = () => {
                       placeholder="Inserisci la nuova password"
                       required
                       minLength={6}
+                      autoComplete="new-password"
+                      className="input-glass h-12 rounded-xl pr-12"
                     />
                     <Button
                       type="button"
@@ -231,6 +215,8 @@ const ResetPassword = () => {
                       placeholder="Conferma la nuova password"
                       required
                       minLength={6}
+                      autoComplete="new-password"
+                      className="input-glass h-12 rounded-xl pr-12"
                     />
                     <Button
                       type="button"
@@ -254,31 +240,13 @@ const ResetPassword = () => {
 
                 <Button
                   type="submit"
-                  className="w-full bg-accent hover:bg-accent/90 text-accent-foreground mt-6"
+                  size="pill"
+                  className="w-full mt-6"
                   disabled={loading || password !== confirmPassword || password.length < 6}
                 >
                   {loading ? (
                     <>
-                      <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
+                      <Loader2 className="animate-spin" aria-hidden="true" />
                       Aggiornamento...
                     </>
                   ) : (

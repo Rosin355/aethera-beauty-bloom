@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/useAuth";
 import { toast } from "sonner";
 import Logo from "@/components/Layout/Logo";
-import { ArrowLeft, Mail } from "lucide-react";
+import { ArrowLeft, Loader2, Mail } from "lucide-react";
 
 const ForgotPassword = () => {
   const [email, setEmail] = useState("");
@@ -43,17 +43,23 @@ const ForgotPassword = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      <div className="p-4">
+    <div className="min-h-screen bg-background flex flex-col relative">
+      <div className="page-glow" aria-hidden="true" />
+      <div className="p-4 relative z-[1]">
         <Logo />
       </div>
-      <div className="flex-1 flex flex-col items-center justify-center px-4">
-        <div className="glass-strong rounded-lg p-8 w-full max-w-md">
+      <div className="flex-1 flex flex-col items-center justify-center px-4 py-10 relative z-[1]">
+        <div className="glass-card rounded-[28px] border border-white/10 p-8 sm:p-10 w-full max-w-[440px]">
           {!emailSent ? (
             <>
               <div className="text-center mb-8">
-                <h1 className="text-3xl font-bold font-playfair">Password Dimenticata</h1>
-                <p className="text-muted-foreground mt-2">
+                <span className="inline-flex items-center gap-3">
+                  <span className="eyebrow-line" aria-hidden="true" />
+                  <span className="eyebrow">4 Elementi Italia</span>
+                  <span className="eyebrow-line" aria-hidden="true" />
+                </span>
+                <h1 className="font-playfair text-3xl mt-4">Password Dimenticata</h1>
+                <p className="text-muted-foreground text-sm mt-3">
                   Inserisci la tua email e ti invieremo un link per reimpostare la password
                 </p>
               </div>
@@ -68,36 +74,15 @@ const ForgotPassword = () => {
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Inserisci la tua email"
                     required
+                    autoComplete="email"
+                    className="input-glass h-12 rounded-xl"
                   />
                 </div>
 
-                <Button
-                  type="submit"
-                  className="w-full bg-accent hover:bg-accent/90 text-accent-foreground mt-6"
-                  disabled={loading}
-                >
+                <Button type="submit" size="pill" className="w-full mt-6" disabled={loading}>
                   {loading ? (
                     <>
-                      <svg
-                        className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
+                      <Loader2 className="animate-spin" aria-hidden="true" />
                       Invio in corso...
                     </>
                   ) : (
@@ -111,8 +96,8 @@ const ForgotPassword = () => {
             </>
           ) : (
             <div className="text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Mail className="text-green-600" size={32} />
+              <div className="w-16 h-16 bg-success/15 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Mail className="text-success" size={32} />
               </div>
               <h1 className="text-2xl font-bold font-playfair mb-2">Email Inviata!</h1>
               <p className="text-muted-foreground mb-6">
@@ -124,7 +109,8 @@ const ForgotPassword = () => {
               </p>
               <Button
                 onClick={() => setEmailSent(false)}
-                variant="outline"
+                variant="secondary"
+                size="pill"
                 className="mb-4"
               >
                 Invia Nuovamente
@@ -135,7 +121,7 @@ const ForgotPassword = () => {
           <div className="mt-8 text-center">
             <Link
               to="/login"
-              className="inline-flex items-center text-sm text-accent hover:underline font-medium"
+              className="inline-flex items-center text-sm link-quiet font-medium"
             >
               <ArrowLeft size={16} className="mr-1" />
               Torna al Login
