@@ -15,6 +15,9 @@ verify_jwt = false
 [functions.send-newsletter]
 verify_jwt = true
 
+[functions.send-center-invite]
+verify_jwt = true
+
 [functions.ai-assistant]
 verify_jwt = true
 

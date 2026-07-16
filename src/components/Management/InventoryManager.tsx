@@ -25,6 +25,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Search, Archive, Edit, Trash } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createInventoryItem, deleteInventoryItem, fetchInventoryItems, type InventoryItem } from "@/lib/api/management";
+import { useCenter } from "@/contexts/CenterContext";
 import { toast } from "sonner";
 
 const InventoryManager = () => {
@@ -42,12 +43,14 @@ const InventoryManager = () => {
   const [products, setProducts] = useState<InventoryItem[]>([]);
 
   const categories = ["Skincare", "Haircare", "Makeup", "Equipment", "Nails", "Massage", "Other"];
-  
+  const { centerId } = useCenter();
+
   useEffect(() => {
+    if (!centerId) return;
     const loadInventory = async () => {
       try {
         setIsLoading(true);
-        const data = await fetchInventoryItems();
+        const data = await fetchInventoryItems(centerId);
         setProducts(data);
       } catch (error) {
         console.error("Error loading inventory:", error);
@@ -57,7 +60,7 @@ const InventoryManager = () => {
       }
     };
     loadInventory();
-  }, []);
+  }, [centerId]);
 
   const filteredProducts = products.filter(
     (product) =>
@@ -67,12 +70,12 @@ const InventoryManager = () => {
   );
 
   const handleAddProduct = async () => {
-    if (!newProduct.name || !newProduct.category || !newProduct.supplier) {
+    if (!newProduct.name || !newProduct.category || !newProduct.supplier || !centerId) {
       return;
     }
 
     try {
-      const created = await createInventoryItem({
+      const created = await createInventoryItem(centerId, {
         name: newProduct.name,
         category: newProduct.category,
         quantity: newProduct.quantity || 0,
@@ -96,8 +99,9 @@ const InventoryManager = () => {
   };
 
   const handleDeleteProduct = async (id: string) => {
+    if (!centerId) return;
     try {
-      await deleteInventoryItem(id);
+      await deleteInventoryItem(centerId, id);
       setProducts(products.filter(product => product.id !== id));
       toast.success("Prodotto eliminato");
     } catch (error) {

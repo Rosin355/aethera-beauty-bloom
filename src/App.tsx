@@ -8,6 +8,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { Helmet } from "react-helmet";
 import CookieBanner from "@/components/ui/CookieBanner";
 import ProtectedRoute from "@/components/Auth/ProtectedRoute";
+import { CenterProvider } from "@/contexts/CenterContext";
 
 const Home = lazy(() => import("./pages/Home"));
 const NotFound = lazy(() => import("./pages/NotFound"));
@@ -41,6 +42,7 @@ const App = () => (
       <Sonner />
       <CookieBanner />
       <BrowserRouter>
+        <CenterProvider>
         <Suspense fallback={<div className="min-h-screen bg-background" />}>
           <Routes>
             <Route path="/" element={<LandingPage />} />
@@ -122,6 +124,7 @@ const App = () => (
             <Route path="*" element={<NotFound />} />
           </Routes>
         </Suspense>
+        </CenterProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>

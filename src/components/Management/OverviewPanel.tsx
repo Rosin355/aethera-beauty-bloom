@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
 import { ChartPie, Calendar, ShoppingBag } from "lucide-react";
 import { fetchOverviewData, type OverviewKpis, type OverviewSeries } from "@/lib/api/management";
+import { useCenter } from "@/contexts/CenterContext";
 import { toast } from "sonner";
 
 const OverviewPanel = () => {
@@ -21,11 +22,14 @@ const OverviewPanel = () => {
     topServices: [],
   });
 
+  const { centerId } = useCenter();
+
   useEffect(() => {
+    if (!centerId) return;
     const loadOverview = async () => {
       try {
         setIsLoading(true);
-        const data = await fetchOverviewData();
+        const data = await fetchOverviewData(centerId);
         setKpis(data.kpis);
         setSeries(data.series);
       } catch (error) {
@@ -36,7 +40,7 @@ const OverviewPanel = () => {
       }
     };
     loadOverview();
-  }, []);
+  }, [centerId]);
 
   const totalRevenue = kpis.revenue;
   const hasAnyData = kpis.totalBookings > 0 || kpis.productsTracked > 0 || series.topServices.length > 0;

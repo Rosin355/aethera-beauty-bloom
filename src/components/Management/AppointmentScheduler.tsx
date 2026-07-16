@@ -24,6 +24,7 @@ import {
   type BusinessAppointment,
   type BusinessService,
 } from "@/lib/api/management";
+import { useCenter } from "@/contexts/CenterContext";
 import { toast } from "sonner";
 
 const parseTimeTo24h = (time: string): { hours: number; minutes: number } => {
@@ -53,24 +54,27 @@ const AppointmentScheduler = () => {
     time: ""
   });
 
+  const { centerId } = useCenter();
+
   useEffect(() => {
+    if (!centerId) return;
     const loadServices = async () => {
       try {
-        const serviceList = await fetchBusinessServices();
+        const serviceList = await fetchBusinessServices(centerId);
         setServices(serviceList);
       } catch (error) {
         console.error("Error loading services for appointments:", error);
       }
     };
     loadServices();
-  }, []);
+  }, [centerId]);
 
   useEffect(() => {
     const loadAppointments = async () => {
-      if (!date) return;
+      if (!date || !centerId) return;
       try {
         setIsLoading(true);
-        const items = await fetchAppointmentsByDate(date);
+        const items = await fetchAppointmentsByDate(centerId, date);
         setAppointments(items);
       } catch (error) {
         console.error("Error loading appointments:", error);
@@ -80,7 +84,7 @@ const AppointmentScheduler = () => {
       }
     };
     loadAppointments();
-  }, [date]);
+  }, [date, centerId]);
 
   const timeSlots = [
     "9:00 AM", "9:30 AM",
@@ -95,7 +99,7 @@ const AppointmentScheduler = () => {
   ];
 
   const handleAddAppointment = async () => {
-    if (!date || !newAppointment.clientName || !newAppointment.serviceId || !newAppointment.time) {
+    if (!date || !centerId || !newAppointment.clientName || !newAppointment.serviceId || !newAppointment.time) {
       return;
     }
     const selectedService = services.find((s) => s.id === newAppointment.serviceId);
@@ -106,7 +110,7 @@ const AppointmentScheduler = () => {
     appointmentDate.setHours(hours, minutes, 0, 0);
 
     try {
-      const created = await createAppointment({
+      const created = await createAppointment(centerId, {
         client_name: newAppointment.clientName,
         service_id: selectedService.id,
         service_name: selectedService.name,

@@ -19,6 +19,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Edit, Clock, Euro, List } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createBusinessService, fetchBusinessServices, type BusinessService } from "@/lib/api/management";
+import { useCenter } from "@/contexts/CenterContext";
 import { toast } from "sonner";
 
 const ServiceCatalog = () => {
@@ -54,11 +55,14 @@ const ServiceCatalog = () => {
     { value: "120", label: "2 hours" },
   ];
   
+  const { centerId } = useCenter();
+
   useEffect(() => {
+    if (!centerId) return;
     const loadServices = async () => {
       try {
         setIsLoading(true);
-        const data = await fetchBusinessServices();
+        const data = await fetchBusinessServices(centerId);
         setServices(data);
       } catch (error) {
         console.error("Error loading services:", error);
@@ -69,19 +73,19 @@ const ServiceCatalog = () => {
     };
 
     loadServices();
-  }, []);
+  }, [centerId]);
 
   const filteredServices = activeCategory === "all"
     ? services
     : services.filter(service => service.category === activeCategory);
 
   const handleAddService = async () => {
-    if (!newService.name || !newService.category) {
+    if (!newService.name || !newService.category || !centerId) {
       return;
     }
 
     try {
-      const created = await createBusinessService({
+      const created = await createBusinessService(centerId, {
         name: newService.name,
         category: newService.category,
         duration_minutes: newService.duration_minutes || 60,
