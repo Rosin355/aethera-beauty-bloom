@@ -8,6 +8,7 @@ import InventoryManager from "@/components/Management/InventoryManager";
 import ServiceCatalog from "@/components/Management/ServiceCatalog";
 import OverviewPanel from "@/components/Management/OverviewPanel";
 import CenterMembersCard from "@/components/Management/CenterMembersCard";
+import CategorySettings from "@/components/Management/CategorySettings";
 import { useCenter } from "@/contexts/CenterContext";
 
 const ManagementTools = () => {
@@ -32,12 +33,13 @@ const ManagementTools = () => {
         </Card>
         
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className={`grid ${isOwner ? "grid-cols-5" : "grid-cols-4"} mb-8`}>
+          <TabsList className={`grid ${isOwner ? "grid-cols-6" : "grid-cols-4"} mb-8`}>
             <TabsTrigger value="appointments">Appuntamenti</TabsTrigger>
             <TabsTrigger value="inventory">Inventario</TabsTrigger>
             <TabsTrigger value="services">Servizi</TabsTrigger>
             <TabsTrigger value="overview">Panoramica</TabsTrigger>
             {isOwner && <TabsTrigger value="team">Team</TabsTrigger>}
+            {isOwner && <TabsTrigger value="settings">Impostazioni</TabsTrigger>}
           </TabsList>
           
           <TabsContent value="appointments" className="space-y-4">
@@ -59,6 +61,12 @@ const ManagementTools = () => {
           {isOwner && (
             <TabsContent value="team" className="space-y-4">
               <CenterMembersCard />
+            </TabsContent>
+          )}
+
+          {isOwner && (
+            <TabsContent value="settings" className="space-y-4">
+              <CategorySettings />
             </TabsContent>
           )}
         </Tabs>

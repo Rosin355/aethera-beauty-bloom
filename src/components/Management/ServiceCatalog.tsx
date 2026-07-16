@@ -20,6 +20,8 @@ import { Plus, Edit, Clock, Euro, List } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createBusinessService, fetchBusinessServices, type BusinessService } from "@/lib/api/management";
 import { useCenter } from "@/contexts/CenterContext";
+import { fetchCategories, fetchCenterDurations, formatDuration } from "@/lib/api/taxonomies";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 const ServiceCatalog = () => {
@@ -36,26 +38,23 @@ const ServiceCatalog = () => {
   
   const [services, setServices] = useState<BusinessService[]>([]);
 
-  const categories = [
-    { value: "all", label: "All Services" },
-    { value: "facial", label: "Facial Treatments" },
-    { value: "massage", label: "Massage" },
-    { value: "hair", label: "Hair Services" },
-    { value: "nails", label: "Nail Services" },
-    { value: "waxing", label: "Waxing" },
-    { value: "makeup", label: "Makeup" },
-  ];
-
-  const durations = [
-    { value: "30", label: "30 minutes" },
-    { value: "45", label: "45 minutes" },
-    { value: "60", label: "1 hour" },
-    { value: "75", label: "1 hour 15 minutes" },
-    { value: "90", label: "1 hour 30 minutes" },
-    { value: "120", label: "2 hours" },
-  ];
-  
   const { centerId } = useCenter();
+
+  const { data: categoryRows = [] } = useQuery({
+    queryKey: ["service-categories", centerId],
+    queryFn: () => fetchCategories("service", centerId!, { activeOnly: true }),
+    enabled: !!centerId,
+  });
+  const { data: durations = [] } = useQuery({
+    queryKey: ["center-durations", centerId],
+    queryFn: () => fetchCenterDurations(centerId!),
+    enabled: !!centerId,
+  });
+
+  const categoryTabs = [
+    { value: "all", label: "Tutti" },
+    ...categoryRows.map((c) => ({ value: c.name, label: c.name })),
+  ];
 
   useEffect(() => {
     if (!centerId) return;
@@ -137,18 +136,18 @@ const ServiceCatalog = () => {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="category">Category</Label>
+                  <Label htmlFor="category">Categoria</Label>
                   <Select
                     value={newService.category}
                     onValueChange={(value) => setNewService({ ...newService, category: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
+                      <SelectValue placeholder="Seleziona categoria" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.filter(cat => cat.value !== "all").map((category) => (
-                        <SelectItem key={category.value} value={category.value}>
-                          {category.label}
+                      {categoryRows.map((category) => (
+                        <SelectItem key={category.id} value={category.name}>
+                          {category.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -156,18 +155,18 @@ const ServiceCatalog = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label htmlFor="duration">Duration</Label>
+                    <Label htmlFor="duration">Durata</Label>
                     <Select
                       value={newService.duration_minutes.toString()}
                       onValueChange={(value) => setNewService({ ...newService, duration_minutes: parseInt(value) })}
                     >
                       <SelectTrigger>
-                        <SelectValue placeholder="Select duration" />
+                        <SelectValue placeholder="Seleziona durata" />
                       </SelectTrigger>
                       <SelectContent>
                         {durations.map((duration) => (
-                          <SelectItem key={duration.value} value={duration.value}>
-                            {duration.label}
+                          <SelectItem key={duration} value={String(duration)}>
+                            {formatDuration(duration)}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -206,7 +205,7 @@ const ServiceCatalog = () => {
         <CardContent>
           <Tabs defaultValue="all" value={activeCategory} onValueChange={setActiveCategory} className="w-full">
             <TabsList className="mb-6 flex flex-nowrap overflow-auto pb-1">
-              {categories.map((category) => (
+              {categoryTabs.map((category) => (
                 <TabsTrigger key={category.value} value={category.value}>
                   {category.label}
                 </TabsTrigger>

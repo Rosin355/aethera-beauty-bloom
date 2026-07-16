@@ -26,6 +26,8 @@ import { Plus, Search, Archive, Edit, Trash } from "lucide-react";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { createInventoryItem, deleteInventoryItem, fetchInventoryItems, type InventoryItem } from "@/lib/api/management";
 import { useCenter } from "@/contexts/CenterContext";
+import { fetchCategories } from "@/lib/api/taxonomies";
+import { useQuery } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 const InventoryManager = () => {
@@ -42,8 +44,12 @@ const InventoryManager = () => {
   
   const [products, setProducts] = useState<InventoryItem[]>([]);
 
-  const categories = ["Skincare", "Haircare", "Makeup", "Equipment", "Nails", "Massage", "Other"];
   const { centerId } = useCenter();
+  const { data: categoryRows = [] } = useQuery({
+    queryKey: ["inventory-categories", centerId],
+    queryFn: () => fetchCategories("inventory", centerId!, { activeOnly: true }),
+    enabled: !!centerId,
+  });
 
   useEffect(() => {
     if (!centerId) return;
@@ -139,18 +145,18 @@ const InventoryManager = () => {
                   />
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="category">Category</Label>
+                  <Label htmlFor="category">Categoria</Label>
                   <Select
                     value={newProduct.category}
                     onValueChange={(value) => setNewProduct({ ...newProduct, category: value })}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select category" />
+                      <SelectValue placeholder="Seleziona categoria" />
                     </SelectTrigger>
                     <SelectContent>
-                      {categories.map((category) => (
-                        <SelectItem key={category} value={category}>
-                          {category}
+                      {categoryRows.map((category) => (
+                        <SelectItem key={category.id} value={category.name}>
+                          {category.name}
                         </SelectItem>
                       ))}
                     </SelectContent>

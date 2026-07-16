@@ -14,8 +14,63 @@ export type Database = {
   }
   public: {
     Tables: {
+      inventory_categories: {
+        Row: {
+          active: boolean
+          center_id: string
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          center_id: string
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          center_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
+      service_categories: {
+        Row: {
+          active: boolean
+          center_id: string
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+        }
+        Insert: {
+          active?: boolean
+          center_id: string
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+        }
+        Update: {
+          active?: boolean
+          center_id?: string
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+        }
+        Relationships: []
+      }
       centers: {
         Row: {
+          service_durations: number[]
           created_at: string
           id: string
           name: string
@@ -23,6 +78,7 @@ export type Database = {
           plan: string
         }
         Insert: {
+          service_durations?: number[]
           created_at?: string
           id?: string
           name: string
@@ -30,6 +86,7 @@ export type Database = {
           plan?: string
         }
         Update: {
+          service_durations?: number[]
           created_at?: string
           id?: string
           name?: string
