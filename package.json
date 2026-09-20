@@ -10,6 +10,7 @@
     "lint": "eslint \"src/**/*.{ts,tsx}\" \"supabase/functions/**/*.ts\"",
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
     "verify": "npm run lint && npm run typecheck && npm run build",
+    "test:sql": "bash supabase/tests/run_local.sh",
     "preview": "vite preview"
   },
   "dependencies": {
