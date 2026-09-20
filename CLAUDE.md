@@ -22,6 +22,13 @@ The step-by-step prompt sequence is `docs/45_SEQUENZA_PROMPT_BETA.md` (FASE 1 = 
   `LOVABLE_API_KEY`) from `ai-assistant`. Knowledge base retrieval is lexical
   (`match_training_data_fts`, service-role only), not embeddings.
 
+## ai-assistant tool framework (P1.3)
+`supabase/functions/ai-assistant/`: `index.ts` (entry), `agent.ts` (loop, max 5 model calls), `llm.ts` (gateway + SSE
+parser), `context.ts` (prompt/KB assembly), `sse.ts`, `tools/` (one module per tool + `run.ts` runner + `schema.ts`
+validator). Center context: `_shared/center.ts`; user-scoped client: `createUserClient` in `_shared/auth.ts`.
+Tools NEVER take center/user ids as arguments and NEVER get the service-role client. Contract: `docs/CONCIERGE_TOOLS.md`.
+Checks: `npm run test:functions` (deno), `npm run test:sql` (scratch Postgres), `npm run verify`.
+
 ## Rules
 1. Never hardcode URLs or secrets. Read them from `Deno.env` / env vars; scripts read env vars.
 2. Every sensitive function authenticates through the shared helpers in `_shared/auth.ts`.

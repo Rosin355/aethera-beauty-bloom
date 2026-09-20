@@ -5,6 +5,20 @@ Audience: whoever implements the next prompts, and the native clients that will 
 
 ---
 
+## Implementation status
+
+**P1.3 (done)** — framework + read tools, as specified below, with these implementation choices:
+
+- `agent.ts` is an async generator of events (`text | tool_call | tool_result`); `index.ts` pulls the first event *before* committing to a 200 stream so a first-call 429/402 from the gateway still returns proper JSON.
+- The tool runner (`runTool`, role check, JSON parse, schema validation, timeout, size cap) lives in `tools/run.ts`; `tools/registry.ts` only lists tools. Center resolution is in `_shared/center.ts` (reused by later functions).
+- Gateway URL and model default to what the function always used and can be overridden with `LLM_GATEWAY_URL` / `AI_MODEL` (no hardcoding beyond defaults).
+- Forced-final call: the system prompt gets a "rispondi ora" nudge appended (safer across gateways than a mid-conversation `system` message).
+- `list_appointments` calls two SQL functions (`fn_center_appointments`, new in migration `20260920110000`, and `fn_center_gaps`) so day boundaries/time zones are computed in SQL. Prices are returned only to the owner.
+- `get_center_profile` already tolerates the `center_profile_slots` table not existing (P1.5 creates it): `slots_available:false, slots:null` until then.
+- `ServiceClient` in `_shared/auth.ts` is now the default `SupabaseClient` type (the old `<unknown,"public",unknown>` generics made every query result `never`, so nothing could be type-checked). `deno check` / `deno test` now run on the function (`npm run test:functions`).
+
+---
+
 ## 1. Audit of `supabase/functions/ai-assistant/index.ts` (as of `main`, 264 lines)
 
 ### 1.1 What it does today

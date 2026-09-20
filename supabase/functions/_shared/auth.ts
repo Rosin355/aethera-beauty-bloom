@@ -1,6 +1,6 @@
 import { createClient, type SupabaseClient, type User } from "https://esm.sh/@supabase/supabase-js@2";
 
-export type ServiceClient = SupabaseClient<unknown, "public", unknown>;
+export type ServiceClient = SupabaseClient;
 
 export class HttpError extends Error {
   status: number;
@@ -19,6 +19,27 @@ export const createServiceClient = (): ServiceClient => {
   }
 
   return createClient(supabaseUrl, serviceRoleKey);
+};
+
+/**
+ * Client bound to the CALLER's identity (anon key + the caller's JWT). Unlike the service client,
+ * every query goes through RLS and auth.uid() is set inside RPCs, so center-scoped code that uses
+ * it cannot read or write outside the caller's centers. Prefer this for anything tenant-scoped.
+ */
+export type UserClient = ServiceClient;
+
+export const createUserClient = (token: string): UserClient => {
+  const supabaseUrl = Deno.env.get("SUPABASE_URL");
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+
+  if (!supabaseUrl || !anonKey) {
+    throw new HttpError(500, "Configurazione Supabase non valida");
+  }
+
+  return createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 };
 
 export const getBearerToken = (req: Request): string => {

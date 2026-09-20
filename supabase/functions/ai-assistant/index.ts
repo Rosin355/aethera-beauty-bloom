@@ -1,39 +1,93 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import {
+  createUserClient,
+  getBearerToken,
   HttpError,
   requireAuthenticatedUser,
   toErrorResponse,
 } from "../_shared/auth.ts";
+import { type CenterAccess, resolveCenterAccess } from "../_shared/center.ts";
+import { enforceRateLimit, readJsonBody } from "../_shared/security.ts";
+import { type AgentEvent, type AgentSummary, runAgent } from "./agent.ts";
+import {
+  buildSystemPrompt,
+  buildToolPrompt,
+  createKnowledgeSearch,
+  loadPromptConfig,
+  loadTrainingContext,
+  loadUserContext,
+} from "./context.ts";
+import { createGatewayStreamRound, gatewayConfigFromEnv, type ChatMessage, UpstreamError } from "./llm.ts";
+import { DONE_FRAME, encodeEvent, errorFrame } from "./sse.ts";
+import { ALL_TOOLS } from "./tools/registry.ts";
+import { runTool, type ToolBase } from "./tools/run.ts";
+
+// Supabase Edge Runtime global (not part of the Deno types).
+declare const EdgeRuntime: { waitUntil(promise: Promise<unknown>): void } | undefined;
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Fallback base prompt used only when ai_system_config has no active 'system_prompt' row.
-const DEFAULT_SYSTEM_PROMPT = `Sei l'assistente AI di 4 Elementi Italia, una piattaforma completa dedicata ai professionisti del settore estetica e bellezza.
+// Input limits (chat history rules are unchanged; the body cap now applies BEFORE parsing).
+const MAX_BODY_BYTES = 40 * 1024;
+const MAX_MESSAGES = 30;
+const MAX_MESSAGES_BYTES = 32 * 1024;
+// Edge Functions have a wall-clock limit; past this point the next model call is forced to be the final answer.
+const REQUEST_BUDGET_MS = 50_000;
+const RATE_LIMIT = { requests: 30, windowSeconds: 60 };
 
-IDENTITÀ E MISSIONE:
-Sei un consulente esperto e affidabile che supporta titolari di centri estetici, estetiste e operatori del settore fornendo consulenza operativa, strategica e formativa. Il tuo obiettivo è aiutare i professionisti a far crescere la loro attività, ottimizzare i processi e raggiungere i loro obiettivi di business.
+interface RequestBody {
+  messages?: unknown;
+  conversationId?: unknown;
+  /** Selector only: must match one of the caller's active memberships. */
+  centerId?: unknown;
+  /** Direct tool mode: run ONE tool without the LLM (same auth, role checks and validation). */
+  toolCall?: unknown;
+}
 
-LINEE GUIDA DI COMUNICAZIONE:
-- Rispondi SEMPRE in italiano
-- Sii professionale ma cordiale, empatico e incoraggiante
-- Fornisci consigli pratici, specifici e immediatamente attuabili
-- Usa esempi concreti dal settore estetica quando possibile
-- Se non conosci la risposta, ammettilo e suggerisci come l'utente può trovare l'informazione
-- Quando appropriato, fai riferimento ai moduli e funzionalità della piattaforma 4 Elementi
-- Struttura le risposte lunghe con elenchi puntati o numerati per chiarezza
+const jsonResponse = (body: unknown, status = 200): Response =>
+  new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
 
-AREE DI COMPETENZA SPECIFICHE:
-1. Gestione operativa del centro estetico
-2. Marketing e comunicazione (social media, contenuti, promozioni)
-3. Gestione clienti, fidelizzazione e CRM
-4. Analisi KPI e performance finanziaria
-5. Gestione team, formazione e incentivi
-6. Protocolli trattamenti e best practices
-7. Pricing, listini e marginalità
-8. Ottimizzazione magazzino e inventario`;
+/**
+ * A client must never inject a "system" message, nor malformed roles/content; conversation size is capped.
+ */
+const sanitizeMessages = (messages: unknown): { role: "user" | "assistant"; content: string }[] => {
+  if (!Array.isArray(messages) || messages.length === 0) {
+    throw new HttpError(400, "Messaggi non validi");
+  }
+  if (messages.length > MAX_MESSAGES) {
+    throw new HttpError(400, "Troppi messaggi nella conversazione");
+  }
+  if (new TextEncoder().encode(JSON.stringify(messages)).length > MAX_MESSAGES_BYTES) {
+    throw new HttpError(413, "Payload dei messaggi troppo grande");
+  }
+  return messages.map((message: unknown) => {
+    const role = (message as { role?: unknown })?.role;
+    const content = (message as { content?: unknown })?.content;
+    if (typeof content !== "string" || (role !== "user" && role !== "assistant")) {
+      throw new HttpError(400, "Formato messaggio non valido");
+    }
+    return { role, content };
+  });
+};
+
+const handleDirectTool = async (
+  toolCall: unknown,
+  toolBase: ToolBase | null,
+): Promise<Response> => {
+  if (!toolBase) throw new HttpError(400, "Nessun centro attivo per questo utente");
+  const call = toolCall as { name?: unknown; args?: unknown } | null;
+  if (!call || typeof call !== "object" || typeof call.name !== "string" || call.name.length > 64) {
+    throw new HttpError(400, "toolCall non valido");
+  }
+  const result = await runTool(ALL_TOOLS, call.name, call.args ?? {}, toolBase);
+  return jsonResponse(result.ok ? { ok: true, data: result.data } : { ok: false, error: result.error });
+};
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -43,74 +97,47 @@ serve(async (req) => {
   const startTime = Date.now();
 
   try {
+    if (req.method !== 'POST') {
+      throw new HttpError(405, "Metodo non consentito");
+    }
+
     const { supabase, user } = await requireAuthenticatedUser(req);
-    const { messages, conversationId } = await req.json();
     const authenticatedUserId = user.id;
+    const userClient = createUserClient(getBearerToken(req));
 
-    if (!Array.isArray(messages) || messages.length === 0) {
-      throw new HttpError(400, "Messaggi non validi");
+    const body = await readJsonBody<RequestBody>(req, MAX_BODY_BYTES);
+    if (typeof body !== "object" || body === null || Array.isArray(body)) {
+      throw new HttpError(400, "Corpo della richiesta non valido");
     }
+    await enforceRateLimit(supabase, `ai-assistant:${authenticatedUserId}`, RATE_LIMIT.requests, RATE_LIMIT.windowSeconds);
 
-    // Input hardening: cap conversation size, reject oversized payloads, and only
-    // accept user/assistant roles (a client must never inject a "system" message,
-    // nor malformed roles/content).
-    const MAX_MESSAGES = 30;
-    const MAX_MESSAGES_BYTES = 32 * 1024;
-    if (messages.length > MAX_MESSAGES) {
-      throw new HttpError(400, "Troppi messaggi nella conversazione");
-    }
-    if (new TextEncoder().encode(JSON.stringify(messages)).length > MAX_MESSAGES_BYTES) {
-      throw new HttpError(413, "Payload dei messaggi troppo grande");
-    }
-    const sanitizedMessages = messages.map((message: unknown) => {
-      const role = (message as { role?: unknown })?.role;
-      const content = (message as { content?: unknown })?.content;
-      if (typeof content !== "string" || (role !== "user" && role !== "assistant")) {
-        throw new HttpError(400, "Formato messaggio non valido");
+    // Tenant identity for the whole request: resolved from the caller's own memberships (RLS), never from the model.
+    const center: CenterAccess | null = await resolveCenterAccess(userClient, authenticatedUserId, body.centerId);
+    const toolBase: ToolBase | null = center
+      ? {
+        supabase: userClient,
+        centerId: center.centerId,
+        userId: authenticatedUserId,
+        role: center.role,
+        now: new Date(),
+        knowledge: createKnowledgeSearch(supabase),
       }
-      return { role, content };
-    });
+      : null;
 
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      throw new Error('LOVABLE_API_KEY non configurata');
+    if (body.toolCall !== undefined) {
+      return await handleDirectTool(body.toolCall, toolBase);
     }
 
-    // Fetch user profile for personalization
-    let userContext = '';
-    const { data: profile, error: profileError } = await supabase
-      .from('profiles')
-      .select('display_name, experience_years, skills, bio, user_type, experience_level, business_name, city, primary_goal, growth_plan, preferred_learning_format, time_availability, team_size')
-      .eq('user_id', authenticatedUserId)
-      .single();
-
-    if (!profileError && profile) {
-      const userTypeLabel = profile.user_type === 'professional' ? 'Professionista del settore estetica' : 'Utente interessato al settore';
-      userContext = `
-PROFILO UTENTE ATTUALE:
-- Nome: ${profile.display_name || 'Non specificato'}
-- Tipo utente: ${userTypeLabel}
-- Nome attività: ${profile.business_name || 'Non specificato'}
-- Città: ${profile.city || 'Non specificata'}
-- Livello esperienza: ${profile.experience_level || 'Non specificato'}
-- Anni esperienza: ${profile.experience_years || 'Non specificati'}
-- Dimensione team: ${profile.team_size || 'Non specificata'}
-- Obiettivo principale: ${profile.primary_goal || 'Non specificato'}
-- Piano di crescita: ${profile.growth_plan || 'Non specificato'}
-- Formato apprendimento preferito: ${profile.preferred_learning_format || 'Non specificato'}
-- Disponibilità tempo: ${profile.time_availability || 'Non specificata'}
-- Competenze: ${profile.skills?.join(', ') || 'Non specificate'}
-- Bio: ${profile.bio || 'Non disponibile'}
-
-IMPORTANTE: Personalizza le tue risposte in base a questo profilo. Se l'utente è un professionista con esperienza, usa terminologia tecnica. Se è nuovo nel settore, spiega i concetti più semplicemente.`;
-    }
+    // Input hardening: cap conversation size and only accept user/assistant roles.
+    const sanitizedMessages = sanitizeMessages(body.messages);
+    const gateway = gatewayConfigFromEnv();
 
     let validatedConversationId: string | null = null;
-    if (typeof conversationId === "string" && conversationId.trim().length > 0) {
+    if (typeof body.conversationId === "string" && body.conversationId.trim().length > 0) {
       const { data: ownedConversation, error: conversationError } = await supabase
         .from("ai_conversations")
         .select("id")
-        .eq("id", conversationId)
+        .eq("id", body.conversationId)
         .eq("user_id", authenticatedUserId)
         .maybeSingle();
 
@@ -119,140 +146,111 @@ IMPORTANTE: Personalizza le tue risposte in base a questo profilo. Se l'utente �
       }
     }
 
-    // Fetch AI system configuration (operational modules)
-    const { data: systemConfig } = await supabase
-      .from('ai_system_config')
-      .select('config_key, config_value, description')
-      .eq('is_active', true)
-      .order('sort_order', { ascending: true });
-
-    // Base system prompt comes from ai_system_config ('system_prompt'); fall back to default.
-    const systemPromptRow = systemConfig?.find((c) => c.config_key === 'system_prompt');
-    const baseSystemPrompt = systemPromptRow?.config_value?.trim()
-      ? systemPromptRow.config_value
-      : DEFAULT_SYSTEM_PROMPT;
-
-    let systemInstructions = '';
-    if (systemConfig && systemConfig.length > 0) {
-      systemInstructions = '\n\nCAPACITÀ OPERATIVE E MODULI DISPONIBILI:\n';
-      systemConfig.forEach((config) => {
-        if (config.config_key !== 'general_context' && config.config_key !== 'system_prompt') {
-          systemInstructions += `\n${config.config_value}\n`;
-        }
-      });
-
-      const generalContext = systemConfig.find(c => c.config_key === 'general_context');
-      if (generalContext) {
-        systemInstructions = `\n${generalContext.config_value}\n` + systemInstructions;
-      }
-    }
-
-    // Lightweight keyword retrieval (full-text) over the 4E knowledge base — no embeddings.
     const lastUserMessage = sanitizedMessages[sanitizedMessages.length - 1]?.content || '';
+    const [userContext, promptConfig, trainingContext] = await Promise.all([
+      loadUserContext(supabase, authenticatedUserId),
+      loadPromptConfig(supabase),
+      loadTrainingContext(supabase, lastUserMessage),
+    ]);
 
-    let docs: Array<{ title: string; description?: string | null; content: string }> = [];
-    const { data: matches, error: matchError } = await supabase.rpc('match_training_data_fts', {
-      query_text: lastUserMessage,
-      match_count: 4,
+    const systemPrompt = buildSystemPrompt({
+      ...promptConfig,
+      userContext,
+      trainingContext,
+      toolPrompt: center ? buildToolPrompt(center, new Date()) : undefined,
     });
 
-    if (!matchError && Array.isArray(matches) && matches.length > 0) {
-      docs = matches as typeof docs;
-    } else {
-      // Fallback: most recent active documents when full-text finds nothing (or errors).
-      const { data: recent } = await supabase
-        .from('ai_training_data')
-        .select('title, description, content')
-        .eq('is_active', true)
-        .order('created_at', { ascending: false })
-        .limit(4);
-      if (recent) docs = recent;
-    }
+    const abort = new AbortController();
+    const agent = runAgent({
+      systemPrompt,
+      history: sanitizedMessages as ChatMessage[],
+      tools: ALL_TOOLS,
+      toolBase,
+      streamRound: createGatewayStreamRound(gateway),
+      deadline: startTime + REQUEST_BUDGET_MS,
+      signal: abort.signal,
+    });
 
-    let trainingContext = '';
-    if (docs.length > 0) {
-      trainingContext = '\n\nMATERIALE DI RIFERIMENTO (basa la risposta su questi contenuti del metodo 4 Elementi):\n';
-      docs.forEach((item, index) => {
-        trainingContext += `\n--- Documento ${index + 1}: ${item.title} ---\n`;
-        if (item.description) {
-          trainingContext += `Descrizione: ${item.description}\n`;
+    // Pull the first event BEFORE committing to a 200 stream, so an upstream failure on the very
+    // first model call still surfaces as a proper JSON error (429/402 mapping as before).
+    let first: IteratorResult<AgentEvent, AgentSummary>;
+    try {
+      first = await agent.next();
+    } catch (error) {
+      if (error instanceof UpstreamError) {
+        if (error.status === 429) {
+          return jsonResponse({ error: 'Limite richieste superato. Riprova tra qualche secondo.' }, 429);
         }
-        const contentPreview = item.content.length > 4000
-          ? item.content.substring(0, 4000) + '... [contenuto troncato]'
-          : item.content;
-        trainingContext += `Contenuto:\n${contentPreview}\n`;
-      });
+        if (error.status === 402) {
+          return jsonResponse({ error: 'Crediti AI esauriti. Contatta l\'amministratore.' }, 402);
+        }
+      }
+      throw error;
     }
 
-    const systemPrompt = `${baseSystemPrompt}
-${systemInstructions}
-${userContext}
-${trainingContext}`;
+    // Log usage asynchronously once the stream is over (don't block the response).
+    let logged = false;
+    const logUsage = (summary?: AgentSummary) => {
+      if (logged) return;
+      logged = true;
+      const work = (async () => {
+        try {
+          // Estimate token counts (rough approximation)
+          const inputTokens = Math.ceil((systemPrompt.length + sanitizedMessages.reduce((acc, m) => acc + m.content.length, 0)) / 4);
+          await supabase.from('ai_usage_logs').insert({
+            user_id: authenticatedUserId,
+            conversation_id: validatedConversationId,
+            tokens_input: inputTokens,
+            tokens_output: null, // We can't easily track streaming output tokens
+            model: gateway.model,
+            response_time_ms: Date.now() - startTime,
+          });
+          if (summary) console.log(`ai-assistant: ${summary.modelCalls} model call(s), ${summary.toolCalls} tool call(s)`);
+        } catch (_logError) {
+          console.error('Error saving usage log');
+        }
+      })();
+      if (typeof EdgeRuntime !== "undefined") EdgeRuntime.waitUntil(work);
+    };
 
-    const modelName = 'google/gemini-2.5-flash';
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
+    const encoder = new TextEncoder();
+    let pending: IteratorResult<AgentEvent, AgentSummary> | null = first;
+    const stream = new ReadableStream<Uint8Array>({
+      async pull(controller) {
+        try {
+          const step = pending ?? await agent.next();
+          pending = null;
+          if (step.done) {
+            controller.enqueue(encoder.encode(DONE_FRAME));
+            controller.close();
+            logUsage(step.value);
+            return;
+          }
+          controller.enqueue(encoder.encode(encodeEvent(step.value)));
+        } catch (error) {
+          // Headers are already sent: report the failure in-band, then end the stream cleanly.
+          console.error('Error in ai-assistant stream');
+          const message = error instanceof UpstreamError && error.status === 429
+            ? 'Limite richieste superato. Riprova tra qualche secondo.'
+            : 'Errore durante la risposta. Riprova.';
+          controller.enqueue(encoder.encode(errorFrame(message)));
+          controller.enqueue(encoder.encode(DONE_FRAME));
+          controller.close();
+          logUsage();
+        }
       },
-      body: JSON.stringify({
-        model: modelName,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          ...sanitizedMessages,
-        ],
-        stream: true,
-      }),
+      async cancel() {
+        abort.abort();
+        await agent.return(undefined as never);
+        logUsage();
+      },
     });
 
-    if (!response.ok) {
-      await response.text();
-      console.error('AI gateway error:', response.status);
-      
-      if (response.status === 429) {
-        return new Response(
-          JSON.stringify({ error: 'Limite richieste superato. Riprova tra qualche secondo.' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'Crediti AI esauriti. Contatta l\'amministratore.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      
-      throw new Error(`Errore nella comunicazione con l'AI: ${response.status}`);
-    }
-
-    // Log usage asynchronously (don't block the response)
-    const responseTime = Date.now() - startTime;
-    EdgeRuntime.waitUntil((async () => {
-      try {
-        // Estimate token counts (rough approximation)
-        const inputTokens = Math.ceil((systemPrompt.length + sanitizedMessages.reduce((acc: number, m: { content?: string }) => acc + (m.content?.length ?? 0), 0)) / 4);
-        
-        await supabase.from('ai_usage_logs').insert({
-          user_id: authenticatedUserId,
-          conversation_id: validatedConversationId,
-          tokens_input: inputTokens,
-          tokens_output: null, // We can't easily track streaming output tokens
-          model: modelName,
-          response_time_ms: responseTime,
-        });
-      } catch (logError) {
-        console.error('Error saving usage log');
-      }
-    })());
-
-    // Return the streaming response directly
-    return new Response(response.body, {
-      headers: { 
-        ...corsHeaders, 
+    return new Response(stream, {
+      headers: {
+        ...corsHeaders,
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
       },
     });
   } catch (error) {
