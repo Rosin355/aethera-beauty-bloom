@@ -1,4 +1,4 @@
-import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
+import { assertEquals, assertStringIncludes } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { CENTER_ID, fakeSupabase, toolBase } from "../test_helpers.ts";
 import { ALL_TOOLS, toolsForRole } from "./registry.ts";
 import { runTool } from "./run.ts";
@@ -8,9 +8,18 @@ const findCall = (recorded: ReturnType<typeof fakeSupabase>["recorded"], name: s
 
 Deno.test("registry: owner-only tools are hidden from operators and receptionists", () => {
   const names = (role: "owner" | "operator" | "receptionist") => toolsForRole(role).map((t) => t.name).sort();
-  assertEquals(names("owner"), ["get_center_kpi", "get_center_profile", "get_protocol", "list_appointments", "simulate_goal"]);
-  assertEquals(names("operator"), ["get_center_profile", "get_protocol", "list_appointments"]);
-  assertEquals(names("receptionist"), ["get_center_profile", "get_protocol", "list_appointments"]);
+  assertEquals(names("owner"), [
+    "create_appointment",
+    "get_center_kpi",
+    "get_center_profile",
+    "get_protocol",
+    "list_appointments",
+    "move_appointment",
+    "propose_recall",
+    "simulate_goal",
+  ]);
+  assertEquals(names("operator"), ["create_appointment", "get_center_profile", "get_protocol", "list_appointments", "move_appointment"]);
+  assertEquals(names("receptionist"), ["create_appointment", "get_center_profile", "get_protocol", "list_appointments", "move_appointment"]);
 });
 
 Deno.test("registry: no tool schema lets the model choose the tenant", () => {
@@ -215,4 +224,160 @@ Deno.test("get_protocol: goes through ctx.knowledge only, trims content, reports
 
   assertEquals((await runTool(ALL_TOOLS, "get_protocol", { name: "a" }, toolBase(client))).ok, false); // too short
   assertEquals((await runTool(ALL_TOOLS, "get_protocol", { name: "x".repeat(121) }, toolBase(client))).ok, false);
+});
+
+Deno.test("create_appointment: passes the server-side center and args through to the RPC", async () => {
+  const { client, recorded } = fakeSupabase({
+    fn_create_appointment: {
+      data: { status: "draft", requires_confirmation: true, preview: { client_name: "Marta" } },
+      error: null,
+    },
+  });
+  const r = await runTool(
+    ALL_TOOLS,
+    "create_appointment",
+    { client_name: "Marta", service_id: "s1", starts_at: "2026-09-18T15:00:00+02:00", confirmed: false },
+    toolBase(client, { role: "operator" }),
+  );
+  assertEquals(r.ok, true);
+  if (r.ok) assertEquals((r.data as { status: string }).status, "draft");
+  assertEquals(findCall(recorded, "fn_create_appointment")?.calls[0][1], [{
+    _center_id: CENTER_ID,
+    _client_name: "Marta",
+    _service_id: "s1",
+    _starts_at: "2026-09-18T15:00:00+02:00",
+    _cabin: null,
+    _notes: null,
+    _confirmed: false,
+  }]);
+});
+
+Deno.test("create_appointment: a conflict is passed through as-is (alternatives, no draft_message)", async () => {
+  const conflictResult = {
+    status: "conflict",
+    requested: { starts_at: "2026-09-18T15:00:00+02:00", ends_at: "2026-09-18T16:00:00+02:00", cabin: 1 },
+    alternatives: [{ cabin: 2, starts_at: "2026-09-18T15:00:00+02:00", ends_at: "2026-09-18T16:00:00+02:00" }],
+  };
+  const { client } = fakeSupabase({ fn_create_appointment: { data: conflictResult, error: null } });
+  const r = await runTool(
+    ALL_TOOLS,
+    "create_appointment",
+    { client_name: "Marta", service_id: "s1", starts_at: "2026-09-18T15:00:00+02:00", cabin: 1, confirmed: true },
+    toolBase(client),
+  );
+  assertEquals(r, { ok: true, data: conflictResult });
+});
+
+Deno.test("move_appointment: drafts a proposal message before writing, a confirmation message after", async () => {
+  const draftResult = {
+    status: "draft",
+    requires_confirmation: true,
+    preview: {
+      id: "a1", client_name: "Marta Colombo", service_name: "Pulizia viso",
+      old_starts_at: "2026-09-18T15:00:00+02:00", new_starts_at: "2026-09-19T16:30:00+02:00", cabin: 2,
+    },
+  };
+  const draft = fakeSupabase({
+    fn_move_appointment: { data: draftResult, error: null },
+    centers: { data: { timezone: "Europe/Rome" }, error: null },
+  });
+  const r1 = await runTool(
+    ALL_TOOLS,
+    "move_appointment",
+    { id: "a1", new_starts_at: "2026-09-19T16:30:00+02:00", confirmed: false },
+    toolBase(draft.client, { role: "receptionist" }),
+  );
+  assertEquals(r1.ok, true);
+  if (r1.ok) {
+    const msg = (r1.data as { draft_message: string }).draft_message;
+    assertStringIncludes(msg, "Marta Colombo");
+    assertStringIncludes(msg, "16:30");
+    assertStringIncludes(msg, "va bene?");
+  }
+
+  const movedResult = { status: "moved", appointment: { ...draftResult.preview, starts_at: draftResult.preview.new_starts_at } };
+  const moved = fakeSupabase({
+    fn_move_appointment: { data: movedResult, error: null },
+    centers: { data: { timezone: "Europe/Rome" }, error: null },
+  });
+  const r2 = await runTool(
+    ALL_TOOLS,
+    "move_appointment",
+    { id: "a1", new_starts_at: "2026-09-19T16:30:00+02:00", confirmed: true },
+    toolBase(moved.client),
+  );
+  assertEquals(r2.ok, true);
+  if (r2.ok) {
+    const msg = (r2.data as { draft_message: string }).draft_message;
+    assertStringIncludes(msg, "ti confermo");
+  }
+  assertEquals(findCall(moved.recorded, "fn_move_appointment")?.calls[0][1], [{
+    _center_id: CENTER_ID, _appointment_id: "a1", _new_starts_at: "2026-09-19T16:30:00+02:00", _confirmed: true,
+  }]);
+});
+
+Deno.test("move_appointment: a conflict is passed through untouched (no centers lookup, no draft_message)", async () => {
+  const conflictResult = { status: "conflict", requested: {}, alternatives: [] };
+  const { client, recorded } = fakeSupabase({ fn_move_appointment: { data: conflictResult, error: null } });
+  const r = await runTool(
+    ALL_TOOLS,
+    "move_appointment",
+    { id: "a1", new_starts_at: "2026-09-19T16:30:00+02:00", confirmed: false },
+    toolBase(client),
+  );
+  assertEquals(r, { ok: true, data: conflictResult });
+  assertEquals(findCall(recorded, "centers"), undefined);
+});
+
+Deno.test("propose_recall: owner-only; drafts a message from the dormant client picked by the RPC", async () => {
+  const { client, recorded } = fakeSupabase({});
+  const forbidden = await runTool(
+    ALL_TOOLS,
+    "propose_recall",
+    { gap: { start: "2026-09-18T15:00:00+02:00", end: "2026-09-18T16:30:00+02:00" } },
+    toolBase(client, { role: "operator" }),
+  );
+  assertEquals(forbidden.ok, false);
+  assertEquals(recorded.length, 0);
+
+  const proposed = fakeSupabase({
+    fn_propose_recall: {
+      data: {
+        status: "proposed",
+        gap: { starts_at: "2026-09-18T15:00:00+02:00", ends_at: "2026-09-18T16:30:00+02:00", cabin: null, minutes: 90 },
+        client: { client_key: "giulia bassi", client_name: "Giulia Bassi", visits: 2, last_service: "B", service_duration_minutes: 90 },
+      },
+      error: null,
+    },
+    centers: { data: { timezone: "Europe/Rome" }, error: null },
+  });
+  const r = await runTool(
+    ALL_TOOLS,
+    "propose_recall",
+    { gap: { start: "2026-09-18T15:00:00+02:00", end: "2026-09-18T16:30:00+02:00" } },
+    toolBase(proposed.client),
+  );
+  assertEquals(r.ok, true);
+  if (r.ok) {
+    const msg = (r.data as { draft_message: string }).draft_message;
+    assertStringIncludes(msg, "Giulia Bassi");
+    assertStringIncludes(msg, "15:00");
+  }
+  assertEquals(findCall(proposed.recorded, "fn_propose_recall")?.calls[0][1], [{
+    _center_id: CENTER_ID, _gap_start: "2026-09-18T15:00:00+02:00", _gap_end: "2026-09-18T16:30:00+02:00", _cabin: null,
+  }]);
+});
+
+Deno.test("propose_recall: no_candidate is passed through untouched (no centers lookup)", async () => {
+  const { client, recorded } = fakeSupabase({
+    fn_propose_recall: { data: { status: "no_candidate", reason: "Nessuna cliente dormiente" }, error: null },
+  });
+  const r = await runTool(
+    ALL_TOOLS,
+    "propose_recall",
+    { gap: { start: "2026-09-18T15:00:00+02:00", end: "2026-09-18T16:30:00+02:00" } },
+    toolBase(client),
+  );
+  assertEquals(r, { ok: true, data: { status: "no_candidate", reason: "Nessuna cliente dormiente" } });
+  assertEquals(findCall(recorded, "centers"), undefined);
 });

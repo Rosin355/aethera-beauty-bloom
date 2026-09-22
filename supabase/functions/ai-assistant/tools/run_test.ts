@@ -1,6 +1,6 @@
 import { assertEquals, assertStringIncludes } from "https://deno.land/std@0.224.0/assert/mod.ts";
 import { fakeSupabase, toolBase } from "../test_helpers.ts";
-import { canUseTool, MAX_RESULT_BYTES, runTool, toOpenAiTools } from "./run.ts";
+import { canUseTool, MAX_RESULT_BYTES, runTool, toOpenAiTools, type WriteConfirmGuard } from "./run.ts";
 import { defineTool, ToolError } from "./types.ts";
 
 const { client } = fakeSupabase({});
@@ -64,7 +64,21 @@ const slow = defineTool<Record<string, never>>({
   handler: () => new Promise(() => {}),
 });
 
-const tools = [echo, ownerOnly, boom, notFound, big, slow];
+const write = defineTool<{ confirmed: boolean }>({
+  name: "write_thing",
+  description: "writes",
+  parameters: {
+    type: "object",
+    properties: { confirmed: { type: "boolean" } },
+    required: ["confirmed"],
+    additionalProperties: false,
+  },
+  access: "member",
+  write: true,
+  handler: ({ args }) => Promise.resolve({ wrote: args.confirmed }),
+});
+
+const tools = [echo, ownerOnly, boom, notFound, big, slow, write];
 
 Deno.test("runs a valid call from a JSON string and injects the server-side tenant", async () => {
   const r = await runTool(tools, "echo", '{"text":"ciao"}', toolBase(client, { role: "operator" }));
@@ -138,4 +152,43 @@ Deno.test("a hanging handler times out", async () => {
 Deno.test("toOpenAiTools exposes name/description/parameters only", () => {
   const defs = toOpenAiTools([echo]);
   assertEquals(defs, [{ type: "function", function: { name: "echo", description: "echo", parameters: echo.parameters } }]);
+});
+
+Deno.test("without a writeGuard, confirmed:true always succeeds (direct tool mode)", async () => {
+  const r1 = await runTool(tools, "write_thing", { confirmed: true }, toolBase(client));
+  const r2 = await runTool(tools, "write_thing", { confirmed: true }, toolBase(client));
+  assertEquals(r1.ok, true);
+  assertEquals(r2.ok, true); // no guard = no "already called" memory
+});
+
+Deno.test("writeGuard: confirmed:true requires a non-empty last user message", async () => {
+  const guard: WriteConfirmGuard = { calledTools: new Set(), lastUserMessageNonEmpty: false };
+  const r = await runTool(tools, "write_thing", { confirmed: true }, toolBase(client), undefined, guard);
+  assertEquals(r.ok, false);
+  if (!r.ok) assertEquals(r.error.code, "invalid_args");
+});
+
+Deno.test("writeGuard: a second confirmed:true call to the same tool in one run is refused", async () => {
+  const guard: WriteConfirmGuard = { calledTools: new Set(), lastUserMessageNonEmpty: true };
+  const preview = await runTool(tools, "write_thing", { confirmed: false }, toolBase(client), undefined, guard);
+  assertEquals(preview.ok, true);
+  assertEquals(guard.calledTools.has("write_thing"), true);
+
+  const confirm = await runTool(tools, "write_thing", { confirmed: true }, toolBase(client), undefined, guard);
+  assertEquals(confirm.ok, false);
+  if (!confirm.ok) assertEquals(confirm.error.code, "conflict");
+});
+
+Deno.test("writeGuard: confirmed:true as the tool's FIRST call this run is allowed", async () => {
+  const guard: WriteConfirmGuard = { calledTools: new Set(), lastUserMessageNonEmpty: true };
+  const r = await runTool(tools, "write_thing", { confirmed: true }, toolBase(client), undefined, guard);
+  assertEquals(r.ok, true);
+  assertEquals(guard.calledTools.has("write_thing"), true);
+});
+
+Deno.test("writeGuard: a non-write tool is never recorded or gated", async () => {
+  const guard: WriteConfirmGuard = { calledTools: new Set(), lastUserMessageNonEmpty: false };
+  const r = await runTool(tools, "echo", { text: "hi" }, toolBase(client), undefined, guard);
+  assertEquals(r.ok, true);
+  assertEquals(guard.calledTools.size, 0);
 });

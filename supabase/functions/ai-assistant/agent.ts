@@ -1,5 +1,5 @@
 import type { ChatMessage, LlmEvent, StreamRound } from "./llm.ts";
-import { canUseTool, runTool, toOpenAiTools, type ToolBase } from "./tools/run.ts";
+import { canUseTool, runTool, TOOL_TIMEOUT_MS, toOpenAiTools, type ToolBase, type WriteConfirmGuard } from "./tools/run.ts";
 import type { Tool, ToolResult } from "./tools/types.ts";
 
 export const MAX_MODEL_CALLS = 5;
@@ -65,6 +65,15 @@ export async function* runAgent(input: AgentInput): AsyncGenerator<AgentEvent, A
   let toolCallsTotal = 0;
   let anyText = false;
 
+  // Confirm-first backstop (docs/CONCIERGE_TOOLS.md §4): shared across every round of THIS
+  // request, so a write tool's own preview-then-self-confirm inside one loop is blocked even
+  // though it spans two rounds — see WriteConfirmGuard for the full rationale.
+  const lastUserMessage = [...input.history].reverse().find((m) => m.role === "user");
+  const writeGuard: WriteConfirmGuard = {
+    calledTools: new Set<string>(),
+    lastUserMessageNonEmpty: (lastUserMessage?.content ?? "").trim().length > 0,
+  };
+
   for (let call = 1; call <= maxModelCalls; call++) {
     const forceFinal = offered.length === 0 || call === maxModelCalls ||
       Date.now() > deadline || toolCallsTotal >= MAX_TOOL_CALLS_TOTAL;
@@ -118,7 +127,7 @@ export async function* runAgent(input: AgentInput): AsyncGenerator<AgentEvent, A
         result = { ok: false, error: { code: "too_many_calls", message: "Troppe chiamate agli strumenti in questa richiesta" } };
       } else {
         toolCallsTotal++;
-        result = await runTool(input.tools, tc.name, tc.arguments, toolBase);
+        result = await runTool(input.tools, tc.name, tc.arguments, toolBase, TOOL_TIMEOUT_MS, writeGuard);
       }
 
       yield toResultEvent(tc.id, tc.name, result);

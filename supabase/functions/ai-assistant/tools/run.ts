@@ -6,6 +6,26 @@ export const MAX_RESULT_BYTES = 6 * 1024;
 
 export type ToolBase = Omit<ToolContext, "args">;
 
+/**
+ * Confirm-first backstop for write tools (P1.4, docs/CONCIERGE_TOOLS.md §4). Only `agent.ts`
+ * passes this — direct tool mode (`handleDirectTool` in index.ts) does not, so a single
+ * deterministic `confirmed:true` call there always succeeds, as designed.
+ *
+ * The PRIMARY control is the system prompt telling the model to show a draft and wait for an
+ * explicit yes; this is the backstop against a model confirming its own draft in the same
+ * automated loop, with no human turn in between: a write tool executed with `confirmed:true`
+ * only if (a) the request's own last user-role message is non-empty, and (b) this tool name was
+ * not already invoked earlier in the SAME request (regardless of that earlier call's own
+ * `confirmed` value — a fresh preview-then-self-confirm inside one loop is exactly what this
+ * blocks; a confirmed:true call that is the tool's first invocation of the request is always the
+ * genuine case: a NEW request whose latest message is the user's own "yes").
+ */
+export interface WriteConfirmGuard {
+  /** Write-tool names already invoked earlier in this same agent run; mutated by `runTool`. */
+  calledTools: Set<string>;
+  lastUserMessageNonEmpty: boolean;
+}
+
 /** True when `role` may use `tool` (owner-only tools are hidden from every other role). */
 export const canUseTool = (tool: Tool, role: ToolBase["role"]): boolean =>
   tool.access === "member" || role === "owner";
@@ -43,6 +63,7 @@ export const runTool = async (
   rawArgs: unknown,
   base: ToolBase,
   timeoutMs = TOOL_TIMEOUT_MS,
+  writeGuard?: WriteConfirmGuard,
 ): Promise<ToolResult> => {
   const tool = tools.find((t) => t.name === name);
   if (!tool) return fail("unknown_tool", `Strumento sconosciuto: ${name}`);
@@ -65,6 +86,22 @@ export const runTool = async (
 
   const problem = validateSchema(tool.parameters, args);
   if (problem) return fail("invalid_args", problem);
+
+  if (tool.write && writeGuard) {
+    const confirmed = (args as Record<string, unknown>).confirmed === true;
+    if (confirmed) {
+      if (!writeGuard.lastUserMessageNonEmpty) {
+        return fail("invalid_args", "Serve un messaggio esplicito dell'utente per confermare un'azione che scrive dati.");
+      }
+      if (writeGuard.calledTools.has(name)) {
+        return fail(
+          "conflict",
+          "Questo strumento è già stato usato in questa richiesta: la conferma deve arrivare in un nuovo messaggio dell'utente.",
+        );
+      }
+    }
+    writeGuard.calledTools.add(name);
+  }
 
   try {
     const data = await withTimeout(tool.handler({ ...base, args: args as Record<string, unknown> }), timeoutMs);

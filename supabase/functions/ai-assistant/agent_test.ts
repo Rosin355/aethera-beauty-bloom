@@ -212,3 +212,71 @@ Deno.test("the caller's history is never mutated and system messages cannot come
   assertEquals(history.length, 1);
   assertEquals(requests[0].messages.filter((m) => m.role === "system").length, 1);
 });
+
+Deno.test("confirm-first backstop: a same-turn preview-then-self-confirm is refused, not written", async () => {
+  const writeThing = defineTool<{ confirmed: boolean }>({
+    name: "write_thing",
+    description: "writes",
+    parameters: {
+      type: "object",
+      properties: { confirmed: { type: "boolean" } },
+      required: ["confirmed"],
+      additionalProperties: false,
+    },
+    access: "member",
+    write: true,
+    handler: ({ args }) => Promise.resolve({ wrote: args.confirmed }),
+  });
+
+  const { streamRound } = scripted([
+    { toolCalls: [call("c1", "write_thing", '{"confirmed":false}')] },
+    { toolCalls: [call("c2", "write_thing", '{"confirmed":true}')] },
+    { text: ["fatto"] },
+  ]);
+  const { events } = await collect(runAgent({
+    systemPrompt: "SYS",
+    history: [{ role: "user", content: "prenota e confermalo subito" }],
+    tools: [...tools, writeThing],
+    toolBase: toolBase(client),
+    streamRound,
+  }));
+
+  const results = events.filter((e) => e.type === "tool_result") as Extract<AgentEvent, { type: "tool_result" }>[];
+  assertEquals(results.length, 2);
+  assertEquals(results[0].ok, true); // the preview call executes normally
+  assertEquals(results[1].ok, false); // the same tool, confirmed:true, same request → refused
+  assertEquals(results[1].error?.code, "conflict");
+});
+
+Deno.test("confirm-first backstop: confirmed:true is fine when it's the tool's first call this run", async () => {
+  const writeThing = defineTool<{ confirmed: boolean }>({
+    name: "write_thing",
+    description: "writes",
+    parameters: {
+      type: "object",
+      properties: { confirmed: { type: "boolean" } },
+      required: ["confirmed"],
+      additionalProperties: false,
+    },
+    access: "member",
+    write: true,
+    handler: ({ args }) => Promise.resolve({ wrote: args.confirmed }),
+  });
+
+  const { streamRound } = scripted([
+    { toolCalls: [call("c1", "write_thing", '{"confirmed":true}')] },
+    { text: ["fatto"] },
+  ]);
+  const { events } = await collect(runAgent({
+    systemPrompt: "SYS",
+    // the user's own latest message is their explicit "yes" — a NEW request, not a same-loop self-confirm
+    history: [{ role: "user", content: "sì, confermalo" }],
+    tools: [...tools, writeThing],
+    toolBase: toolBase(client),
+    streamRound,
+  }));
+
+  const results = events.filter((e) => e.type === "tool_result") as Extract<AgentEvent, { type: "tool_result" }>[];
+  assertEquals(results.length, 1);
+  assertEquals(results[0].ok, true);
+});

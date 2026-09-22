@@ -17,6 +17,14 @@ Audience: whoever implements the next prompts, and the native clients that will 
 - `get_center_profile` already tolerates the `center_profile_slots` table not existing (P1.5 creates it): `slots_available:false, slots:null` until then.
 - `ServiceClient` in `_shared/auth.ts` is now the default `SupabaseClient` type (the old `<unknown,"public",unknown>` generics made every query result `never`, so nothing could be type-checked). `deno check` / `deno test` now run on the function (`npm run test:functions`).
 
+**P1.4 (done)** — the three agenda write tools, migration `20260922110000_agenda_write_tools.sql`:
+
+- `fn_create_appointment` / `fn_move_appointment` / `fn_propose_recall` are SECURITY DEFINER wrappers (same shape as `fn_simulate_goal`), each with its own explicit `auth.uid()` + membership/role check up front — SECURITY DEFINER here only elevates read access to the `_calc` helpers (`fn_center_gaps_calc`, `fn_center_kpi_calc`), it does not widen the tenant boundary: every write is still explicitly scoped by the server-resolved `_center_id` parameter.
+- `fn_center_nearest_slots_calc` (new `_calc` helper, service_role only) reuses `fn_center_gaps_calc`'s gap-merging/opening-hours math rather than duplicating it, ranking candidate slots by distance from the requested time.
+- Conflict detection is a check-then-act inside one function call, not a DB-level exclusion constraint (see the migration's own header comment for why a `tstzrange` EXCLUDE was rejected for this phase — it would break `10_kpi_math.sql`'s intentional Fede/Gigi overlap fixture). A true concurrent double-booking race is possible in principle; negligible at single-salon booking volume, revisit at the P1.7 security pass if it matters by then.
+- The confirm-first backstop (§4) is `WriteConfirmGuard` in `tools/run.ts`: an opt-in second parameter to `runTool` that `agent.ts` constructs once per request and `handleDirectTool` never passes, so direct tool mode's single deterministic `confirmed:true` call is unaffected.
+- `move_appointment` / `propose_recall` compose their client-facing `draft_message` in the TS tool layer (not SQL) from the RPC's structured response, so the wording stays easy to keep in the app's plain-prose, no-markdown house style (CLAUDE.md) as that evolves; `create_appointment` needs no client message (P1.4 doesn't ask for one — a new booking's client is presumably already being told directly).
+
 ---
 
 ## 1. Audit of `supabase/functions/ai-assistant/index.ts` (as of `main`, 264 lines)
@@ -225,9 +233,9 @@ Legacy web clients ignore every frame without `choices` (verified in `ChatAssist
 | `list_appointments` | P1.3 | member | – | `day: date` (default today, Europe/Rome) | appointments + gaps for the day |
 | `get_center_profile` | P1.3 | member | – | `{}` | filled/missing profile slots (P1.5 fills them; P1.3 reads what exists) |
 | `get_protocol` | P1.3 | member | – | `name: string (≤ 120)` | protocol text from the KB (via `ctx.knowledge`) |
-| `create_appointment` | P1.4 | member | ✔ | `client_name, service, datetime, cabin?, confirmed` | created row, or the 2 nearest free alternatives on conflict |
-| `move_appointment` | P1.4 | member | ✔ | `id, new_datetime, confirmed` | moved row + draft client message |
-| `propose_recall` | P1.4 | owner | – (returns a draft) | `gap: {start,end,cabin?}` | best dormant client + draft message |
+| `create_appointment` | P1.4 | member | ✔ | `client_name, service_id, starts_at, cabin?, notes?, confirmed` | created row, or the 2 nearest free alternatives on conflict |
+| `move_appointment` | P1.4 | member | ✔ | `id, new_starts_at, confirmed` | moved row + draft client message |
+| `propose_recall` | P1.4 | owner | – (returns a draft) | `gap: {start, end, cabin?}` | best dormant client + draft message |
 | `set_profile_slot` | P1.5 | member | ✔ (idempotent upsert; `confirmed` not required for `source:'conversation'`) | `slot_key, value` | updated slot |
 | `get_missing_slots` | P1.5 | member | – | `chapter?` | missing / stale (> 6 months) slots |
 | `generate_first_reading` | P1.5 | owner | – | `{}` | closing letter text |

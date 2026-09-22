@@ -29,3 +29,10 @@ export const localTime = (iso: string, timeZone: string): string =>
 
 export const clip = (text: string | null | undefined, max: number): string | null =>
   text == null ? null : text.length > max ? `${text.slice(0, max)}…` : text;
+
+/** "giovedì 24 settembre alle 16:30" in the given IANA time zone — for client-facing draft messages. */
+export const localDayTime = (iso: string, timeZone: string): string => {
+  const date = new Date(iso);
+  const day = new Intl.DateTimeFormat("it-IT", { timeZone, weekday: "long", day: "numeric", month: "long" }).format(date);
+  return `${day} alle ${localTime(iso, timeZone)}`;
+};

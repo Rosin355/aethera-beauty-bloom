@@ -133,9 +133,43 @@ check_tool "unknown tool is reported" "$ACCESS_TOKEN" does_not_exist '{}' \
 check_tool "a smuggled center_id argument is rejected" "$ACCESS_TOKEN" list_appointments \
   '{"center_id":"00000000-0000-4000-8000-000000000000"}' '.ok == false and .error.code == "invalid_args"'
 
+# ---- 2b. agenda write tools (P1.4): validation only ----------------------------------------
+# Deliberately no happy-path here: a real confirmed:true call would write a test appointment
+# into the live demo center's actual calendar. The full create/conflict/draft/confirm/write
+# round trip is covered deterministically in supabase/tests/12_agenda_write_fn.sql (scratch
+# Postgres, fixture data, nothing live). These checks only exercise schema validation and the
+# confirm-first backstop, none of which ever reaches a write.
+echo "agenda write tools (validation only, direct mode)"
+check_tool "create_appointment requires confirmed" "$ACCESS_TOKEN" create_appointment \
+  '{"client_name":"Test","service_id":"00000000-0000-4000-8000-000000000000","starts_at":"2026-01-01T10:00:00+01:00"}' \
+  '.ok == false and .error.code == "invalid_args"'
+check_tool "create_appointment rejects a non-uuid service_id" "$ACCESS_TOKEN" create_appointment \
+  '{"client_name":"Test","service_id":"not-a-uuid","starts_at":"2026-01-01T10:00:00+01:00","confirmed":false}' \
+  '.ok == false and .error.code == "invalid_args"'
+check_tool "create_appointment rejects a cabin out of range" "$ACCESS_TOKEN" create_appointment \
+  '{"client_name":"Test","service_id":"00000000-0000-4000-8000-000000000000","starts_at":"2026-01-01T10:00:00+01:00","cabin":99,"confirmed":false}' \
+  '.ok == false and .error.code == "invalid_args"'
+check_tool "create_appointment rejects an unknown service_id" "$ACCESS_TOKEN" create_appointment \
+  '{"client_name":"Test","service_id":"00000000-0000-4000-8000-000000000000","starts_at":"2026-01-01T10:00:00+01:00","confirmed":false}' \
+  '.ok == false and .error.code == "invalid_args"'
+check_tool "move_appointment rejects a non-uuid id" "$ACCESS_TOKEN" move_appointment \
+  '{"id":"not-a-uuid","new_starts_at":"2026-01-01T10:00:00+01:00","confirmed":false}' \
+  '.ok == false and .error.code == "invalid_args"'
+check_tool "move_appointment rejects an unknown appointment id" "$ACCESS_TOKEN" move_appointment \
+  '{"id":"00000000-0000-4000-8000-000000000000","new_starts_at":"2026-01-01T10:00:00+01:00","confirmed":false}' \
+  '.ok == false and .error.code == "invalid_args"'
+check_tool "propose_recall requires a gap" "$ACCESS_TOKEN" propose_recall '{}' \
+  '.ok == false and .error.code == "invalid_args"'
+check_tool "propose_recall rejects an inverted gap" "$ACCESS_TOKEN" propose_recall \
+  '{"gap":{"start":"2026-01-01T15:00:00+01:00","end":"2026-01-01T14:00:00+01:00"}}' \
+  '.ok == false and .error.code == "invalid_args"'
+
 # ---- 3. role scoping (optional second user) --------------------------------------------------
 if [ -n "${OPERATOR_ACCESS_TOKEN:-}" ]; then
   echo "role scoping (non-owner member)"
+  check_tool "propose_recall is forbidden for a non-owner (owner-only)" "$OPERATOR_ACCESS_TOKEN" propose_recall \
+    '{"gap":{"start":"2026-01-01T14:00:00+01:00","end":"2026-01-01T15:30:00+01:00"}}' \
+    '.ok == false and .error.code == "forbidden"'
   check_tool "get_center_kpi is forbidden for a non-owner" "$OPERATOR_ACCESS_TOKEN" get_center_kpi '{}' \
     '.ok == false and .error.code == "forbidden"'
   check_tool "simulate_goal is forbidden for a non-owner" "$OPERATOR_ACCESS_TOKEN" simulate_goal '{"goal_amount":1000}' \
