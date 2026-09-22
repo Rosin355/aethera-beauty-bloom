@@ -20,7 +20,11 @@
 -- manual INSERT this needs after deploy.
 
 CREATE EXTENSION IF NOT EXISTS pg_cron WITH SCHEMA pg_catalog;
-CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA net;
+-- extensions, not net: CREATE EXTENSION requires the target schema to already exist, and `net`
+-- does not -- pg_net creates and owns it itself, so pre-creating it fails with "schema net is not
+-- a member of extension pg_net". Installing into Supabase's conventional `extensions` home still
+-- puts the functions in `net`, so net.http_post below resolves either way.
+CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
 
 -- ============================ 1) internal_config ============================
 CREATE TABLE IF NOT EXISTS public.internal_config (
@@ -140,7 +144,11 @@ SELECT cron.schedule(
 -- schedules, the functions and the wiring are all in place; flip `active` to true once APNs is
 -- configured and internal_config is populated. Idempotent, and re-running this migration
 -- re-parks the jobs rather than silently re-arming them.
-UPDATE cron.job SET active = false
+-- cron.alter_job, not UPDATE cron.job: the table is owned by supabase_admin and a direct UPDATE
+-- is denied to the migration role, while alter_job is pg_cron's own supported entry point and
+-- lets a job's owner change it.
+SELECT cron.alter_job(jobid, active := false)
+FROM cron.job
 WHERE jobname IN ('weekly-briefing-monday', 'daily-recall-reminders');
 
 -- ============================ DOWN (manual rollback) ============================
