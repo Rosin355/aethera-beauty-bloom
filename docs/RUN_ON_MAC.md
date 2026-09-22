@@ -110,8 +110,13 @@ Things I could not verify from the sandbox and that this run confirms:
    If the chat check ever shows an in-band `"type":"error"` frame after tool calls, that is the first suspect.
 3. `verify_jwt = true` plus the new `apikey` header handling for direct tool mode.
 
-Rate limit: the function allows 30 requests / minute / user; the script stays well below that, but do not
-run it twice within the same minute.
+Rate limit: the function allows 30 requests / minute / user. A full run issues 40–55 of them
+(more with `OTHER_CENTER_ID` / `OPERATOR_ACCESS_TOKEN` set, or once the write round trip starts
+executing for real from P1.4 on), so `test-tools.sh` paces itself at `RATE_MAX` requests/minute
+(default 20, a real margin under 30) and, belt and suspenders, retries once more on an actual 429
+after a real cool-down (`RETRY_COOLDOWN`, default 8s) rather than letting one rate-limit trip
+cascade into every check after it — the 2026-09-22 run (`docs/TEST_RESULTS_FASE1B.md`) is exactly
+that failure mode. Still: do not run it twice within the same minute.
 
 ## 4. After P1.4 — agenda write tools (migration + local SQL test + live tests)
 
@@ -138,8 +143,11 @@ RUN_CHAT=0 ./scripts/test-tools.sh
 ```
 
 This run's `set_profile_slot` check writes a real (tagged) value into the live demo center's
-profile — harmless, an upsert, easy to overwrite again. `get_center_profile` should now show a
-`completeness_pct` number.
+profile, but reads the slot's own current value first and restores it (or deletes the row, if it
+didn't have one) on every exit path via the script's cleanup trap — normal completion, an
+assertion failure, or Ctrl-C. `get_center_profile` should now show a `completeness_pct` number,
+and `get_missing_slots` returns at most 8 slots by default (`limit`, up to 20) even though the
+full catalogue is 75 questions — `missing_count` still reports the true total.
 
 ## 6. After P1.6 — referto e azioni (migration + new function deploy + live tests)
 
@@ -189,10 +197,18 @@ get a permission error — expected, that's the fix.
 
 ### 7a. Enable `pg_cron` and `pg_net` on the project (dashboard, one-time)
 
-Supabase project dashboard → Database → Extensions → enable `pg_cron` and `pg_net` if not already
-on. The migration also runs `CREATE EXTENSION IF NOT EXISTS`, but Supabase restricts which schema
-non-superusers can install extensions into for these two, so confirm via the dashboard toggle
-first if `supabase db push` errors on the `CREATE EXTENSION` lines.
+**Not needed in the end** — settled on 2026-09-22 against the live project: the migration role
+(`postgres`, not a superuser) installed both extensions itself, so no dashboard toggle was
+required. Neither was enabled beforehand and the migration created both.
+
+What *did* matter is the target schema. `CREATE EXTENSION` validates it before running, and
+`net` does not exist yet — pg_net creates and owns that schema itself, so pre-creating it fails
+with `schema net is not a member of extension "pg_net"`. The migration installs pg_net into
+`extensions` (Supabase's usual home); its functions still land in `net`, so `net.http_post`
+resolves either way. pg_cron goes into `pg_catalog`, which is what its control file wants.
+
+If a future project *does* refuse the `CREATE EXTENSION` lines, the dashboard toggle
+(Database → Extensions) is the fallback.
 
 ### 7b. Populate `internal_config` (manual, one-time — needed before either cron job can push)
 
@@ -206,6 +222,39 @@ on conflict (key) do update set value = excluded.value, updated_at = now();
 Run this in the SQL editor as the project owner — `internal_config` has zero RLS policies, so it
 is not reachable any other way (see `docs/SECURITY_REVIEW_FASE1.md` finding 2 for why this is a
 plain table rather than Vault, and the follow-up to move it there).
+
+### 7b-bis. The two cron jobs are deployed PARKED — what you need before switching them on
+
+`20260922160000_scheduler.sql` creates both jobs and then deactivates them in the same
+migration, so nothing fires on a project that cannot deliver a push. Deployed state (2026-09-22):
+
+```
+weekly-briefing-monday   30 6 * * 1   active = false
+daily-recall-reminders   0 8 * * *    active = false
+```
+
+Checklist before flipping them on — all three are prerequisites, not optional:
+
+| # | What | Where it comes from |
+|---|---|---|
+| 1 | **Apple `.p8` private key** (`AuthKey_XXXXXXXXXX.p8`) | Apple Developer → Certificates, Identifiers & Profiles → Keys → new key with **APNs** enabled. Downloadable **once** — keep it safe. |
+| 2 | **Key ID** (10 chars) | shown next to that key |
+| 3 | **Team ID** (10 chars) | Apple Developer → Membership details |
+| 4 | *(also needed)* **Bundle ID** of the iOS app | the native app's identifier |
+| 5 | `internal_config` populated | §7b above — without it `fn_call_send_push` only logs a WARNING and skips |
+
+Then set the secrets (§7c), and only then enable the jobs:
+
+```sql
+select cron.alter_job(jobid, active := true)
+from cron.job where jobname in ('weekly-briefing-monday', 'daily-recall-reminders');
+```
+
+Use `cron.alter_job`, not `update cron.job` — that table is owned by `supabase_admin` and a
+direct UPDATE is denied to the migration role. Re-running the migration parks them again.
+
+Remember the DST caveat at the top of that migration: these are UTC clock times, so 06:30 UTC is
+07:30 in winter and 08:30 in summer Italian time.
 
 ### 7c. Set the APNs function secrets
 

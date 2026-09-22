@@ -50,11 +50,14 @@ if [ -z "${ACCESS_TOKEN:-}" ]; then
 fi
 
 # ---- helpers ----------------------------------------------------------------------------
-# ai-assistant allows 30 requests / minute / user and this script now issues well over 30 of
-# them, so it paces itself instead of bursting: without this the run dies part-way through with
-# HTTP 429 and every later check "fails" for a reason that has nothing to do with the code.
-# Requests are spread evenly at RATE_MAX per minute, a little under the real limit.
-RATE_MAX="${RATE_MAX:-25}"
+# ai-assistant allows 30 requests / minute / user and this script issues well over 30 of them
+# in a full run, so it paces itself instead of bursting: without this, the run dies part-way
+# through with HTTP 429 and every later check "fails" for a reason that has nothing to do with
+# the code (2026-09-22 live run: 7 of 8 failures were exactly this). Requests are spread evenly
+# at RATE_MAX per minute -- a real margin under the actual limit, not just barely under it, so
+# ordinary network jitter or an extra optional check (OTHER_CENTER_ID, OPERATOR_ACCESS_TOKEN,
+# the full write round trip) never pushes a 60-second window over 30.
+RATE_MAX="${RATE_MAX:-20}"
 REQ_INTERVAL_MS=$(( 60000 / RATE_MAX ))
 REQ_COUNT=0
 RUN_START="$(date +%s)"
@@ -68,13 +71,24 @@ throttle() {
   return 0
 }
 
+# Belt and suspenders on top of throttle(): if a 429 slips through anyway (a slow run, a retry,
+# clock drift), don't let it cascade into every check that follows -- cool down for real (longer
+# than the normal pacing gap) and try again, up to twice, before giving the caller whatever the
+# last response was.
+RETRY_COOLDOWN="${RETRY_COOLDOWN:-8}"
+RATE_LIMIT_RETRIES="${RATE_LIMIT_RETRIES:-2}"
+
 # post_json <token|-> <body-json>  -> sets HTTP_CODE, writes the response body to $TMP/body
 post_json() {
-  local token="$1" body="$2" auth=()
-  throttle
+  local token="$1" body="$2" auth=() attempt
   [ "$token" != "-" ] && auth=(-H "Authorization: Bearer $token")
-  HTTP_CODE="$(curl -sS -o "$TMP/body" -w '%{http_code}' --max-time 60 -X POST "$FN_URL" \
-    -H "apikey: $SUPABASE_ANON_KEY" -H 'Content-Type: application/json' ${auth[@]+"${auth[@]}"} --data-binary "$body")"
+  for attempt in $(seq 0 "$RATE_LIMIT_RETRIES"); do
+    throttle
+    HTTP_CODE="$(curl -sS -o "$TMP/body" -w '%{http_code}' --max-time 60 -X POST "$FN_URL" \
+      -H "apikey: $SUPABASE_ANON_KEY" -H 'Content-Type: application/json' ${auth[@]+"${auth[@]}"} --data-binary "$body")"
+    [ "$HTTP_CODE" = "429" ] || return 0
+    [ "$attempt" -lt "$RATE_LIMIT_RETRIES" ] && sleep "$RETRY_COOLDOWN"
+  done
 }
 
 with_center() { # merge centerId into a JSON body when CENTER_ID is set
@@ -100,6 +114,65 @@ check_status() { # check_status <label> <expected> <token|-> <body>
   post_json "$3" "$4"
   if [ "$HTTP_CODE" = "$2" ]; then pass "$1"; else fail "$1" "expected HTTP $2, got $HTTP_CODE  body: $(head -c 200 "$TMP/body")"; fi
 }
+
+# ---- write-test safety net -------------------------------------------------------------------
+# Two things below ever write real data into the live demo center: a throwaway appointment (2e)
+# and a tagged profile-slot value (2c). Both clean up after themselves on every exit path --
+# normal completion, an assertion failure, or Ctrl-C -- via the one EXIT trap set below, which is
+# set here (before any check runs) rather than only once section 2e is reached, so it is armed
+# for the whole run.
+CREATED_ID=""
+TEST_SLOT_FILTER=""
+SLOT_EXISTED_BEFORE=false
+ORIGINAL_SLOT_JSON=""
+
+# Deletes the test appointment through PostgREST with the caller's own JWT (the "Owner deletes
+# center appointments" policy permits it). No-op if 2e never created one.
+cleanup_created_appointment() {
+  [ -n "$CREATED_ID" ] || return 0
+  local code
+  code="$(curl -sS -o /dev/null -w '%{http_code}' -X DELETE \
+    "${SUPABASE_URL%/}/rest/v1/business_appointments?id=eq.${CREATED_ID}" \
+    -H "apikey: $SUPABASE_ANON_KEY" -H "Authorization: Bearer $ACCESS_TOKEN")"
+  if [ "$code" = "204" ] || [ "$code" = "200" ]; then
+    printf '  \033[32mPASS\033[0m %s\n' "cleanup: test appointment deleted"
+  else
+    printf '  \033[31mFAIL\033[0m %s\n' "cleanup: could NOT delete $CREATED_ID (HTTP $code) -- remove it by hand"
+  fi
+  CREATED_ID=""
+}
+
+# Restores the profile slot 2c writes: back to its original value if it had one (PATCH -- the
+# "Members update" policy allows any active member), or deleted if the test slot didn't exist
+# before (DELETE -- "Owner deletes", owner-only). No-op if 2c never set TEST_SLOT_FILTER (it
+# never ran, or skipped itself because it could not safely read the slot's original state first).
+cleanup_test_slot() {
+  [ -n "$TEST_SLOT_FILTER" ] || return 0
+  local code
+  if [ "$SLOT_EXISTED_BEFORE" = true ]; then
+    code="$(curl -sS -o /dev/null -w '%{http_code}' -X PATCH \
+      "${SUPABASE_URL%/}/rest/v1/center_profile_slots?${TEST_SLOT_FILTER}" \
+      -H "apikey: $SUPABASE_ANON_KEY" -H "Authorization: Bearer $ACCESS_TOKEN" \
+      -H 'Content-Type: application/json' -H 'Prefer: return=minimal' \
+      --data-binary "$(jq -c '{value, source}' <<<"$ORIGINAL_SLOT_JSON")")"
+    if [ "$code" = "204" ] || [ "$code" = "200" ]; then
+      printf '  \033[32mPASS\033[0m %s\n' "cleanup: test profile slot restored to its original value"
+    else
+      printf '  \033[31mFAIL\033[0m %s\n' "cleanup: could NOT restore the profile slot (HTTP $code) -- restore it by hand"
+    fi
+  else
+    code="$(curl -sS -o /dev/null -w '%{http_code}' -X DELETE \
+      "${SUPABASE_URL%/}/rest/v1/center_profile_slots?${TEST_SLOT_FILTER}" \
+      -H "apikey: $SUPABASE_ANON_KEY" -H "Authorization: Bearer $ACCESS_TOKEN")"
+    if [ "$code" = "204" ] || [ "$code" = "200" ]; then
+      printf '  \033[32mPASS\033[0m %s\n' "cleanup: test profile slot removed"
+    else
+      printf '  \033[31mFAIL\033[0m %s\n' "cleanup: could NOT delete the test profile slot (HTTP $code) -- remove it by hand"
+    fi
+  fi
+  TEST_SLOT_FILTER=""
+}
+trap 'cleanup_created_appointment; cleanup_test_slot; rm -rf "$TMP"' EXIT
 
 echo "ai-assistant tool tests → $FN_URL"
 
@@ -185,12 +258,16 @@ check_tool "propose_recall rejects an inverted gap" "$ACCESS_TOKEN" propose_reca
 
 # ---- 2c. profile slots (P1.5) ----------------------------------------------------------------
 # get_missing_slots and generate_first_reading are read-only: safe to run for real. set_profile_slot
-# writes real data into the live demo center's profile, but a slot is just a fact the concierge
-# would record anyway (upsert, freely overwritten later) — unlike an appointment there's no
-# calendar to pollute, so the happy path runs for real here, tagged so it's obviously test data.
+# writes real data into the live demo center's profile -- unlike an appointment there's no calendar
+# to pollute, but it's still someone's real profile data, so its original value is read first and
+# the cleanup trap (defined above) restores or removes it again at the end of the run.
 echo "profile slots (direct mode)"
-check_tool "get_missing_slots (all chapters) returns a prioritised list" "$ACCESS_TOKEN" get_missing_slots '{}' \
-  '.ok == true and (.data.missing | type == "array") and (.data | has("missing_count"))'
+check_tool "get_missing_slots defaults to a short prioritised list (<=8), true total in missing_count" "$ACCESS_TOKEN" get_missing_slots '{}' \
+  '.ok == true and (.data.missing | type == "array") and (.data.missing | length) <= 8 and (.data | has("missing_count"))'
+check_tool "get_missing_slots respects an explicit limit" "$ACCESS_TOKEN" get_missing_slots '{"limit":3}' \
+  '.ok == true and (.data.missing | length) <= 3'
+check_tool "get_missing_slots rejects a limit above the max (20)" "$ACCESS_TOKEN" get_missing_slots '{"limit":21}' \
+  '.ok == false and .error.code == "invalid_args"'
 check_tool "get_missing_slots rejects an unknown chapter" "$ACCESS_TOKEN" get_missing_slots '{"chapter":"non_esiste"}' \
   '.ok == false and .error.code == "invalid_args"'
 check_tool "set_profile_slot requires slot_key, value and source" "$ACCESS_TOKEN" set_profile_slot '{}' \
@@ -198,9 +275,30 @@ check_tool "set_profile_slot requires slot_key, value and source" "$ACCESS_TOKEN
 check_tool "set_profile_slot rejects an unknown slot_key" "$ACCESS_TOKEN" set_profile_slot \
   '{"slot_key":"not_a_real_slot","value":"x","source":"conversation"}' \
   '.ok == false and .error.code == "invalid_args"'
-check_tool "set_profile_slot upserts a real slot (tagged test data)" "$ACCESS_TOKEN" set_profile_slot \
-  '{"slot_key":"trattamenti_piu_eseguiti","value":"[test-tools.sh live run]","source":"conversation"}' \
-  '.ok == true and .data.slot_key == "trattamenti_piu_eseguiti" and .data.value == "[test-tools.sh live run]"'
+
+# Read the slot's CURRENT state (via PostgREST, not the tool -- no tool reads a single slot)
+# before touching it, so the cleanup trap knows whether to restore or delete afterwards. If this
+# read itself fails, skip the write entirely rather than gamble on which cleanup path is safe.
+TEST_SLOT_KEY="trattamenti_piu_eseguiti"
+TEST_SLOT_FILTER="slot_key=eq.${TEST_SLOT_KEY}"
+[ -n "${CENTER_ID:-}" ] && TEST_SLOT_FILTER="${TEST_SLOT_FILTER}&center_id=eq.${CENTER_ID}"
+ORIGINAL_SLOT_HTTP="$(curl -sS -o "$TMP/orig_slot.json" -w '%{http_code}' \
+  "${SUPABASE_URL%/}/rest/v1/center_profile_slots?${TEST_SLOT_FILTER}&select=value,source" \
+  -H "apikey: $SUPABASE_ANON_KEY" -H "Authorization: Bearer $ACCESS_TOKEN")"
+
+if [ "$ORIGINAL_SLOT_HTTP" != "200" ]; then
+  TEST_SLOT_FILTER=""   # nothing recorded to clean up: the trap will no-op for this slot
+  fail "set_profile_slot upserts a real slot (tagged test data)" \
+    "could not read the slot's current value first (HTTP $ORIGINAL_SLOT_HTTP) -- skipped the write to avoid losing data"
+else
+  ORIGINAL_SLOT_JSON="$(jq -c '.[0] // empty' "$TMP/orig_slot.json")"
+  [ -n "$ORIGINAL_SLOT_JSON" ] && SLOT_EXISTED_BEFORE=true
+
+  check_tool "set_profile_slot upserts a real slot (tagged test data, restored on exit)" "$ACCESS_TOKEN" set_profile_slot \
+    "$(jq -nc --arg k "$TEST_SLOT_KEY" '{slot_key:$k,value:"[test-tools.sh live run]",source:"conversation"}')" \
+    ".ok == true and .data.slot_key == \"$TEST_SLOT_KEY\" and .data.value == \"[test-tools.sh live run]\""
+fi
+
 check_tool "get_center_profile now shows a completeness percentage" "$ACCESS_TOKEN" get_center_profile '{}' \
   '.ok == true and .data.slots_available == true and (.data.completeness_pct | type == "number")'
 check_tool "generate_first_reading returns completeness and per-chapter highlights" "$ACCESS_TOKEN" generate_first_reading '{}' \
@@ -229,103 +327,93 @@ check_tool "set_action_done rejects an unknown action_id" "$ACCESS_TOKEN" set_ac
 # Guarded two ways, because it is the only part of this script that writes to a calendar:
 #   * it runs ONLY against the demo center, matched by name, never a real customer's agenda;
 #   * the appointment is booked far in the future under an obvious throwaway client name, and
-#     is deleted again at the end -- including on failure or Ctrl-C, via the EXIT trap below.
+#     is deleted again at the end -- including on failure or Ctrl-C, via the EXIT trap set above.
 WRITE_DAY="${WRITE_DAY:-2027-03-02}"          # a Tuesday, CET (+01:00); far from any real booking
 WRITE_AT="${WRITE_DAY}T06:15:00+01:00"        # odd early hour: no realistic conflict
 WRITE_MOVED_AT="${WRITE_DAY}T06:45:00+01:00"
 WRITE_CLIENT="ZZ TEST test-tools.sh (da cancellare)"
 DEMO_CENTER_NAME="${DEMO_CENTER_NAME:-Centro Estetico Aurora}"
-CREATED_ID=""
 
-# Deletes the test appointment through PostgREST with the caller's own JWT (the "Owner deletes
-# center appointments" policy permits it). Runs on every exit path, hence the trap.
-cleanup_created_appointment() {
-  [ -n "$CREATED_ID" ] || return 0
-  local code
-  code="$(curl -sS -o /dev/null -w '%{http_code}' -X DELETE \
-    "${SUPABASE_URL%/}/rest/v1/business_appointments?id=eq.${CREATED_ID}" \
-    -H "apikey: $SUPABASE_ANON_KEY" -H "Authorization: Bearer $ACCESS_TOKEN")"
-  if [ "$code" = "204" ] || [ "$code" = "200" ]; then
-    printf '  \033[32mPASS\033[0m %s\n' "cleanup: test appointment deleted"
-  else
-    printf '  \033[31mFAIL\033[0m %s\n' "cleanup: could NOT delete $CREATED_ID (HTTP $code) -- remove it by hand"
-  fi
-  CREATED_ID=""
-}
-trap 'cleanup_created_appointment; rm -rf "$TMP"' EXIT
-
+echo "agenda write round trip"
 post_json "$ACCESS_TOKEN" "$(tool_body get_center_profile '{}')"
-LIVE_CENTER_NAME="$(jq -r '.data.center.name // empty' "$TMP/body")"
-SERVICE_ID="$(jq -r '.data.services.items[0].id // empty' "$TMP/body")"
 
-if [ "$LIVE_CENTER_NAME" != "$DEMO_CENTER_NAME" ]; then
-  echo "agenda write round trip"
-  echo "  skip write round trip: center is '$LIVE_CENTER_NAME', not the demo center ('$DEMO_CENTER_NAME')"
-elif [ -z "$SERVICE_ID" ]; then
-  fail "agenda write round trip" "get_center_profile returned no service id -- cannot build a create_appointment call"
+# A failed lookup here is NOT the same thing as "this isn't the demo center" -- treating them the
+# same is exactly how the 2026-09-22 run turned a run of 429s into a silent, misleading
+# "skip: center is ''" instead of a visible failure. Surface it as a real failure instead.
+if [ "$HTTP_CODE" != "200" ] || ! jq -e '.ok == true' "$TMP/body" >/dev/null 2>&1; then
+  fail "resolve the demo center for the write round trip" "HTTP $HTTP_CODE  body: $(head -c 300 "$TMP/body")"
 else
-  echo "agenda write round trip (demo center only, cleans up after itself)"
+  LIVE_CENTER_NAME="$(jq -r '.data.center.name // empty' "$TMP/body")"
+  SERVICE_ID="$(jq -r '.data.services.items[0].id // empty' "$TMP/body")"
 
-  check_tool "create_appointment confirmed:false returns a draft" "$ACCESS_TOKEN" create_appointment \
-    "$(jq -nc --arg c "$WRITE_CLIENT" --arg s "$SERVICE_ID" --arg t "$WRITE_AT" \
-       '{client_name:$c,service_id:$s,starts_at:$t,confirmed:false}')" \
-    '.ok == true and .data.status == "draft" and .data.requires_confirmation == true'
-
-  # the draft must not have written anything
-  post_json "$ACCESS_TOKEN" "$(tool_body list_appointments "$(jq -nc --arg d "$WRITE_DAY" '{day:$d}')")"
-  if [ "$(jq -r --arg c "$WRITE_CLIENT" '[.data.appointments[]? | select(.client_name == $c)] | length' "$TMP/body")" = "0" ]; then
-    pass "the draft wrote nothing to the agenda"
+  if [ "$LIVE_CENTER_NAME" != "$DEMO_CENTER_NAME" ]; then
+    echo "  skip write round trip: center is '$LIVE_CENTER_NAME', not the demo center ('$DEMO_CENTER_NAME')"
+  elif [ -z "$SERVICE_ID" ]; then
+    fail "agenda write round trip" "get_center_profile returned no service id -- cannot build a create_appointment call"
   else
-    fail "the draft wrote nothing to the agenda" "a row already exists before any confirmed:true call"
-  fi
+    echo "  running against the demo center, cleans up after itself"
 
-  post_json "$ACCESS_TOKEN" "$(tool_body create_appointment \
-    "$(jq -nc --arg c "$WRITE_CLIENT" --arg s "$SERVICE_ID" --arg t "$WRITE_AT" \
-       '{client_name:$c,service_id:$s,starts_at:$t,confirmed:true}')")"
-  CREATED_ID="$(jq -r '.data.appointment.id // empty' "$TMP/body")"
-  if [ "$HTTP_CODE" = "200" ] && [ -n "$CREATED_ID" ] &&
-     jq -e '.ok == true and .data.status == "created"' "$TMP/body" >/dev/null 2>&1; then
-    pass "create_appointment confirmed:true writes the appointment"
-  else
-    fail "create_appointment confirmed:true writes the appointment" "HTTP $HTTP_CODE  body: $(head -c 300 "$TMP/body")"
-  fi
+    check_tool "create_appointment confirmed:false returns a draft" "$ACCESS_TOKEN" create_appointment \
+      "$(jq -nc --arg c "$WRITE_CLIENT" --arg s "$SERVICE_ID" --arg t "$WRITE_AT" \
+         '{client_name:$c,service_id:$s,starts_at:$t,confirmed:false}')" \
+      '.ok == true and .data.status == "draft" and .data.requires_confirmation == true'
 
-  # a cabin must actually be recorded -- a NULL cabin reads as cabin 1 to every conflict check
-  if [ -n "$CREATED_ID" ]; then
-    if jq -e '.data.appointment.cabin != null' "$TMP/body" >/dev/null 2>&1; then
-      pass "the created appointment carries a real cabin number"
-    else
-      fail "the created appointment carries a real cabin number" "cabin came back null"
-    fi
-  fi
-
-  if [ -n "$CREATED_ID" ]; then
-    check_tool "move_appointment confirmed:false returns a draft" "$ACCESS_TOKEN" move_appointment \
-      "$(jq -nc --arg i "$CREATED_ID" --arg t "$WRITE_MOVED_AT" '{id:$i,new_starts_at:$t,confirmed:false}')" \
-      '.ok == true and .data.status == "draft"'
-
-    check_tool "move_appointment confirmed:true moves it" "$ACCESS_TOKEN" move_appointment \
-      "$(jq -nc --arg i "$CREATED_ID" --arg t "$WRITE_MOVED_AT" '{id:$i,new_starts_at:$t,confirmed:true}')" \
-      '.ok == true and .data.status == "moved"'
-
-    # `start` is local "HH:MM" in the center's own zone, so this compares wall-clock time without
-    # depending on how the timestamp comes back serialised (UTC vs +01:00).
+    # the draft must not have written anything
     post_json "$ACCESS_TOKEN" "$(tool_body list_appointments "$(jq -nc --arg d "$WRITE_DAY" '{day:$d}')")"
-    if jq -e --arg i "$CREATED_ID" '[.data.appointments[]? | select(.id == $i and .start == "06:45")] | length == 1' \
-         "$TMP/body" >/dev/null 2>&1; then
-      pass "the agenda shows the appointment at its new time"
+    if [ "$(jq -r --arg c "$WRITE_CLIENT" '[.data.appointments[]? | select(.client_name == $c)] | length' "$TMP/body")" = "0" ]; then
+      pass "the draft wrote nothing to the agenda"
     else
-      fail "the agenda shows the appointment at its new time" "$(jq -c '[.data.appointments[]? | {id,start,client_name}]' "$TMP/body" | head -c 300)"
+      fail "the draft wrote nothing to the agenda" "a row already exists before any confirmed:true call"
     fi
-  fi
 
-  cleanup_created_appointment
+    post_json "$ACCESS_TOKEN" "$(tool_body create_appointment \
+      "$(jq -nc --arg c "$WRITE_CLIENT" --arg s "$SERVICE_ID" --arg t "$WRITE_AT" \
+         '{client_name:$c,service_id:$s,starts_at:$t,confirmed:true}')")"
+    CREATED_ID="$(jq -r '.data.appointment.id // empty' "$TMP/body")"
+    if [ "$HTTP_CODE" = "200" ] && [ -n "$CREATED_ID" ] &&
+       jq -e '.ok == true and .data.status == "created"' "$TMP/body" >/dev/null 2>&1; then
+      pass "create_appointment confirmed:true writes the appointment"
+    else
+      fail "create_appointment confirmed:true writes the appointment" "HTTP $HTTP_CODE  body: $(head -c 300 "$TMP/body")"
+    fi
 
-  post_json "$ACCESS_TOKEN" "$(tool_body list_appointments "$(jq -nc --arg d "$WRITE_DAY" '{day:$d}')")"
-  if [ "$(jq -r --arg c "$WRITE_CLIENT" '[.data.appointments[]? | select(.client_name == $c)] | length' "$TMP/body")" = "0" ]; then
-    pass "the demo agenda is back to how it started"
-  else
-    fail "the demo agenda is back to how it started" "a test appointment is still present"
+    # a cabin must actually be recorded -- a NULL cabin reads as cabin 1 to every conflict check
+    if [ -n "$CREATED_ID" ]; then
+      if jq -e '.data.appointment.cabin != null' "$TMP/body" >/dev/null 2>&1; then
+        pass "the created appointment carries a real cabin number"
+      else
+        fail "the created appointment carries a real cabin number" "cabin came back null"
+      fi
+    fi
+
+    if [ -n "$CREATED_ID" ]; then
+      check_tool "move_appointment confirmed:false returns a draft" "$ACCESS_TOKEN" move_appointment \
+        "$(jq -nc --arg i "$CREATED_ID" --arg t "$WRITE_MOVED_AT" '{id:$i,new_starts_at:$t,confirmed:false}')" \
+        '.ok == true and .data.status == "draft"'
+
+      check_tool "move_appointment confirmed:true moves it" "$ACCESS_TOKEN" move_appointment \
+        "$(jq -nc --arg i "$CREATED_ID" --arg t "$WRITE_MOVED_AT" '{id:$i,new_starts_at:$t,confirmed:true}')" \
+        '.ok == true and .data.status == "moved"'
+
+      # `start` is local "HH:MM" in the center's own zone, so this compares wall-clock time
+      # without depending on how the timestamp comes back serialised (UTC vs +01:00).
+      post_json "$ACCESS_TOKEN" "$(tool_body list_appointments "$(jq -nc --arg d "$WRITE_DAY" '{day:$d}')")"
+      if jq -e --arg i "$CREATED_ID" '[.data.appointments[]? | select(.id == $i and .start == "06:45")] | length == 1' \
+           "$TMP/body" >/dev/null 2>&1; then
+        pass "the agenda shows the appointment at its new time"
+      else
+        fail "the agenda shows the appointment at its new time" "$(jq -c '[.data.appointments[]? | {id,start,client_name}]' "$TMP/body" | head -c 300)"
+      fi
+    fi
+
+    cleanup_created_appointment
+
+    post_json "$ACCESS_TOKEN" "$(tool_body list_appointments "$(jq -nc --arg d "$WRITE_DAY" '{day:$d}')")"
+    if [ "$(jq -r --arg c "$WRITE_CLIENT" '[.data.appointments[]? | select(.client_name == $c)] | length' "$TMP/body")" = "0" ]; then
+      pass "the demo agenda is back to how it started"
+    else
+      fail "the demo agenda is back to how it started" "a test appointment is still present"
+    fi
   fi
 fi
 
@@ -356,10 +444,16 @@ fi
 if [ "${RUN_CHAT:-1}" = "1" ]; then
   echo "chat round trip (uses model credits)"
   CHAT_BODY="$(with_center '{"messages":[{"role":"user","content":"Come sta andando il mio centro questa settimana? Dammi scontrino medio e clienti dormienti."}]}')"
-  throttle   # the chat round trip is a request like any other as far as the rate limiter cares
-  HTTP_CODE="$(curl -sS -N -o "$TMP/sse" -D "$TMP/sse.headers" -w '%{http_code}' --max-time 90 -X POST "$FN_URL" \
-    -H "apikey: $SUPABASE_ANON_KEY" -H 'Content-Type: application/json' -H "Authorization: Bearer $ACCESS_TOKEN" \
-    --data-binary "$CHAT_BODY")"
+  # Same retry-on-429 as post_json (this call bypasses it -- SSE needs -N and a separate
+  # headers file -- but it counts against the same limit and deserves the same safety net).
+  for CHAT_ATTEMPT in $(seq 0 "$RATE_LIMIT_RETRIES"); do
+    throttle
+    HTTP_CODE="$(curl -sS -N -o "$TMP/sse" -D "$TMP/sse.headers" -w '%{http_code}' --max-time 90 -X POST "$FN_URL" \
+      -H "apikey: $SUPABASE_ANON_KEY" -H 'Content-Type: application/json' -H "Authorization: Bearer $ACCESS_TOKEN" \
+      --data-binary "$CHAT_BODY")"
+    [ "$HTTP_CODE" = "429" ] || break
+    [ "$CHAT_ATTEMPT" -lt "$RATE_LIMIT_RETRIES" ] && sleep "$RETRY_COOLDOWN"
+  done
   if [ "$HTTP_CODE" = "200" ] && grep -qi '^content-type: *text/event-stream' "$TMP/sse.headers"; then
     pass "chat answers with an event stream"
   else

@@ -6,8 +6,12 @@ const STALE_AFTER_DAYS = 182; // ~6 months
 // past run.ts's 6 KB cap and the model gets a truncated string blob instead of a list -- worst
 // exactly on a brand-new center, which is when this tool is for. The list is already sorted with
 // the welcome-interview slots first, so the head of it is the right slice to keep; missing_count
-// still reports the true total.
-const MAX_MISSING = 15;
+// still reports the true total. DEFAULT_LIMIT is small on purpose: the concierge asks ONE question
+// at a time, so it only ever needs a short prioritised shortlist, not the whole backlog; a caller
+// that genuinely wants more of the list can raise `limit` up to MAX_LIMIT (still comfortably under
+// run.ts's 6 KB cap even at 20 long labels).
+const DEFAULT_LIMIT = 8;
+const MAX_LIMIT = 20;
 
 interface SlotCatalogRow {
   slot_key: string;
@@ -29,12 +33,13 @@ const CHAPTERS = ["identita", "gestione", "numeri", "clienti", "marketing", "tea
  * while (P1.5). A slot is "missing" with no row at all, "stale" if its own row is older than
  * ~6 months — either way it's a candidate to ask about; "answered" (recent) is never returned.
  */
-export const getMissingSlots = defineTool<{ chapter?: string }>({
+export const getMissingSlots = defineTool<{ chapter?: string; limit?: number }>({
   name: "get_missing_slots",
   description:
     "Elenca gli slot dell'Analisi di Valore ancora mancanti o non aggiornati da più di 6 mesi, " +
     "in ordine di priorità (i più prioritari prima). Usalo per scegliere la prossima domanda da " +
-    "fare — mai domande su slot già risposti di recente.",
+    "fare — mai domande su slot già risposti di recente. Restituisce solo le prime (default 8, " +
+    "massimo 20): missing_count riporta comunque il totale reale.",
   parameters: {
     type: "object",
     properties: {
@@ -43,12 +48,19 @@ export const getMissingSlots = defineTool<{ chapter?: string }>({
         enum: CHAPTERS,
         description: "Limita a un capitolo; se omesso, tutti.",
       },
+      limit: {
+        type: "integer",
+        minimum: 1,
+        maximum: MAX_LIMIT,
+        description: `Quanti slot restituire al massimo (default ${DEFAULT_LIMIT}).`,
+      },
     },
     additionalProperties: false,
   },
   access: "member",
   write: false,
   async handler({ supabase, centerId, args, now }) {
+    const limit = args.limit ?? DEFAULT_LIMIT;
     let catalogQuery = supabase
       .from("profile_slot_catalog")
       .select("slot_key, chapter, question_number, label, is_welcome_interview")
@@ -82,7 +94,7 @@ export const getMissingSlots = defineTool<{ chapter?: string }>({
     return {
       chapter: args.chapter ?? null,
       missing_count: missing.length,
-      missing: missing.slice(0, MAX_MISSING),
+      missing: missing.slice(0, limit),
     };
   },
 });

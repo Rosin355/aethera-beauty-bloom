@@ -514,6 +514,56 @@ Deno.test("get_missing_slots: an invalid chapter is rejected by the schema", asy
   assertEquals(recorded.length, 0);
 });
 
+Deno.test("get_missing_slots: defaults to a short list of 8 even when far more are missing, but missing_count is the true total", async () => {
+  // 75 unanswered slots, like a brand-new center -- the case the cap exists for.
+  const catalog = Array.from({ length: 75 }, (_, i) => ({
+    slot_key: `s${i}`,
+    chapter: "identita",
+    question_number: i + 1,
+    label: `Question ${i + 1}`,
+    is_welcome_interview: false,
+  }));
+  const { client } = fakeSupabase({
+    profile_slot_catalog: { data: catalog, error: null },
+    center_profile_slots: { data: [], error: null },
+  });
+  const r = await runTool(ALL_TOOLS, "get_missing_slots", {}, toolBase(client, { now: new Date("2026-09-22T00:00:00Z") }));
+  assertEquals(r.ok, true);
+  if (r.ok) {
+    const d = r.data as { missing_count: number; missing: unknown[] };
+    assertEquals(d.missing_count, 75);
+    assertEquals(d.missing.length, 8); // DEFAULT_LIMIT, not MAX_MISSING's old 15
+  }
+});
+
+Deno.test("get_missing_slots: limit is respected up to its max, and out-of-range values are rejected before any query", async () => {
+  const catalog = Array.from({ length: 75 }, (_, i) => ({
+    slot_key: `s${i}`,
+    chapter: "identita",
+    question_number: i + 1,
+    label: `Question ${i + 1}`,
+    is_welcome_interview: false,
+  }));
+  const { client } = fakeSupabase({
+    profile_slot_catalog: { data: catalog, error: null },
+    center_profile_slots: { data: [], error: null },
+  });
+  const now = new Date("2026-09-22T00:00:00Z");
+
+  const three = await runTool(ALL_TOOLS, "get_missing_slots", { limit: 3 }, toolBase(client, { now }));
+  assertEquals(three.ok && (three.data as { missing: unknown[] }).missing.length, 3);
+
+  const max = await runTool(ALL_TOOLS, "get_missing_slots", { limit: 20 }, toolBase(client, { now }));
+  assertEquals(max.ok && (max.data as { missing: unknown[] }).missing.length, 20);
+
+  const { client: emptyClient, recorded } = fakeSupabase({});
+  for (const bad of [21, 0, -1, 3.5]) {
+    const r = await runTool(ALL_TOOLS, "get_missing_slots", { limit: bad }, toolBase(emptyClient));
+    assertEquals(r.ok, false, `limit ${bad} should be rejected`);
+  }
+  assertEquals(recorded.length, 0); // rejected by the schema, never reached the database
+});
+
 Deno.test("generate_first_reading: owner-only; completeness and per-chapter highlights from the real data", async () => {
   const { client: opClient, recorded: opRecorded } = fakeSupabase({});
   const forbidden = await runTool(ALL_TOOLS, "generate_first_reading", {}, toolBase(opClient, { role: "operator" }));

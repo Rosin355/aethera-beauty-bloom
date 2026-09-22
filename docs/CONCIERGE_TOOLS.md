@@ -254,7 +254,7 @@ Legacy web clients ignore every frame without `choices` (verified in `ChatAssist
 | `move_appointment` | P1.4 | member | ✔ | `id, new_starts_at, confirmed` | moved row + draft client message |
 | `propose_recall` | P1.4 | owner | – (returns a draft) | `gap: {start, end, cabin?}` | best dormant client + draft message |
 | `set_profile_slot` | P1.5 | member | – (idempotent upsert; see §4 below) | `slot_key, value, source` | the saved slot row |
-| `get_missing_slots` | P1.5 | member | – | `chapter?` | missing / stale (> 6 months) slots, welcome-8 first |
+| `get_missing_slots` | P1.5 | member | – | `chapter?, limit?` (default 8, max 20) | missing / stale (> 6 months) slots, welcome-8 first + true `missing_count` |
 | `generate_first_reading` | P1.5 | owner | – | `{}` | completeness % + per-chapter highlights (model narrates the letter) |
 | `get_latest_report` | P1.6 | owner | – | `{}` | latest `center_reports` row + actions |
 | `set_action_done` | P1.6 | owner | ✔ | `action_id, done, confirmed` | updated action |
