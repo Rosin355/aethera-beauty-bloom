@@ -134,6 +134,15 @@ SELECT cron.schedule(
   $$ SELECT public.fn_run_daily_recall_reminders(); $$
 );
 
+-- Created but PARKED. cron.schedule() arms a job the moment it returns, and there is no APNs
+-- credential on this project yet (no .p8 key / key id / team id -- see docs/RUN_ON_MAC.md §7),
+-- so every firing would only walk all centers to reach a push that cannot be delivered. The
+-- schedules, the functions and the wiring are all in place; flip `active` to true once APNs is
+-- configured and internal_config is populated. Idempotent, and re-running this migration
+-- re-parks the jobs rather than silently re-arming them.
+UPDATE cron.job SET active = false
+WHERE jobname IN ('weekly-briefing-monday', 'daily-recall-reminders');
+
 -- ============================ DOWN (manual rollback) ============================
 -- SELECT cron.unschedule('daily-recall-reminders');
 -- SELECT cron.unschedule('weekly-briefing-monday');
