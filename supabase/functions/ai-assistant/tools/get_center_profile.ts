@@ -38,7 +38,10 @@ export const getCenterProfile = defineTool<Record<string, never>>({
     const [servicesRes, membersRes, slotsRes, catalogRes] = await Promise.all([
       supabase
         .from("business_services")
-        .select("name, category, price, duration_minutes")
+        // id included: create_appointment takes a service_id and names this tool as where to get
+        // it, and this is the only tool that reads the catalogue -- without it the model has no
+        // way to obtain a valid one and the write tool cannot be called at all.
+        .select("id, name, category, price, duration_minutes")
         .eq("center_id", centerId)
         .eq("is_active", true)
         .order("category")
@@ -53,7 +56,7 @@ export const getCenterProfile = defineTool<Record<string, never>>({
       supabase.from("profile_slot_catalog").select("slot_key, is_welcome_interview"),
     ]);
 
-    const services = unwrap<{ name: string; category: string; price: number; duration_minutes: number }[]>(servicesRes) ?? [];
+    const services = unwrap<{ id: string; name: string; category: string; price: number; duration_minutes: number }[]>(servicesRes) ?? [];
     const members = unwrap<{ role: string }[]>(membersRes) ?? [];
 
     let slots: { slot_key: string; value: unknown; source: string; updated_at: string }[] | null = null;

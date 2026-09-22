@@ -203,6 +203,113 @@ check_tool "set_action_done rejects an unknown action_id" "$ACCESS_TOKEN" set_ac
   '{"action_id":"00000000-0000-4000-8000-000000000000","done":true,"confirmed":false}' \
   '.ok == false and .error.code == "invalid_args"'
 
+# ---- 2e. agenda write ROUND TRIP (writes, then deletes what it wrote) ------------------------
+# The checks in 2b stop at validation. This is the real confirm-first path end to end: draft
+# (nothing written) -> confirm (row lands) -> move draft -> move confirm -> delete.
+#
+# Guarded two ways, because it is the only part of this script that writes to a calendar:
+#   * it runs ONLY against the demo center, matched by name, never a real customer's agenda;
+#   * the appointment is booked far in the future under an obvious throwaway client name, and
+#     is deleted again at the end -- including on failure or Ctrl-C, via the EXIT trap below.
+WRITE_DAY="${WRITE_DAY:-2027-03-02}"          # a Tuesday, CET (+01:00); far from any real booking
+WRITE_AT="${WRITE_DAY}T06:15:00+01:00"        # odd early hour: no realistic conflict
+WRITE_MOVED_AT="${WRITE_DAY}T06:45:00+01:00"
+WRITE_CLIENT="ZZ TEST test-tools.sh (da cancellare)"
+DEMO_CENTER_NAME="${DEMO_CENTER_NAME:-Centro Estetico Aurora}"
+CREATED_ID=""
+
+# Deletes the test appointment through PostgREST with the caller's own JWT (the "Owner deletes
+# center appointments" policy permits it). Runs on every exit path, hence the trap.
+cleanup_created_appointment() {
+  [ -n "$CREATED_ID" ] || return 0
+  local code
+  code="$(curl -sS -o /dev/null -w '%{http_code}' -X DELETE \
+    "${SUPABASE_URL%/}/rest/v1/business_appointments?id=eq.${CREATED_ID}" \
+    -H "apikey: $SUPABASE_ANON_KEY" -H "Authorization: Bearer $ACCESS_TOKEN")"
+  if [ "$code" = "204" ] || [ "$code" = "200" ]; then
+    printf '  \033[32mPASS\033[0m %s\n' "cleanup: test appointment deleted"
+  else
+    printf '  \033[31mFAIL\033[0m %s\n' "cleanup: could NOT delete $CREATED_ID (HTTP $code) -- remove it by hand"
+  fi
+  CREATED_ID=""
+}
+trap 'cleanup_created_appointment; rm -rf "$TMP"' EXIT
+
+post_json "$ACCESS_TOKEN" "$(tool_body get_center_profile '{}')"
+LIVE_CENTER_NAME="$(jq -r '.data.center.name // empty' "$TMP/body")"
+SERVICE_ID="$(jq -r '.data.services.items[0].id // empty' "$TMP/body")"
+
+if [ "$LIVE_CENTER_NAME" != "$DEMO_CENTER_NAME" ]; then
+  echo "agenda write round trip"
+  echo "  skip write round trip: center is '$LIVE_CENTER_NAME', not the demo center ('$DEMO_CENTER_NAME')"
+elif [ -z "$SERVICE_ID" ]; then
+  fail "agenda write round trip" "get_center_profile returned no service id -- cannot build a create_appointment call"
+else
+  echo "agenda write round trip (demo center only, cleans up after itself)"
+
+  check_tool "create_appointment confirmed:false returns a draft" "$ACCESS_TOKEN" create_appointment \
+    "$(jq -nc --arg c "$WRITE_CLIENT" --arg s "$SERVICE_ID" --arg t "$WRITE_AT" \
+       '{client_name:$c,service_id:$s,starts_at:$t,confirmed:false}')" \
+    '.ok == true and .data.status == "draft" and .data.requires_confirmation == true'
+
+  # the draft must not have written anything
+  post_json "$ACCESS_TOKEN" "$(tool_body list_appointments "$(jq -nc --arg d "$WRITE_DAY" '{day:$d}')")"
+  if [ "$(jq -r --arg c "$WRITE_CLIENT" '[.data.appointments[]? | select(.client_name == $c)] | length' "$TMP/body")" = "0" ]; then
+    pass "the draft wrote nothing to the agenda"
+  else
+    fail "the draft wrote nothing to the agenda" "a row already exists before any confirmed:true call"
+  fi
+
+  post_json "$ACCESS_TOKEN" "$(tool_body create_appointment \
+    "$(jq -nc --arg c "$WRITE_CLIENT" --arg s "$SERVICE_ID" --arg t "$WRITE_AT" \
+       '{client_name:$c,service_id:$s,starts_at:$t,confirmed:true}')")"
+  CREATED_ID="$(jq -r '.data.appointment.id // empty' "$TMP/body")"
+  if [ "$HTTP_CODE" = "200" ] && [ -n "$CREATED_ID" ] &&
+     jq -e '.ok == true and .data.status == "created"' "$TMP/body" >/dev/null 2>&1; then
+    pass "create_appointment confirmed:true writes the appointment"
+  else
+    fail "create_appointment confirmed:true writes the appointment" "HTTP $HTTP_CODE  body: $(head -c 300 "$TMP/body")"
+  fi
+
+  # a cabin must actually be recorded -- a NULL cabin reads as cabin 1 to every conflict check
+  if [ -n "$CREATED_ID" ]; then
+    if jq -e '.data.appointment.cabin != null' "$TMP/body" >/dev/null 2>&1; then
+      pass "the created appointment carries a real cabin number"
+    else
+      fail "the created appointment carries a real cabin number" "cabin came back null"
+    fi
+  fi
+
+  if [ -n "$CREATED_ID" ]; then
+    check_tool "move_appointment confirmed:false returns a draft" "$ACCESS_TOKEN" move_appointment \
+      "$(jq -nc --arg i "$CREATED_ID" --arg t "$WRITE_MOVED_AT" '{id:$i,new_starts_at:$t,confirmed:false}')" \
+      '.ok == true and .data.status == "draft"'
+
+    check_tool "move_appointment confirmed:true moves it" "$ACCESS_TOKEN" move_appointment \
+      "$(jq -nc --arg i "$CREATED_ID" --arg t "$WRITE_MOVED_AT" '{id:$i,new_starts_at:$t,confirmed:true}')" \
+      '.ok == true and .data.status == "moved"'
+
+    # `start` is local "HH:MM" in the center's own zone, so this compares wall-clock time without
+    # depending on how the timestamp comes back serialised (UTC vs +01:00).
+    post_json "$ACCESS_TOKEN" "$(tool_body list_appointments "$(jq -nc --arg d "$WRITE_DAY" '{day:$d}')")"
+    if jq -e --arg i "$CREATED_ID" '[.data.appointments[]? | select(.id == $i and .start == "06:45")] | length == 1' \
+         "$TMP/body" >/dev/null 2>&1; then
+      pass "the agenda shows the appointment at its new time"
+    else
+      fail "the agenda shows the appointment at its new time" "$(jq -c '[.data.appointments[]? | {id,start,client_name}]' "$TMP/body" | head -c 300)"
+    fi
+  fi
+
+  cleanup_created_appointment
+
+  post_json "$ACCESS_TOKEN" "$(tool_body list_appointments "$(jq -nc --arg d "$WRITE_DAY" '{day:$d}')")"
+  if [ "$(jq -r --arg c "$WRITE_CLIENT" '[.data.appointments[]? | select(.client_name == $c)] | length' "$TMP/body")" = "0" ]; then
+    pass "the demo agenda is back to how it started"
+  else
+    fail "the demo agenda is back to how it started" "a test appointment is still present"
+  fi
+fi
+
 # ---- 3. role scoping (optional second user) --------------------------------------------------
 if [ -n "${OPERATOR_ACCESS_TOKEN:-}" ]; then
   echo "role scoping (non-owner member)"
