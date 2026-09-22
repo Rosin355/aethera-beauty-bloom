@@ -2,6 +2,12 @@ import { unwrap } from "./db.ts";
 import { defineTool } from "./types.ts";
 
 const STALE_AFTER_DAYS = 182; // ~6 months
+// The whole catalogue is 75 questions with long labels, so an unanswered center serialises well
+// past run.ts's 6 KB cap and the model gets a truncated string blob instead of a list -- worst
+// exactly on a brand-new center, which is when this tool is for. The list is already sorted with
+// the welcome-interview slots first, so the head of it is the right slice to keep; missing_count
+// still reports the true total.
+const MAX_MISSING = 15;
 
 interface SlotCatalogRow {
   slot_key: string;
@@ -73,6 +79,10 @@ export const getMissingSlots = defineTool<{ chapter?: string }>({
       Number(b.is_welcome_interview) - Number(a.is_welcome_interview) || a.question_number - b.question_number
     );
 
-    return { chapter: args.chapter ?? null, missing_count: missing.length, missing };
+    return {
+      chapter: args.chapter ?? null,
+      missing_count: missing.length,
+      missing: missing.slice(0, MAX_MISSING),
+    };
   },
 });

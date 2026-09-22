@@ -50,9 +50,28 @@ if [ -z "${ACCESS_TOKEN:-}" ]; then
 fi
 
 # ---- helpers ----------------------------------------------------------------------------
+# ai-assistant allows 30 requests / minute / user and this script now issues well over 30 of
+# them, so it paces itself instead of bursting: without this the run dies part-way through with
+# HTTP 429 and every later check "fails" for a reason that has nothing to do with the code.
+# Requests are spread evenly at RATE_MAX per minute, a little under the real limit.
+RATE_MAX="${RATE_MAX:-25}"
+REQ_INTERVAL_MS=$(( 60000 / RATE_MAX ))
+REQ_COUNT=0
+RUN_START="$(date +%s)"
+throttle() {
+  REQ_COUNT=$((REQ_COUNT + 1))
+  local target elapsed wait
+  target=$(( (REQ_COUNT * REQ_INTERVAL_MS) / 1000 ))
+  elapsed=$(( $(date +%s) - RUN_START ))
+  wait=$(( target - elapsed ))
+  if [ "$wait" -gt 0 ]; then sleep "$wait"; fi
+  return 0
+}
+
 # post_json <token|-> <body-json>  -> sets HTTP_CODE, writes the response body to $TMP/body
 post_json() {
   local token="$1" body="$2" auth=()
+  throttle
   [ "$token" != "-" ] && auth=(-H "Authorization: Bearer $token")
   HTTP_CODE="$(curl -sS -o "$TMP/body" -w '%{http_code}' --max-time 60 -X POST "$FN_URL" \
     -H "apikey: $SUPABASE_ANON_KEY" -H 'Content-Type: application/json' ${auth[@]+"${auth[@]}"} --data-binary "$body")"
@@ -337,6 +356,7 @@ fi
 if [ "${RUN_CHAT:-1}" = "1" ]; then
   echo "chat round trip (uses model credits)"
   CHAT_BODY="$(with_center '{"messages":[{"role":"user","content":"Come sta andando il mio centro questa settimana? Dammi scontrino medio e clienti dormienti."}]}')"
+  throttle   # the chat round trip is a request like any other as far as the rate limiter cares
   HTTP_CODE="$(curl -sS -N -o "$TMP/sse" -D "$TMP/sse.headers" -w '%{http_code}' --max-time 90 -X POST "$FN_URL" \
     -H "apikey: $SUPABASE_ANON_KEY" -H 'Content-Type: application/json' -H "Authorization: Bearer $ACCESS_TOKEN" \
     --data-binary "$CHAT_BODY")"
