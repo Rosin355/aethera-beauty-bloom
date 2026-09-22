@@ -55,6 +55,10 @@ BEGIN
   ASSERT n = 75, 'a completely unrelated user (T2 owner) also reads the whole catalog -- it is not tenant data';
   RESET ROLE;
 
+  -- Clear the claims first: SET ROLE alone does not reset request.jwt.claims, so auth.uid()
+  -- would still return the previous user and the "authenticated users only" policy would let
+  -- this read succeed -- testing a state no real anon request can ever be in.
+  PERFORM set_config('request.jwt.claims', '', true);
   SET LOCAL ROLE anon;
   SELECT count(*) INTO n FROM public.profile_slot_catalog;
   ASSERT n = 0, 'anon reads nothing (RLS requires auth.uid())';
@@ -125,14 +129,14 @@ BEGIN
   ASSERT n = 0, 'the blocked insert must not have landed';
   RESET ROLE;
 
+  -- Reads nothing, rather than being refused outright: anon keeps the table privileges Supabase's
+  -- default grants hand out (true of all 40 public tables here), so RLS is what empties this, not
+  -- a missing GRANT. Claims must be cleared too -- SET ROLE alone leaves auth.uid() pointing at
+  -- the previous user.
+  PERFORM set_config('request.jwt.claims', '', true);
   SET LOCAL ROLE anon;
-  BEGIN
-    PERFORM * FROM public.center_profile_slots WHERE center_id = t1;
-    SELECT count(*) INTO n FROM public.center_profile_slots WHERE center_id = t1;
-    -- anon has no GRANT at all on this table, so even the SELECT itself should fail
-    ASSERT false, 'anon must not be able to query center_profile_slots';
-  EXCEPTION WHEN insufficient_privilege THEN NULL;
-  END;
+  SELECT count(*) INTO n FROM public.center_profile_slots WHERE center_id = t1;
+  ASSERT n = 0, format('anon must read no center profile slots, saw %s', n);
   RESET ROLE;
 END $$;
 

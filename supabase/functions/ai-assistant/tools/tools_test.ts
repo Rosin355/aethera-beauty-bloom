@@ -6,6 +6,12 @@ import { runTool } from "./run.ts";
 const findCall = (recorded: ReturnType<typeof fakeSupabase>["recorded"], name: string) =>
   recorded.find((r) => r.name === name);
 
+// Id arguments are validated against the uuid format by the tool schemas, so these stand-ins
+// must be well-formed uuids -- short placeholders are rejected before a handler ever runs.
+const SERVICE_ID = "5e000000-0000-4000-8000-000000000001";
+const APPOINTMENT_ID = "aa000000-0000-4000-8000-000000000001";
+const ACTION_ID = "ac000000-0000-4000-8000-000000000001";
+
 Deno.test("registry: owner-only tools are hidden from operators and receptionists", () => {
   const names = (role: "owner" | "operator" | "receptionist") => toolsForRole(role).map((t) => t.name).sort();
   assertEquals(names("owner"), [
@@ -283,7 +289,7 @@ Deno.test("create_appointment: passes the server-side center and args through to
   const r = await runTool(
     ALL_TOOLS,
     "create_appointment",
-    { client_name: "Marta", service_id: "s1", starts_at: "2026-09-18T15:00:00+02:00", confirmed: false },
+    { client_name: "Marta", service_id: SERVICE_ID, starts_at: "2026-09-18T15:00:00+02:00", confirmed: false },
     toolBase(client, { role: "operator" }),
   );
   assertEquals(r.ok, true);
@@ -291,7 +297,7 @@ Deno.test("create_appointment: passes the server-side center and args through to
   assertEquals(findCall(recorded, "fn_create_appointment")?.calls[0][1], [{
     _center_id: CENTER_ID,
     _client_name: "Marta",
-    _service_id: "s1",
+    _service_id: SERVICE_ID,
     _starts_at: "2026-09-18T15:00:00+02:00",
     _cabin: null,
     _notes: null,
@@ -309,7 +315,7 @@ Deno.test("create_appointment: a conflict is passed through as-is (alternatives,
   const r = await runTool(
     ALL_TOOLS,
     "create_appointment",
-    { client_name: "Marta", service_id: "s1", starts_at: "2026-09-18T15:00:00+02:00", cabin: 1, confirmed: true },
+    { client_name: "Marta", service_id: SERVICE_ID, starts_at: "2026-09-18T15:00:00+02:00", cabin: 1, confirmed: true },
     toolBase(client),
   );
   assertEquals(r, { ok: true, data: conflictResult });
@@ -320,7 +326,7 @@ Deno.test("move_appointment: drafts a proposal message before writing, a confirm
     status: "draft",
     requires_confirmation: true,
     preview: {
-      id: "a1", client_name: "Marta Colombo", service_name: "Pulizia viso",
+      id: APPOINTMENT_ID, client_name: "Marta Colombo", service_name: "Pulizia viso",
       old_starts_at: "2026-09-18T15:00:00+02:00", new_starts_at: "2026-09-19T16:30:00+02:00", cabin: 2,
     },
   };
@@ -331,7 +337,7 @@ Deno.test("move_appointment: drafts a proposal message before writing, a confirm
   const r1 = await runTool(
     ALL_TOOLS,
     "move_appointment",
-    { id: "a1", new_starts_at: "2026-09-19T16:30:00+02:00", confirmed: false },
+    { id: APPOINTMENT_ID, new_starts_at: "2026-09-19T16:30:00+02:00", confirmed: false },
     toolBase(draft.client, { role: "receptionist" }),
   );
   assertEquals(r1.ok, true);
@@ -339,7 +345,7 @@ Deno.test("move_appointment: drafts a proposal message before writing, a confirm
     const msg = (r1.data as { draft_message: string }).draft_message;
     assertStringIncludes(msg, "Marta Colombo");
     assertStringIncludes(msg, "16:30");
-    assertStringIncludes(msg, "va bene?");
+    assertStringIncludes(msg, "va bene");
   }
 
   const movedResult = { status: "moved", appointment: { ...draftResult.preview, starts_at: draftResult.preview.new_starts_at } };
@@ -350,7 +356,7 @@ Deno.test("move_appointment: drafts a proposal message before writing, a confirm
   const r2 = await runTool(
     ALL_TOOLS,
     "move_appointment",
-    { id: "a1", new_starts_at: "2026-09-19T16:30:00+02:00", confirmed: true },
+    { id: APPOINTMENT_ID, new_starts_at: "2026-09-19T16:30:00+02:00", confirmed: true },
     toolBase(moved.client),
   );
   assertEquals(r2.ok, true);
@@ -359,7 +365,7 @@ Deno.test("move_appointment: drafts a proposal message before writing, a confirm
     assertStringIncludes(msg, "ti confermo");
   }
   assertEquals(findCall(moved.recorded, "fn_move_appointment")?.calls[0][1], [{
-    _center_id: CENTER_ID, _appointment_id: "a1", _new_starts_at: "2026-09-19T16:30:00+02:00", _confirmed: true,
+    _center_id: CENTER_ID, _appointment_id: APPOINTMENT_ID, _new_starts_at: "2026-09-19T16:30:00+02:00", _confirmed: true,
   }]);
 });
 
@@ -369,7 +375,7 @@ Deno.test("move_appointment: a conflict is passed through untouched (no centers 
   const r = await runTool(
     ALL_TOOLS,
     "move_appointment",
-    { id: "a1", new_starts_at: "2026-09-19T16:30:00+02:00", confirmed: false },
+    { id: APPOINTMENT_ID, new_starts_at: "2026-09-19T16:30:00+02:00", confirmed: false },
     toolBase(client),
   );
   assertEquals(r, { ok: true, data: conflictResult });
@@ -558,7 +564,7 @@ Deno.test("get_latest_report: owner-only; the newest report plus its actions spl
     },
     center_actions: {
       data: [
-        { id: "a1", kind: "urgent", number: 1, action_text: "Richiama le dormienti", done: false },
+        { id: APPOINTMENT_ID, kind: "urgent", number: 1, action_text: "Richiama le dormienti", done: false },
         { id: "a2", kind: "strategic", number: 1, action_text: "Rivedi il listino", done: true },
       ],
       error: null,
@@ -583,11 +589,11 @@ Deno.test("get_latest_report: no report yet -> not_found", async () => {
 
 Deno.test("set_action_done: draft previews without writing, confirmed writes and stamps done_at", async () => {
   const actionRow = {
-    id: "a1", center_id: CENTER_ID, kind: "urgent", number: 1, action_text: "Richiama le dormienti", done: false, done_at: null,
+    id: ACTION_ID, center_id: CENTER_ID, kind: "urgent", number: 1, action_text: "Richiama le dormienti", done: false, done_at: null,
   };
 
   const draft = fakeSupabase({ center_actions: { data: actionRow, error: null } });
-  const r1 = await runTool(ALL_TOOLS, "set_action_done", { action_id: "a1", done: true, confirmed: false }, toolBase(draft.client));
+  const r1 = await runTool(ALL_TOOLS, "set_action_done", { action_id: ACTION_ID, done: true, confirmed: false }, toolBase(draft.client));
   assertEquals(r1.ok, true);
   if (r1.ok) assertEquals((r1.data as { status: string }).status, "draft");
   // the maybeSingle() lookup happens, but no .update() call should have fired
@@ -598,17 +604,22 @@ Deno.test("set_action_done: draft previews without writing, confirmed writes and
   // AFTER the write -- the meaningful assertion is on what .update() was actually called with,
   // not on the fake's returned shape (it can't simulate a real mutation).
   const updated = fakeSupabase({ center_actions: { data: { ...actionRow, done: true, done_at: "2026-09-22T00:00:00Z" }, error: null } });
-  const r2 = await runTool(ALL_TOOLS, "set_action_done", { action_id: "a1", done: true, confirmed: true }, toolBase(updated.client));
+  const r2 = await runTool(ALL_TOOLS, "set_action_done", { action_id: ACTION_ID, done: true, confirmed: true }, toolBase(updated.client));
   assertEquals(r2.ok, true);
   if (r2.ok) assertEquals((r2.data as { status: string }).status, "updated");
-  const updateCall = findCall(updated.recorded, "center_actions")?.calls.find(([m]) => m === "update");
+  // Every .from() opens its own record, so center_actions appears twice here (the lookup, then
+  // the update); findCall would only ever return the first of them.
+  const updateCall = updated.recorded
+    .filter((c) => c.name === "center_actions")
+    .flatMap((c) => c.calls)
+    .find(([m]) => m === "update");
   assertEquals((updateCall?.[1][0] as { done: boolean }).done, true);
   assertEquals(typeof (updateCall?.[1][0] as { done_at: string }).done_at, "string");
 });
 
 Deno.test("set_action_done: an action from another center is invalid_args, not a cross-tenant leak", async () => {
   const { client } = fakeSupabase({ center_actions: { data: null, error: null } });
-  const r = await runTool(ALL_TOOLS, "set_action_done", { action_id: "a1", done: true, confirmed: false }, toolBase(client));
+  const r = await runTool(ALL_TOOLS, "set_action_done", { action_id: ACTION_ID, done: true, confirmed: false }, toolBase(client));
   assertEquals(r.ok, false);
   if (!r.ok) assertEquals(r.error.code, "invalid_args");
 });

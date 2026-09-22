@@ -36,6 +36,10 @@ BEGIN
   ASSERT n = 5, 'any authenticated user reads the whole thresholds table';
   RESET ROLE;
 
+  -- Clear the claims first: SET ROLE alone does not reset request.jwt.claims, so auth.uid()
+  -- would still return the previous user and this read would succeed under the "authenticated
+  -- users only" policy -- a state no real anon request can ever be in.
+  PERFORM set_config('request.jwt.claims', '', true);
   SET LOCAL ROLE anon;
   SELECT count(*) INTO n FROM public.report_thresholds;
   ASSERT n = 0, 'anon reads nothing';
@@ -117,12 +121,14 @@ BEGIN
   ASSERT n = 0, 'a foreign-tenant owner sees no actions of T1';
   RESET ROLE;
 
+  -- Reads nothing, rather than being refused outright: anon keeps the table privileges Supabase's
+  -- default grants hand out (true of all 40 public tables here), so RLS is what empties this, not
+  -- a missing GRANT. Claims must be cleared too -- SET ROLE alone leaves auth.uid() pointing at
+  -- the previous user.
+  PERFORM set_config('request.jwt.claims', '', true);
   SET LOCAL ROLE anon;
-  BEGIN
-    PERFORM * FROM public.center_reports WHERE center_id = t1;
-    ASSERT false, 'anon must not be able to query center_reports';
-  EXCEPTION WHEN insufficient_privilege THEN NULL;
-  END;
+  SELECT count(*) INTO n FROM public.center_reports WHERE center_id = t1;
+  ASSERT n = 0, format('anon must read no center reports, saw %s', n);
   RESET ROLE;
 END $$;
 

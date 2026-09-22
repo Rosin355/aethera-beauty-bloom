@@ -23,23 +23,29 @@ BEGIN
   SET LOCAL ROLE authenticated;
 
   -- cabin 1 explicitly requested at 14:00, 60 min -> overlaps Elisa (14:00-15:30) -> conflict
-  r := public.fn_create_appointment(t1, 'Nuova Cliente', sa, '2026-09-16 14:00+02', 1, NULL, false);
+  -- 1::smallint, not 1: _cabin is smallint and int4 -> int2 is an assignment cast, not an
+  -- implicit one, so a bare integer literal finds no matching function from PL/pgSQL. (PostgREST
+  -- casts named JSON arguments to the declared parameter types, so the edge functions are fine.)
+  r := public.fn_create_appointment(t1, 'Nuova Cliente', sa, '2026-09-16 14:00+02', 1::smallint, NULL, false);
   ASSERT r ->> 'status' = 'conflict', format('expected conflict on cabin1 14:00, got %s', r);
   ASSERT jsonb_array_length(r -> 'alternatives') = 2, 'expected exactly 2 alternatives';
   ASSERT (SELECT count(*) FROM public.business_appointments WHERE client_name = 'Nuova Cliente') = 0,
     'a conflict must never write, confirmed or not';
 
-  r := public.fn_create_appointment(t1, 'Nuova Cliente', sa, '2026-09-16 14:00+02', 1, NULL, true);
+  r := public.fn_create_appointment(t1, 'Nuova Cliente', sa, '2026-09-16 14:00+02', 1::smallint, NULL, true);
   ASSERT r ->> 'status' = 'conflict', 'confirmed:true must not bypass a real conflict';
 
-  -- cabin 1 at 10:00, free -> draft, then confirm and check the row lands with the right shape
-  r := public.fn_create_appointment(t1, 'Nuova Cliente', sa, '2026-09-16 10:00+02', 1, 'note test', false);
+  -- cabin 1 at 16:00, free -> draft, then confirm and check the row lands with the right shape.
+  -- Not 10:00: Carla Neri (completato) sits at 10:00-11:00 with cabin NULL, and every conflict
+  -- check reads cabin as coalesce(cabin, 1), so that slot is cabin 1 as far as this function is
+  -- concerned. 16:00 also stays clear of the move block below, which uses cabin 1 at 11:00-12:30.
+  r := public.fn_create_appointment(t1, 'Nuova Cliente', sa, '2026-09-16 16:00+02', 1::smallint, 'note test', false);
   ASSERT r ->> 'status' = 'draft', format('expected draft, got %s', r);
   ASSERT (r -> 'preview' ->> 'cabin')::int = 1, 'preview should name cabin 1';
   ASSERT (SELECT count(*) FROM public.business_appointments WHERE client_name = 'Nuova Cliente') = 0,
     'confirmed:false (draft) must never write';
 
-  r := public.fn_create_appointment(t1, 'Nuova Cliente', sa, '2026-09-16 10:00+02', 1, 'note test', true);
+  r := public.fn_create_appointment(t1, 'Nuova Cliente', sa, '2026-09-16 16:00+02', 1::smallint, 'note test', true);
   ASSERT r ->> 'status' = 'created', format('expected created, got %s', r);
   new_id := (r -> 'appointment' ->> 'id')::uuid;
   ASSERT EXISTS (
@@ -186,7 +192,7 @@ BEGIN
   -- owner: a 90-minute gap fits Giulia Bassi's last service (B, 90 min) -> she's the pick
   PERFORM set_config('request.jwt.claims', json_build_object('sub', u1, 'role', 'authenticated')::text, true);
   SET LOCAL ROLE authenticated;
-  r := public.fn_propose_recall(t1, as_of + interval '3 hours', as_of + interval '4 hours 30 minutes', 1, as_of);
+  r := public.fn_propose_recall(t1, as_of + interval '3 hours', as_of + interval '4 hours 30 minutes', 1::smallint, as_of);
   ASSERT r ->> 'status' = 'proposed', format('expected proposed, got %s', r);
   ASSERT r -> 'client' ->> 'client_name' = 'Giulia Bassi', format('expected Giulia Bassi, got %s', r -> 'client');
   ASSERT (r -> 'client' ->> 'service_duration_minutes')::int = 90, 'expected her 90-minute service';

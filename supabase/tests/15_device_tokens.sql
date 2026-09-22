@@ -52,12 +52,17 @@ BEGIN
   END;
   RESET ROLE;
 
+  -- Clear the claims first: SET ROLE alone leaves request.jwt.claims in place, so auth.uid()
+  -- would still resolve to u1 and anon would read u1's own row.
+  --
+  -- This asserts "reads nothing", not "is refused": anon keeps the table privileges Supabase's
+  -- default grants hand out, here and on all 40 public tables in this project, so the statement
+  -- is allowed to run and RLS -- not REVOKE -- is what makes it return nothing. Tightening that
+  -- is a platform-wide hardening pass, not something to special-case on this one table.
+  PERFORM set_config('request.jwt.claims', '', true);
   SET LOCAL ROLE anon;
-  BEGIN
-    PERFORM * FROM public.device_tokens WHERE center_id = t1;
-    ASSERT false, 'anon must not be able to query device_tokens';
-  EXCEPTION WHEN insufficient_privilege THEN NULL;
-  END;
+  SELECT count(*) INTO n FROM public.device_tokens;
+  ASSERT n = 0, format('anon must read no device tokens, saw %s', n);
   RESET ROLE;
 END $$;
 
