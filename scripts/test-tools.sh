@@ -164,11 +164,36 @@ check_tool "propose_recall rejects an inverted gap" "$ACCESS_TOKEN" propose_reca
   '{"gap":{"start":"2026-01-01T15:00:00+01:00","end":"2026-01-01T14:00:00+01:00"}}' \
   '.ok == false and .error.code == "invalid_args"'
 
+# ---- 2c. profile slots (P1.5) ----------------------------------------------------------------
+# get_missing_slots and generate_first_reading are read-only: safe to run for real. set_profile_slot
+# writes real data into the live demo center's profile, but a slot is just a fact the concierge
+# would record anyway (upsert, freely overwritten later) — unlike an appointment there's no
+# calendar to pollute, so the happy path runs for real here, tagged so it's obviously test data.
+echo "profile slots (direct mode)"
+check_tool "get_missing_slots (all chapters) returns a prioritised list" "$ACCESS_TOKEN" get_missing_slots '{}' \
+  '.ok == true and (.data.missing | type == "array") and (.data | has("missing_count"))'
+check_tool "get_missing_slots rejects an unknown chapter" "$ACCESS_TOKEN" get_missing_slots '{"chapter":"non_esiste"}' \
+  '.ok == false and .error.code == "invalid_args"'
+check_tool "set_profile_slot requires slot_key, value and source" "$ACCESS_TOKEN" set_profile_slot '{}' \
+  '.ok == false and .error.code == "invalid_args"'
+check_tool "set_profile_slot rejects an unknown slot_key" "$ACCESS_TOKEN" set_profile_slot \
+  '{"slot_key":"not_a_real_slot","value":"x","source":"conversation"}' \
+  '.ok == false and .error.code == "invalid_args"'
+check_tool "set_profile_slot upserts a real slot (tagged test data)" "$ACCESS_TOKEN" set_profile_slot \
+  '{"slot_key":"trattamenti_piu_eseguiti","value":"[test-tools.sh live run]","source":"conversation"}' \
+  '.ok == true and .data.slot_key == "trattamenti_piu_eseguiti" and .data.value == "[test-tools.sh live run]"'
+check_tool "get_center_profile now shows a completeness percentage" "$ACCESS_TOKEN" get_center_profile '{}' \
+  '.ok == true and .data.slots_available == true and (.data.completeness_pct | type == "number")'
+check_tool "generate_first_reading returns completeness and per-chapter highlights" "$ACCESS_TOKEN" generate_first_reading '{}' \
+  '.ok == true and (.data.completeness_pct | type == "number") and (.data.chapters | length == 7) and (.data.missing_welcome_slots | type == "array")'
+
 # ---- 3. role scoping (optional second user) --------------------------------------------------
 if [ -n "${OPERATOR_ACCESS_TOKEN:-}" ]; then
   echo "role scoping (non-owner member)"
   check_tool "propose_recall is forbidden for a non-owner (owner-only)" "$OPERATOR_ACCESS_TOKEN" propose_recall \
     '{"gap":{"start":"2026-01-01T14:00:00+01:00","end":"2026-01-01T15:30:00+01:00"}}' \
+    '.ok == false and .error.code == "forbidden"'
+  check_tool "generate_first_reading is forbidden for a non-owner (owner-only)" "$OPERATOR_ACCESS_TOKEN" generate_first_reading '{}' \
     '.ok == false and .error.code == "forbidden"'
   check_tool "get_center_kpi is forbidden for a non-owner" "$OPERATOR_ACCESS_TOKEN" get_center_kpi '{}' \
     '.ok == false and .error.code == "forbidden"'

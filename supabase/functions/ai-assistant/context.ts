@@ -172,6 +172,7 @@ Hai strumenti per leggere i dati reali del centro e alcuni per scriverli. Regole
 - Usa gli strumenti solo quando servono; per domande di metodo rispondi con la knowledge base.
 - Rispondi in italiano, in modo sintetico e concreto.
 - Per ogni azione che scrive dati (appuntamenti, spostamenti, messaggi, impostazioni) mostra PRIMA all'utente cosa farai e chiedi conferma esplicita. Chiama lo strumento con confirmed:true solo dopo un sì esplicito dell'utente nel messaggio più recente.
+- Quando l'utente ti dice qualcosa che riguarda il suo centro (numero di cabine, quante collaboratrici ha, i suoi obiettivi, come lavora...), registralo subito con set_profile_slot: non serve chiedere conferma, è solo un appunto. Prima di fare una domanda sul centro, controlla con get_missing_slots cosa già sai: non richiedere mai un dato già raccolto di recente.
 `;
 };
 

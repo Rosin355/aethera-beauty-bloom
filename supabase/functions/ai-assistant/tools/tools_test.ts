@@ -1,5 +1,5 @@
 import { assertEquals, assertStringIncludes } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { CENTER_ID, fakeSupabase, toolBase } from "../test_helpers.ts";
+import { CENTER_ID, fakeSupabase, toolBase, USER_ID } from "../test_helpers.ts";
 import { ALL_TOOLS, toolsForRole } from "./registry.ts";
 import { runTool } from "./run.ts";
 
@@ -10,16 +10,35 @@ Deno.test("registry: owner-only tools are hidden from operators and receptionist
   const names = (role: "owner" | "operator" | "receptionist") => toolsForRole(role).map((t) => t.name).sort();
   assertEquals(names("owner"), [
     "create_appointment",
+    "generate_first_reading",
     "get_center_kpi",
     "get_center_profile",
+    "get_missing_slots",
     "get_protocol",
     "list_appointments",
     "move_appointment",
     "propose_recall",
+    "set_profile_slot",
     "simulate_goal",
   ]);
-  assertEquals(names("operator"), ["create_appointment", "get_center_profile", "get_protocol", "list_appointments", "move_appointment"]);
-  assertEquals(names("receptionist"), ["create_appointment", "get_center_profile", "get_protocol", "list_appointments", "move_appointment"]);
+  assertEquals(names("operator"), [
+    "create_appointment",
+    "get_center_profile",
+    "get_missing_slots",
+    "get_protocol",
+    "list_appointments",
+    "move_appointment",
+    "set_profile_slot",
+  ]);
+  assertEquals(names("receptionist"), [
+    "create_appointment",
+    "get_center_profile",
+    "get_missing_slots",
+    "get_protocol",
+    "list_appointments",
+    "move_appointment",
+    "set_profile_slot",
+  ]);
 });
 
 Deno.test("registry: no tool schema lets the model choose the tenant", () => {
@@ -159,13 +178,21 @@ Deno.test("get_center_profile: tolerates the slots table not existing yet (P1.5)
       business_services: { data: [{ name: "A", category: "Viso", price: 50, duration_minutes: 60 }], error: null },
       center_members: { data: [{ role: "owner" }, { role: "operator" }, { role: "operator" }], error: null },
       center_profile_slots: { data: null, error: { code, message: "missing" } },
+      profile_slot_catalog: { data: null, error: { code, message: "missing" } },
     });
     const r = await runTool(ALL_TOOLS, "get_center_profile", {}, toolBase(client, { role: "receptionist" }));
     assertEquals(r.ok, true);
     if (r.ok) {
-      const d = r.data as { slots_available: boolean; slots: unknown; team: Record<string, number>; services: { categories: string[] } };
+      const d = r.data as {
+        slots_available: boolean;
+        slots: unknown;
+        team: Record<string, number>;
+        services: { categories: string[] };
+        completeness_pct: number | null;
+      };
       assertEquals(d.slots_available, false);
       assertEquals(d.slots, null);
+      assertEquals(d.completeness_pct, null); // no catalog yet -> nothing to compute against
       assertEquals(d.team, { owner: 1, operator: 2, receptionist: 0 });
       assertEquals(d.services.categories, ["Viso"]);
     }
@@ -177,20 +204,38 @@ Deno.test("get_center_profile: tolerates the slots table not existing yet (P1.5)
   }
 });
 
-Deno.test("get_center_profile: returns the slots once the table exists; other slot errors are real errors", async () => {
+Deno.test("get_center_profile: returns the slots and completeness once the tables exist; other slot errors are real errors", async () => {
   const base = {
     centers: { data: { name: "Aurora", timezone: "Europe/Rome", cabin_count: 1, opening_hours: {} }, error: null },
     business_services: { data: [], error: null },
     center_members: { data: [], error: null },
   };
-  const ok = fakeSupabase({ ...base, center_profile_slots: { data: [{ slot_key: "q1", value: "x" }], error: null } });
+  const catalog = [
+    { slot_key: "q1", is_welcome_interview: true },
+    { slot_key: "q2", is_welcome_interview: false },
+  ];
+  const ok = fakeSupabase({
+    ...base,
+    center_profile_slots: { data: [{ slot_key: "q1", value: "x" }], error: null },
+    profile_slot_catalog: { data: catalog, error: null },
+  });
   const r = await runTool(ALL_TOOLS, "get_center_profile", {}, toolBase(ok.client));
-  assertEquals(r.ok && (r.data as { slots_available: boolean }).slots_available, true);
+  assertEquals(r.ok, true);
+  if (r.ok) {
+    const d = r.data as { slots_available: boolean; completeness_pct: number };
+    assertEquals(d.slots_available, true);
+    // weight 3 (q1, answered) of a total 4 (3 + 1) -> 75%
+    assertEquals(d.completeness_pct, 75);
+  }
 
   const originalError = console.error;
   console.error = () => {};
   try {
-    const bad = fakeSupabase({ ...base, center_profile_slots: { data: null, error: { code: "XX000", message: "boom" } } });
+    const bad = fakeSupabase({
+      ...base,
+      center_profile_slots: { data: null, error: { code: "XX000", message: "boom" } },
+      profile_slot_catalog: { data: catalog, error: null },
+    });
     const r2 = await runTool(ALL_TOOLS, "get_center_profile", {}, toolBase(bad.client));
     assertEquals(r2.ok, false);
   } finally {
@@ -380,4 +425,116 @@ Deno.test("propose_recall: no_candidate is passed through untouched (no centers 
   );
   assertEquals(r, { ok: true, data: { status: "no_candidate", reason: "Nessuna cliente dormiente" } });
   assertEquals(findCall(recorded, "centers"), undefined);
+});
+
+Deno.test("set_profile_slot: rejects an unknown slot_key before touching center_profile_slots", async () => {
+  const { client, recorded } = fakeSupabase({
+    profile_slot_catalog: { data: null, error: null },
+  });
+  const r = await runTool(
+    ALL_TOOLS,
+    "set_profile_slot",
+    { slot_key: "not_real", value: "x", source: "conversation" },
+    toolBase(client, { role: "operator" }),
+  );
+  assertEquals(r.ok, false);
+  if (!r.ok) assertEquals(r.error.code, "invalid_args");
+  assertEquals(findCall(recorded, "center_profile_slots"), undefined);
+});
+
+Deno.test("set_profile_slot: upserts with the server-side center and caller as updated_by", async () => {
+  const { client, recorded } = fakeSupabase({
+    profile_slot_catalog: { data: { slot_key: "tipologia" }, error: null },
+    center_profile_slots: {
+      data: { slot_key: "tipologia", value: "Centro estetico", source: "conversation", updated_at: "2026-09-22T00:00:00Z" },
+      error: null,
+    },
+  });
+  const r = await runTool(
+    ALL_TOOLS,
+    "set_profile_slot",
+    { slot_key: "tipologia", value: "Centro estetico", source: "conversation" },
+    toolBase(client, { role: "operator" }),
+  );
+  assertEquals(r.ok, true);
+  if (r.ok) assertEquals((r.data as { value: unknown }).value, "Centro estetico");
+  const call = findCall(recorded, "center_profile_slots");
+  assertEquals(call?.calls[0], ["upsert", [
+    { center_id: CENTER_ID, slot_key: "tipologia", value: "Centro estetico", source: "conversation", updated_by: USER_ID },
+    { onConflict: "center_id,slot_key" },
+  ]]);
+});
+
+Deno.test("set_profile_slot: is not a write tool -- no confirmed field, callable repeatedly in one turn", () => {
+  const tool = ALL_TOOLS.find((t) => t.name === "set_profile_slot")!;
+  assertEquals(tool.write, false);
+  assertEquals(tool.parameters.required?.includes("confirmed"), false);
+});
+
+Deno.test("get_missing_slots: missing (no row) and stale (>6 months) both surface, answered-recent does not", async () => {
+  const catalog = [
+    { slot_key: "a", chapter: "identita", question_number: 1, label: "A", is_welcome_interview: true },
+    { slot_key: "b", chapter: "identita", question_number: 2, label: "B", is_welcome_interview: false },
+    { slot_key: "c", chapter: "identita", question_number: 3, label: "C", is_welcome_interview: false },
+  ];
+  const { client } = fakeSupabase({
+    profile_slot_catalog: { data: catalog, error: null },
+    center_profile_slots: {
+      data: [
+        { slot_key: "b", updated_at: "2020-01-01T00:00:00Z" }, // stale
+        { slot_key: "c", updated_at: "2026-09-01T00:00:00Z" }, // recent, answered
+      ],
+      error: null,
+    },
+  });
+  const r = await runTool(ALL_TOOLS, "get_missing_slots", {}, toolBase(client, { role: "operator", now: new Date("2026-09-22T00:00:00Z") }));
+  assertEquals(r.ok, true);
+  if (r.ok) {
+    const d = r.data as { missing_count: number; missing: { slot_key: string; reason: string }[] };
+    assertEquals(d.missing_count, 2);
+    // welcome-interview slot ("a", missing) sorts before the ordinary stale one ("b")
+    assertEquals(d.missing.map((m) => m.slot_key), ["a", "b"]);
+    assertEquals(d.missing[0].reason, "missing");
+    assertEquals(d.missing[1].reason, "stale");
+  }
+});
+
+Deno.test("get_missing_slots: an invalid chapter is rejected by the schema", async () => {
+  const { client, recorded } = fakeSupabase({});
+  const r = await runTool(ALL_TOOLS, "get_missing_slots", { chapter: "non_esiste" }, toolBase(client));
+  assertEquals(r.ok, false);
+  assertEquals(recorded.length, 0);
+});
+
+Deno.test("generate_first_reading: owner-only; completeness and per-chapter highlights from the real data", async () => {
+  const { client: opClient, recorded: opRecorded } = fakeSupabase({});
+  const forbidden = await runTool(ALL_TOOLS, "generate_first_reading", {}, toolBase(opClient, { role: "operator" }));
+  assertEquals(forbidden.ok, false);
+  assertEquals(opRecorded.length, 0);
+
+  const catalog = [
+    { slot_key: "tipologia", chapter: "identita", label: "Tipologia", is_welcome_interview: true },
+    { slot_key: "dimensioni", chapter: "identita", label: "Dimensioni", is_welcome_interview: true },
+    { slot_key: "obiettivi_futuri", chapter: "obiettivi", label: "Obiettivi", is_welcome_interview: true },
+  ];
+  const { client } = fakeSupabase({
+    profile_slot_catalog: { data: catalog, error: null },
+    center_profile_slots: { data: [{ slot_key: "tipologia", value: "Centro estetico" }], error: null },
+  });
+  const r = await runTool(ALL_TOOLS, "generate_first_reading", {}, toolBase(client));
+  assertEquals(r.ok, true);
+  if (r.ok) {
+    const d = r.data as {
+      completeness_pct: number;
+      chapters: { chapter: string; answered_count: number; total_count: number; highlights: unknown[] }[];
+      missing_welcome_slots: string[];
+    };
+    // 1 of 3 welcome slots answered, all weight 3 -> 3 of 9 -> 33%
+    assertEquals(d.completeness_pct, 33);
+    const identita = d.chapters.find((c) => c.chapter === "identita")!;
+    assertEquals(identita.answered_count, 1);
+    assertEquals(identita.total_count, 2);
+    assertEquals(identita.highlights, [{ label: "Tipologia", value: "Centro estetico" }]);
+    assertEquals(d.missing_welcome_slots, ["Dimensioni", "Obiettivi"]);
+  }
 });

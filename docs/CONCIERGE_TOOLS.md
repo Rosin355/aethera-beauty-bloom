@@ -25,6 +25,13 @@ Audience: whoever implements the next prompts, and the native clients that will 
 - The confirm-first backstop (§4) is `WriteConfirmGuard` in `tools/run.ts`: an opt-in second parameter to `runTool` that `agent.ts` constructs once per request and `handleDirectTool` never passes, so direct tool mode's single deterministic `confirmed:true` call is unaffected.
 - `move_appointment` / `propose_recall` compose their client-facing `draft_message` in the TS tool layer (not SQL) from the RPC's structured response, so the wording stays easy to keep in the app's plain-prose, no-markdown house style (CLAUDE.md) as that evolves; `create_appointment` needs no client message (P1.4 doesn't ask for one — a new booking's client is presumably already being told directly).
 
+**P1.5 (done)** — progressive Analisi di Valore profile, migration `20260922120000_profile_slots.sql`, mapping in `docs/PROFILE_SLOTS.md`:
+
+- Two tables, not one: `profile_slot_catalog` (75 fixed rows — the questionnaire itself, readable by any authenticated user, not tenant data) and `center_profile_slots` (the actual per-center answers, membership RLS same shape as `client_notes`). The catalog's `slot_key` is a real FK target, so `center_profile_slots` can never hold an answer to a slot that doesn't exist.
+- `set_profile_slot` / `get_missing_slots` / `generate_first_reading` are plain TS tools querying those two tables directly (`.from()`, no RPC) — there was no SQL logic complex enough to be worth a function for this one, unlike P1.2–P1.4.
+- Completeness is `tools/profile_completeness.ts`, one pure function both `get_center_profile` and `generate_first_reading` call, so the percentage can't drift between the two. Weight 3 for a welcome-interview slot, 1 for everything else (see the doc for the exact number).
+- `generate_first_reading` returns data (completeness, per-chapter highlights, still-missing welcome slots), not prose — the calling model narrates the actual "prima lettura" letter from it, same "tools return data" split as every other tool here.
+
 ---
 
 ## 1. Audit of `supabase/functions/ai-assistant/index.ts` (as of `main`, 264 lines)
@@ -219,6 +226,7 @@ Legacy web clients ignore every frame without `choices` (verified in `ChatAssist
 - The system prompt addendum (added in P1.4) says: *"Per ogni azione che scrive dati (appuntamenti, spostamenti, messaggi, impostazioni) mostra PRIMA all'utente cosa farai e chiedi conferma esplicita. Chiama lo strumento con confirmed:true solo dopo un sì esplicito dell'utente nel messaggio più recente."*
 - The runner adds a second guard: a write tool executes with `confirmed:true` only if the **last user message** in the request is non-empty and the same tool was not already executed in this request. This is a backstop, not the primary control (the primary control is that the write itself is tenant-scoped by RLS and constrained by triggers).
 - Writes use the user-scoped client, so a write cannot leave the caller's center: RLS `WITH CHECK (is_center_member(center_id))` and the existing `check_appointment_service_center` trigger both apply.
+- `set_profile_slot` (P1.5) is deliberately **not** one of these: `write: false`, no `confirmed` argument at all. Recording a fact the owner just mentioned is low-stakes and freely correctable, unlike booking an appointment or sending a message — and the concierge routinely learns several slots in one turn, which the "same tool once per request" backstop above would otherwise block on the second call.
 
 ---
 
@@ -231,14 +239,14 @@ Legacy web clients ignore every frame without `choices` (verified in `ChatAssist
 | `get_center_kpi` | P1.3 | owner | – | `{}` | row of `v_center_week_kpi` |
 | `simulate_goal` | P1.3 | owner | – | `goal_amount: number (>0)` | `fn_simulate_goal` result |
 | `list_appointments` | P1.3 | member | – | `day: date` (default today, Europe/Rome) | appointments + gaps for the day |
-| `get_center_profile` | P1.3 | member | – | `{}` | filled/missing profile slots (P1.5 fills them; P1.3 reads what exists) |
+| `get_center_profile` | P1.3 | member | – | `{}` | profile slots + `completeness_pct` (P1.5 fills them; P1.3 reads what exists) |
 | `get_protocol` | P1.3 | member | – | `name: string (≤ 120)` | protocol text from the KB (via `ctx.knowledge`) |
 | `create_appointment` | P1.4 | member | ✔ | `client_name, service_id, starts_at, cabin?, notes?, confirmed` | created row, or the 2 nearest free alternatives on conflict |
 | `move_appointment` | P1.4 | member | ✔ | `id, new_starts_at, confirmed` | moved row + draft client message |
 | `propose_recall` | P1.4 | owner | – (returns a draft) | `gap: {start, end, cabin?}` | best dormant client + draft message |
-| `set_profile_slot` | P1.5 | member | ✔ (idempotent upsert; `confirmed` not required for `source:'conversation'`) | `slot_key, value` | updated slot |
-| `get_missing_slots` | P1.5 | member | – | `chapter?` | missing / stale (> 6 months) slots |
-| `generate_first_reading` | P1.5 | owner | – | `{}` | closing letter text |
+| `set_profile_slot` | P1.5 | member | – (idempotent upsert; see §4 below) | `slot_key, value, source` | the saved slot row |
+| `get_missing_slots` | P1.5 | member | – | `chapter?` | missing / stale (> 6 months) slots, welcome-8 first |
+| `generate_first_reading` | P1.5 | owner | – | `{}` | completeness % + per-chapter highlights (model narrates the letter) |
 | `get_latest_report` | P1.6 | owner | – | `{}` | latest `center_reports` row + actions |
 | `set_action_done` | P1.6 | owner | ✔ | `action_id, done, confirmed` | updated action |
 
