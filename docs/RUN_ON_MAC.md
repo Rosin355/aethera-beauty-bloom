@@ -113,6 +113,60 @@ Things I could not verify from the sandbox and that this run confirms:
 Rate limit: the function allows 30 requests / minute / user; the script stays well below that, but do not
 run it twice within the same minute.
 
+## 4. After P1.4 — agenda write tools (migration + local SQL test + live tests)
+
+```bash
+npm run test:sql   # replays supabase/tests/12_agenda_write_fn.sql locally first
+./scripts/deploy_fase1.sh migrations   # 20260922110000_agenda_write_tools.sql
+./scripts/deploy_fase1.sh functions
+RUN_CHAT=0 ./scripts/test-tools.sh
+```
+
+The new checks are validation-only (see the script's own comment): no real appointment gets
+written into the live demo calendar. Watch for `create_appointment` / `move_appointment` /
+`propose_recall` in the output, all `PASS`. To see the real conflict/draft/confirm/write path,
+either exercise it through the chat (`RUN_CHAT=1`, ask the concierge to book something) or trust
+`supabase/tests/12_agenda_write_fn.sql`, which already covers it against fixture data.
+
+## 5. After P1.5 — progressive profile slots (migration + local SQL test + live tests)
+
+```bash
+npm run test:sql   # replays supabase/tests/13_profile_slots.sql locally first
+./scripts/deploy_fase1.sh migrations   # 20260922120000_profile_slots.sql
+./scripts/deploy_fase1.sh functions
+RUN_CHAT=0 ./scripts/test-tools.sh
+```
+
+This run's `set_profile_slot` check writes a real (tagged) value into the live demo center's
+profile — harmless, an upsert, easy to overwrite again. `get_center_profile` should now show a
+`completeness_pct` number.
+
+## 6. After P1.6 — referto e azioni (migration + new function deploy + live tests)
+
+```bash
+npm run test:sql   # replays supabase/tests/14_center_reports.sql locally first
+./scripts/deploy_fase1.sh migrations   # 20260922140000_center_reports.sql
+./scripts/deploy_fase1.sh functions    # now also deploys generate-report
+RUN_CHAT=0 ./scripts/test-tools.sh
+```
+
+`generate-report` is a **separate** edge function, not part of `ai-assistant` — `test-tools.sh`
+does not call it (it uses model credits and writes a real report + 10 actions into the live demo
+center, same caution as the chat round trip). Call it once by hand to confirm the whole thing:
+
+```bash
+curl -sS -X POST "$SUPABASE_URL/functions/v1/generate-report" \
+  -H "apikey: $SUPABASE_ANON_KEY" -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" --data '{}' | jq .
+```
+
+Expected: `{"ok":true,"report":{...},"actions":[...10 rows...]}`. Check `report.diagnostic_narrative`
+reads as plain prose (no `**`, no `- ` bullets, no `#` headings) — that's `generate-report`'s own
+hand-kept copy of the plain-prose rule (CLAUDE.md), separate from `ai-assistant`'s
+`RESPONSE_STYLE_INSTRUCTIONS`, worth double-checking specifically because it's not shared code.
+Then confirm from the chat: ask the concierge "cosa dice il mio ultimo referto?" and expect it to
+call `get_latest_report` and quote from it.
+
 ## Notes on what could not be verified without the live project
 
 - Migrations are validated locally against a Supabase stub (roles, `auth.uid()`, default

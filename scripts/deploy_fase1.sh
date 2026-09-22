@@ -44,6 +44,7 @@ step_migrations() {
 
 step_functions() {
   supabase functions deploy ai-assistant --project-ref "$PROJECT_REF"
+  supabase functions deploy generate-report --project-ref "$PROJECT_REF"
 }
 
 case "${1:-all}" in

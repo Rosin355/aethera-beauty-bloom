@@ -187,6 +187,22 @@ check_tool "get_center_profile now shows a completeness percentage" "$ACCESS_TOK
 check_tool "generate_first_reading returns completeness and per-chapter highlights" "$ACCESS_TOKEN" generate_first_reading '{}' \
   '.ok == true and (.data.completeness_pct | type == "number") and (.data.chapters | length == 7) and (.data.missing_welcome_slots | type == "array")'
 
+# ---- 2d. referto e azioni (P1.6) -------------------------------------------------------------
+# generate-report is a SEPARATE edge function (not called here -- see docs/RUN_ON_MAC.md §6, it
+# uses model credits and writes a real report). get_latest_report is safe either way: it returns
+# ok:true if a report already exists (from an earlier manual generate-report call) or a clean
+# not_found if none does yet -- both are a valid shape, unlike every other check in this script.
+echo "referto e azioni (direct mode)"
+check_tool "get_latest_report returns a report or a clean not_found" "$ACCESS_TOKEN" get_latest_report '{}' \
+  '(.ok == true and (.data.report | has("id")) and (.data.urgent_actions | type == "array")) or (.ok == false and .error.code == "not_found")'
+check_tool "set_action_done requires action_id, done and confirmed" "$ACCESS_TOKEN" set_action_done '{}' \
+  '.ok == false and .error.code == "invalid_args"'
+check_tool "set_action_done rejects a non-uuid action_id" "$ACCESS_TOKEN" set_action_done \
+  '{"action_id":"not-a-uuid","done":true,"confirmed":false}' '.ok == false and .error.code == "invalid_args"'
+check_tool "set_action_done rejects an unknown action_id" "$ACCESS_TOKEN" set_action_done \
+  '{"action_id":"00000000-0000-4000-8000-000000000000","done":true,"confirmed":false}' \
+  '.ok == false and .error.code == "invalid_args"'
+
 # ---- 3. role scoping (optional second user) --------------------------------------------------
 if [ -n "${OPERATOR_ACCESS_TOKEN:-}" ]; then
   echo "role scoping (non-owner member)"
@@ -194,6 +210,11 @@ if [ -n "${OPERATOR_ACCESS_TOKEN:-}" ]; then
     '{"gap":{"start":"2026-01-01T14:00:00+01:00","end":"2026-01-01T15:30:00+01:00"}}' \
     '.ok == false and .error.code == "forbidden"'
   check_tool "generate_first_reading is forbidden for a non-owner (owner-only)" "$OPERATOR_ACCESS_TOKEN" generate_first_reading '{}' \
+    '.ok == false and .error.code == "forbidden"'
+  check_tool "get_latest_report is forbidden for a non-owner (owner-only)" "$OPERATOR_ACCESS_TOKEN" get_latest_report '{}' \
+    '.ok == false and .error.code == "forbidden"'
+  check_tool "set_action_done is forbidden for a non-owner (owner-only)" "$OPERATOR_ACCESS_TOKEN" set_action_done \
+    '{"action_id":"00000000-0000-4000-8000-000000000000","done":true,"confirmed":false}' \
     '.ok == false and .error.code == "forbidden"'
   check_tool "get_center_kpi is forbidden for a non-owner" "$OPERATOR_ACCESS_TOKEN" get_center_kpi '{}' \
     '.ok == false and .error.code == "forbidden"'

@@ -13,11 +13,13 @@ Deno.test("registry: owner-only tools are hidden from operators and receptionist
     "generate_first_reading",
     "get_center_kpi",
     "get_center_profile",
+    "get_latest_report",
     "get_missing_slots",
     "get_protocol",
     "list_appointments",
     "move_appointment",
     "propose_recall",
+    "set_action_done",
     "set_profile_slot",
     "simulate_goal",
   ]);
@@ -537,4 +539,76 @@ Deno.test("generate_first_reading: owner-only; completeness and per-chapter high
     assertEquals(identita.highlights, [{ label: "Tipologia", value: "Centro estetico" }]);
     assertEquals(d.missing_welcome_slots, ["Dimensioni", "Obiettivi"]);
   }
+});
+
+Deno.test("get_latest_report: owner-only; the newest report plus its actions split by kind", async () => {
+  const { client: opClient, recorded: opRecorded } = fakeSupabase({});
+  const forbidden = await runTool(ALL_TOOLS, "get_latest_report", {}, toolBase(opClient, { role: "operator" }));
+  assertEquals(forbidden.ok, false);
+  assertEquals(opRecorded.length, 0);
+
+  const { client } = fakeSupabase({
+    center_reports: {
+      data: {
+        id: "r1", period_start: "2026-09-16", period_end: "2026-09-22",
+        kpi_snapshot: [{ metric_key: "avg_ticket_7d", value: 61, status: "ok" }],
+        diagnostic_narrative: "Va bene.", generated_at: "2026-09-22T08:00:00Z",
+      },
+      error: null,
+    },
+    center_actions: {
+      data: [
+        { id: "a1", kind: "urgent", number: 1, action_text: "Richiama le dormienti", done: false },
+        { id: "a2", kind: "strategic", number: 1, action_text: "Rivedi il listino", done: true },
+      ],
+      error: null,
+    },
+  });
+  const r = await runTool(ALL_TOOLS, "get_latest_report", {}, toolBase(client));
+  assertEquals(r.ok, true);
+  if (r.ok) {
+    const d = r.data as { report: { id: string }; urgent_actions: unknown[]; strategic_actions: unknown[] };
+    assertEquals(d.report.id, "r1");
+    assertEquals(d.urgent_actions.length, 1);
+    assertEquals(d.strategic_actions.length, 1);
+  }
+});
+
+Deno.test("get_latest_report: no report yet -> not_found", async () => {
+  const { client } = fakeSupabase({ center_reports: { data: null, error: null } });
+  const r = await runTool(ALL_TOOLS, "get_latest_report", {}, toolBase(client));
+  assertEquals(r.ok, false);
+  if (!r.ok) assertEquals(r.error.code, "not_found");
+});
+
+Deno.test("set_action_done: draft previews without writing, confirmed writes and stamps done_at", async () => {
+  const actionRow = {
+    id: "a1", center_id: CENTER_ID, kind: "urgent", number: 1, action_text: "Richiama le dormienti", done: false, done_at: null,
+  };
+
+  const draft = fakeSupabase({ center_actions: { data: actionRow, error: null } });
+  const r1 = await runTool(ALL_TOOLS, "set_action_done", { action_id: "a1", done: true, confirmed: false }, toolBase(draft.client));
+  assertEquals(r1.ok, true);
+  if (r1.ok) assertEquals((r1.data as { status: string }).status, "draft");
+  // the maybeSingle() lookup happens, but no .update() call should have fired
+  assertEquals(draft.recorded.some((c) => c.calls.some(([m]) => m === "update")), false);
+
+  // The fake resolves every query against "center_actions" (both the initial lookup and the
+  // update's own .select()) to the SAME canned row, so this represents what the row looks like
+  // AFTER the write -- the meaningful assertion is on what .update() was actually called with,
+  // not on the fake's returned shape (it can't simulate a real mutation).
+  const updated = fakeSupabase({ center_actions: { data: { ...actionRow, done: true, done_at: "2026-09-22T00:00:00Z" }, error: null } });
+  const r2 = await runTool(ALL_TOOLS, "set_action_done", { action_id: "a1", done: true, confirmed: true }, toolBase(updated.client));
+  assertEquals(r2.ok, true);
+  if (r2.ok) assertEquals((r2.data as { status: string }).status, "updated");
+  const updateCall = findCall(updated.recorded, "center_actions")?.calls.find(([m]) => m === "update");
+  assertEquals((updateCall?.[1][0] as { done: boolean }).done, true);
+  assertEquals(typeof (updateCall?.[1][0] as { done_at: string }).done_at, "string");
+});
+
+Deno.test("set_action_done: an action from another center is invalid_args, not a cross-tenant leak", async () => {
+  const { client } = fakeSupabase({ center_actions: { data: null, error: null } });
+  const r = await runTool(ALL_TOOLS, "set_action_done", { action_id: "a1", done: true, confirmed: false }, toolBase(client));
+  assertEquals(r.ok, false);
+  if (!r.ok) assertEquals(r.error.code, "invalid_args");
 });

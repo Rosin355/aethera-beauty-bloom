@@ -40,6 +40,18 @@ tables, short paragraphs, numbers written inline in the sentence. Any new prompt
 follow the same rule; don't rely on `RESPONSE_STYLE_INSTRUCTIONS` alone to fix content that
 actively asks for markdown.
 
+## generate-report (P1.6)
+`supabase/functions/generate-report/`: a second, separate edge function — NOT part of the
+ai-assistant tool-calling framework. One-shot (non-streaming) model call with
+`response_format: json_object`, owner-only, assembles a `center_reports` row (KPI snapshot +
+diagnostic narrative) and 10 `center_actions` rows (5 urgent, 5 strategic) per call. Its own
+prompt carries a hand-kept copy of the plain-prose rule above (`NARRATIVE_STYLE` in its
+`index.ts`) since it never goes through `context.ts`'s `RESPONSE_STYLE_INSTRUCTIONS` — keep the
+two in sync by hand if the wording changes. Deliberately duplicates a few lines of gateway
+config from `ai-assistant/llm.ts` rather than importing across function directories or
+refactoring already-shipped code without the ability to run tests; a real `_shared/llm.ts`
+extraction is flagged as P1.7 security-pass work, not done blind.
+
 ## Rules
 1. Never hardcode URLs or secrets. Read them from `Deno.env` / env vars; scripts read env vars.
 2. Every sensitive function authenticates through the shared helpers in `_shared/auth.ts`.
@@ -73,6 +85,10 @@ actively asks for markdown.
 | `ai_system_config` | admin-managed system prompt + operational modules |
 | `profiles` | per-user profile (`user_id`) |
 | `user_roles` | platform roles (`admin`/`collaborator`/`user`) via `has_role()` |
+| `profile_slot_catalog` | fixed reference data, all authenticated read; the 75 Analisi di Valore questions (`docs/PROFILE_SLOTS.md`) |
+| `center_profile_slots` | per-center answers to the catalog above; membership RLS |
+| `report_thresholds` | fixed reference data, all authenticated read; semaphore bands per KPI metric |
+| `center_reports` / `center_actions` | one "lettura del centro" + its 5+5 actions; members read, only `generate-report`'s service-role client writes |
 
 ## Repo facts that differ from the prompt doc (adapt to the repo, not the doc)
 - `requireAuthenticatedUser`/`requireAdminUser` live in `_shared/auth.ts` (not `security.ts`).
