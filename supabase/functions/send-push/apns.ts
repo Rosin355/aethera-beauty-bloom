@@ -39,13 +39,15 @@ const base64UrlEncode = (bytes: Uint8Array): string => {
   return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 };
 
-const pemToDer = (pem: string): Uint8Array => {
+// Uint8Array<ArrayBuffer>, not a bare Uint8Array: importKey's BufferSource excludes
+// SharedArrayBuffer-backed views, which is what the unparameterised type widens to.
+const pemToDer = (pem: string): Uint8Array<ArrayBuffer> => {
   const base64 = pem
     .replace("-----BEGIN PRIVATE KEY-----", "")
     .replace("-----END PRIVATE KEY-----", "")
     .replace(/\s+/g, "");
   const binary = atob(base64);
-  const bytes = new Uint8Array(binary.length);
+  const bytes = new Uint8Array(new ArrayBuffer(binary.length));
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
   return bytes;
 };

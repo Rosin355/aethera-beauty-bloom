@@ -136,14 +136,18 @@ BEGIN
   ELSE
     v_conflict := true;
     v_cabin := NULL;
-    FOR v_cabin IN 1..v_cabin_count LOOP
+    -- Distinct loop variable: `FOR v_cabin IN ...` would auto-declare a *new* integer scoped to
+    -- the loop, shadowing the one declared above, so the cabin found here would never reach the
+    -- INSERT and the row would be stored with cabin NULL (= cabin 1 to every conflict check).
+    FOR v_try_cabin IN 1..v_cabin_count LOOP
       IF NOT EXISTS (
         SELECT 1 FROM public.business_appointments a
         WHERE a.center_id = _center_id AND a.status <> 'annullato'
-          AND coalesce(a.cabin, 1) = v_cabin
+          AND coalesce(a.cabin, 1) = v_try_cabin
           AND a.appointment_at < v_ends_at
           AND a.appointment_at + make_interval(mins => a.duration_minutes) > _starts_at
       ) THEN
+        v_cabin := v_try_cabin::smallint;
         v_conflict := false;
         EXIT;
       END IF;

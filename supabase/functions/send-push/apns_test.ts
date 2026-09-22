@@ -16,10 +16,12 @@ const toPem = (der: ArrayBuffer): string => {
   return `-----BEGIN PRIVATE KEY-----\n${lines.join("\n")}\n-----END PRIVATE KEY-----`;
 };
 
-const base64UrlDecode = (value: string): Uint8Array => {
+// Uint8Array<ArrayBuffer>, for the same reason as pemToDer in apns.ts: crypto.subtle.verify's
+// BufferSource does not accept the SharedArrayBuffer-backed widening of a bare Uint8Array.
+const base64UrlDecode = (value: string): Uint8Array<ArrayBuffer> => {
   const padded = value.replace(/-/g, "+").replace(/_/g, "/").padEnd(value.length + (4 - value.length % 4) % 4, "=");
   const binary = atob(padded);
-  const bytes = new Uint8Array(binary.length);
+  const bytes = new Uint8Array(new ArrayBuffer(binary.length));
   for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
   return bytes;
 };
