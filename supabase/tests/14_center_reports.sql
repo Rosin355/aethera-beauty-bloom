@@ -81,12 +81,15 @@ BEGIN
   END;
   RESET ROLE;
 
-  -- an operator (member, not owner) can UPDATE an action's done flag
+  -- P1.7 security pass: an operator (member, not owner) must NOT be able to toggle an action's
+  -- done flag by calling PostgREST directly -- RLS is now owner-only here too, matching the
+  -- chat TOOL's own owner-only gate (previously RLS was member-level and only the tool enforced
+  -- owner-only, which a direct PostgREST call could bypass).
   PERFORM set_config('request.jwt.claims', json_build_object('sub', u2, 'role', 'authenticated')::text, true);
   SET LOCAL ROLE authenticated;
   UPDATE public.center_actions SET done = true, done_at = now() WHERE report_id = v_report_id AND kind = 'urgent' AND number = 1;
   SELECT count(*) INTO n FROM public.center_actions WHERE report_id = v_report_id AND kind = 'urgent' AND number = 1 AND done;
-  ASSERT n = 1, 'operator can toggle an action done (RLS is member-level; the chat TOOL is the owner-only gate)';
+  ASSERT n = 0, 'operator must not be able to toggle an action done -- RLS is owner-only';
 
   -- but an operator cannot INSERT a new action directly -- no grant at all
   BEGIN
@@ -95,6 +98,14 @@ BEGIN
     ASSERT false, 'an authenticated direct insert into center_actions must be rejected';
   EXCEPTION WHEN insufficient_privilege THEN NULL;
   END;
+  RESET ROLE;
+
+  -- the owner CAN toggle an action done directly (RLS owner-only, matches the tool)
+  PERFORM set_config('request.jwt.claims', json_build_object('sub', u1, 'role', 'authenticated')::text, true);
+  SET LOCAL ROLE authenticated;
+  UPDATE public.center_actions SET done = true, done_at = now() WHERE report_id = v_report_id AND kind = 'urgent' AND number = 1;
+  SELECT count(*) INTO n FROM public.center_actions WHERE report_id = v_report_id AND kind = 'urgent' AND number = 1 AND done;
+  ASSERT n = 1, 'owner can toggle an action done';
   RESET ROLE;
 
   -- T2's owner sees none of T1's report or actions

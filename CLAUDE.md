@@ -52,6 +52,24 @@ config from `ai-assistant/llm.ts` rather than importing across function director
 refactoring already-shipped code without the ability to run tests; a real `_shared/llm.ts`
 extraction is flagged as P1.7 security-pass work, not done blind.
 
+## Push + scheduler (P1.7)
+`supabase/functions/send-push/`: service-role-only (checks the bearer token against
+`SUPABASE_SERVICE_ROLE_KEY` itself, on top of the platform's `verify_jwt`), never called by the
+app or an end user. `apns.ts` signs the ES256 provider JWT with Web Crypto and posts to APNs
+over HTTP/2 (via `fetch`, which negotiates HTTP/2 automatically) — **unverified**: no Apple
+developer account, `.p8` key or device reachable from this sandbox, see that file's own header.
+FCM/Android is deferred (tokens are counted and skipped, not sent to). `notifyCenter` is exported
+so it's reusable without going through HTTP again — no cross-function imports in this codebase.
+
+pg_cron (`20260922160000_scheduler.sql`, skipped by `supabase/tests/run_local.sh` — needs
+Supabase-only extensions) fires `fn_run_weekly_briefing` / `fn_run_daily_recall_reminders`, which
+call `send-push` via `pg_net.http_post` (fire-and-forget) using `internal_config`, a plain table
+holding `functions_base_url` / `service_role_key` with RLS enabled and zero policies (nothing
+reads or writes it through PostgREST, ever — only a `SECURITY DEFINER` function or a migration
+running as an elevated role bypasses RLS the way a table owner always does). The two cron
+schedules are plain UTC, not "Europe/Rome" — pg_cron's timezone support could not be confirmed
+from this sandbox; see the migration's own header and `docs/SECURITY_REVIEW_FASE1.md`.
+
 ## Rules
 1. Never hardcode URLs or secrets. Read them from `Deno.env` / env vars; scripts read env vars.
 2. Every sensitive function authenticates through the shared helpers in `_shared/auth.ts`.
@@ -89,6 +107,8 @@ extraction is flagged as P1.7 security-pass work, not done blind.
 | `center_profile_slots` | per-center answers to the catalog above; membership RLS |
 | `report_thresholds` | fixed reference data, all authenticated read; semaphore bands per KPI metric |
 | `center_reports` / `center_actions` | one "lettura del centro" + its 5+5 actions; members read, only `generate-report`'s service-role client writes |
+| `device_tokens` | push registration; RLS is per-**user**, not per-center — not even a teammate can see another member's token |
+| `internal_config` | `functions_base_url` / `service_role_key` for the scheduler's `pg_net` calls; RLS enabled, zero policies — no client role can touch it at all |
 
 ## Repo facts that differ from the prompt doc (adapt to the repo, not the doc)
 - `requireAuthenticatedUser`/`requireAdminUser` live in `_shared/auth.ts` (not `security.ts`).

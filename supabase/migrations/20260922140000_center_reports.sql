@@ -111,14 +111,18 @@ DROP POLICY IF EXISTS "Members read center actions" ON public.center_actions;
 CREATE POLICY "Members read center actions"
 ON public.center_actions FOR SELECT USING (public.is_center_member(center_id));
 
--- The RLS boundary is member-level (an operator toggling a to-do is not a revenue number), but
--- the ai-assistant TOOL (set_action_done) is owner-only per docs/CONCIERGE_TOOLS.md's catalogue
--- -- the concierge chat itself doesn't let a non-owner touch the strategic checklist, even
--- though the underlying table permission is broader for a future dashboard.
+-- P1.7 security pass (docs/SECURITY_REVIEW_FASE1.md): this was originally member-level RLS with
+-- only the ai-assistant TOOL (set_action_done) restricting to owner -- but RLS is the real
+-- boundary (a member's own valid JWT reaches PostgREST directly, no tool in the way), so that
+-- left any member able to toggle the strategic checklist by calling PostgREST directly, contrary
+-- to the product intent. Tightened to owner-only at the RLS layer too, matching the tool. Widen
+-- this again only when a real feature (e.g. a future team dashboard) needs member-level writes --
+-- not speculatively ahead of one.
 DROP POLICY IF EXISTS "Members update center actions" ON public.center_actions;
-CREATE POLICY "Members update center actions"
+DROP POLICY IF EXISTS "Owner updates center actions" ON public.center_actions;
+CREATE POLICY "Owner updates center actions"
 ON public.center_actions FOR UPDATE
-USING (public.is_center_member(center_id)) WITH CHECK (public.is_center_member(center_id));
+USING (public.center_role(center_id) = 'owner') WITH CHECK (public.center_role(center_id) = 'owner');
 
 GRANT SELECT, UPDATE ON public.center_actions TO authenticated;
 -- No INSERT/DELETE grant to authenticated: only generate-report's service-role client creates

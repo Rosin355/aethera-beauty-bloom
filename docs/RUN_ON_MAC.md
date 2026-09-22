@@ -167,6 +167,108 @@ hand-kept copy of the plain-prose rule (CLAUDE.md), separate from `ai-assistant`
 Then confirm from the chat: ask the concierge "cosa dice il mio ultimo referto?" and expect it to
 call `get_latest_report` and quote from it.
 
+## 7. After P1.7 — push, scheduler, security pass (migrations + new function deploy + manual steps)
+
+```bash
+npm run test:sql   # replays supabase/tests/14_center_reports.sql (RLS fix, see below) and
+                    # supabase/tests/15_device_tokens.sql locally first; scheduler migration is
+                    # skipped locally (needs pg_cron/pg_net, Supabase-only extensions)
+./scripts/deploy_fase1.sh migrations   # 20260922150000_device_tokens.sql, 20260922160000_scheduler.sql
+./scripts/deploy_fase1.sh functions    # now also deploys send-push
+RUN_CHAT=0 ./scripts/test-tools.sh
+```
+
+**Re-run `supabase/tests/14_center_reports.sql` even though P1.6 is already deployed** — the
+security pass (`docs/SECURITY_REVIEW_FASE1.md`, finding 1) tightened `center_actions`' UPDATE RLS
+from member-level to owner-only, in the same migration file P1.6 already shipped
+(`20260922140000_center_reports.sql` is edited in place, not a new migration — Supabase reruns it
+via `CREATE POLICY`'s `DROP POLICY IF EXISTS` guard, so `supabase db push` picks up the change on
+a project that already ran the old version of this file). If a non-owner member of your live demo
+center was relying on toggling a checklist item directly (not through the chat), that will now
+get a permission error — expected, that's the fix.
+
+### 7a. Enable `pg_cron` and `pg_net` on the project (dashboard, one-time)
+
+Supabase project dashboard → Database → Extensions → enable `pg_cron` and `pg_net` if not already
+on. The migration also runs `CREATE EXTENSION IF NOT EXISTS`, but Supabase restricts which schema
+non-superusers can install extensions into for these two, so confirm via the dashboard toggle
+first if `supabase db push` errors on the `CREATE EXTENSION` lines.
+
+### 7b. Populate `internal_config` (manual, one-time — needed before either cron job can push)
+
+```sql
+insert into public.internal_config (key, value) values
+  ('functions_base_url', 'https://<project-ref>.functions.supabase.co'),
+  ('service_role_key', '<service role key, from Project settings -> API>')
+on conflict (key) do update set value = excluded.value, updated_at = now();
+```
+
+Run this in the SQL editor as the project owner — `internal_config` has zero RLS policies, so it
+is not reachable any other way (see `docs/SECURITY_REVIEW_FASE1.md` finding 2 for why this is a
+plain table rather than Vault, and the follow-up to move it there).
+
+### 7c. Set the APNs function secrets
+
+```bash
+supabase secrets set APNS_TEAM_ID="<team id>" APNS_KEY_ID="<key id>" \
+  APNS_BUNDLE_ID="<app bundle id>" APNS_ENVIRONMENT="sandbox" \
+  APNS_PRIVATE_KEY="$(cat AuthKey_XXXXXXXXXX.p8)" --project-ref <project-ref>
+```
+
+`APNS_PRIVATE_KEY` can be the `.p8` file's contents with real newlines (the multi-line form above)
+or a single-line value with literal `\n` — `apns.ts` accepts either. Use `APNS_ENVIRONMENT=sandbox`
+until you have production APNs credentials; omit it (or set anything else) for production.
+
+### 7d. Manual smoke test of `send-push` (needs a real device token — none exist yet from the app)
+
+```bash
+curl -sS -X POST "$SUPABASE_URL/functions/v1/send-push" \
+  -H "apikey: $SUPABASE_ANON_KEY" -H "Authorization: Bearer <SUPABASE_SERVICE_ROLE_KEY>" \
+  -H "Content-Type: application/json" \
+  --data '{"centerId":"<a real center id>","title":"Prova","body":"Solo un test."}' | jq .
+```
+
+Expected with no rows in `device_tokens` yet: `{"ok":true,"sent":0,"failed":0,"skipped_android":0}`.
+Register a real iOS device token in `device_tokens` (once the native app implements APNs
+registration) and re-run to confirm `sent:1` and that a push actually arrives — this is the one
+part of P1.7 that has **never been exercised against real Apple infrastructure** from this sandbox
+(no developer account, `.p8` key, or device available there); see `apns.ts`'s own header.
+
+### 7e. Manually trigger each cron job once, instead of waiting for the schedule
+
+```sql
+select public.fn_run_weekly_briefing();
+select public.fn_run_daily_recall_reminders();
+```
+
+Both are fire-and-forget (`pg_net.http_post`), so check `net._http_response` for the async result
+rather than the `SELECT`'s own (empty) return value:
+
+```sql
+select status_code, content from net._http_response order by created desc limit 5;
+```
+
+Also confirm the schedules themselves registered:
+
+```sql
+select jobname, schedule, active from cron.job;
+-- expected: weekly-briefing-monday | 30 6 * * 1 | t
+--           daily-recall-reminders | 0 8 * * *   | t
+```
+
+Both are UTC clock times, not DST-aware "Europe/Rome" as the spec's prose describes — confirm
+whether `cron.schedule` on your project's Postgres version supports a timezone-aware form
+(`cron.schedule_in_database` / a `timezone` parameter varies by pg_cron version); if not, the
+Monday-07:30-Rome / daily-recall times will drift by an hour across the DST change twice a year.
+Flagged in the migration's own header and `docs/SECURITY_REVIEW_FASE1.md`; not fixed blind.
+
+### 7f. Read `docs/SECURITY_REVIEW_FASE1.md`
+
+One real RLS gap found and fixed (covered above, 7 and its re-run note), two deferrals documented
+with rationale (plaintext secrets in `internal_config`, unexercised APNs delivery). Nothing else
+needs action beyond what steps 7a–7e already cover, but worth reading in full before considering
+Fase 1 closed.
+
 ## Notes on what could not be verified without the live project
 
 - Migrations are validated locally against a Supabase stub (roles, `auth.uid()`, default

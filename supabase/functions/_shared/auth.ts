@@ -99,12 +99,22 @@ export const requireAdminUser = async (
   return { supabase, user };
 };
 
+/**
+ * Every edge function funnels its catch-all through this. An `HttpError` was deliberately thrown
+ * by the app's own code with a message that's already safe to show the caller (Italian, no
+ * internals). Anything else -- a driver error, a network failure, an unexpected TypeError -- is
+ * logged in full server-side but answered with a generic message only, so a raw exception text
+ * (which can include SQL, hostnames, or other internal detail) never reaches the HTTP response.
+ */
 export const toErrorResponse = (
   error: unknown,
   corsHeaders: Record<string, string>,
 ): Response => {
   const status = error instanceof HttpError ? error.status : 500;
-  const message = error instanceof Error ? error.message : "Errore interno";
+  if (!(error instanceof HttpError)) {
+    console.error("unhandled error:", error);
+  }
+  const message = error instanceof HttpError ? error.message : "Errore interno";
 
   return new Response(JSON.stringify({ error: message }), {
     status,

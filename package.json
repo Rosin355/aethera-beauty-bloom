@@ -11,7 +11,7 @@
     "typecheck": "tsc -p tsconfig.app.json --noEmit",
     "verify": "npm run lint && npm run typecheck && npm run build",
     "test:sql": "bash supabase/tests/run_local.sh",
-    "test:functions": "deno check supabase/functions/ai-assistant/index.ts supabase/functions/generate-report/index.ts && deno test supabase/functions",
+    "test:functions": "deno check supabase/functions/ai-assistant/index.ts supabase/functions/generate-report/index.ts supabase/functions/send-push/index.ts && deno test supabase/functions",
     "preview": "vite preview"
   },
   "dependencies": {
