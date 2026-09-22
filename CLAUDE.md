@@ -29,6 +29,17 @@ validator). Center context: `_shared/center.ts`; user-scoped client: `createUser
 Tools NEVER take center/user ids as arguments and NEVER get the service-role client. Contract: `docs/CONCIERGE_TOOLS.md`.
 Checks: `npm run test:functions` (deno), `npm run test:sql` (scratch Postgres), `npm run verify`.
 
+**Output format is plain prose, never markdown.** The native iOS/Android clients render
+assistant replies as typeset editorial prose — there is no markdown renderer client-side.
+`context.ts`'s `RESPONSE_STYLE_INSTRUCTIONS` is appended to every system prompt, after
+`ai_system_config` and after the tool prompt, specifically so a DB-edited prompt (or a
+model mirroring the bullet-heavy formatting of the operational-module instructions) can't
+silently reintroduce it: no bold/italic markup, no bulleted/numbered lists, no headings, no
+tables, short paragraphs, numbers written inline in the sentence. Any new prompt content —
+`ai_system_config` rows, tool prompts, future tools' own instructions to the model — must
+follow the same rule; don't rely on `RESPONSE_STYLE_INSTRUCTIONS` alone to fix content that
+actively asks for markdown.
+
 ## Rules
 1. Never hardcode URLs or secrets. Read them from `Deno.env` / env vars; scripts read env vars.
 2. Every sensitive function authenticates through the shared helpers in `_shared/auth.ts`.

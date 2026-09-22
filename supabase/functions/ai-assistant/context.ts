@@ -16,7 +16,7 @@ LINEE GUIDA DI COMUNICAZIONE:
 - Usa esempi concreti dal settore estetica quando possibile
 - Se non conosci la risposta, ammettilo e suggerisci come l'utente può trovare l'informazione
 - Quando appropriato, fai riferimento ai moduli e funzionalità della piattaforma 4 Elementi
-- Struttura le risposte lunghe con elenchi puntati o numerati per chiarezza
+- Scrivi in prosa semplice, mai in markdown: niente elenchi puntati o numerati, grassetto, corsivo, titoli o tabelle
 
 AREE DI COMPETENZA SPECIFICHE:
 1. Gestione operativa del centro estetico
@@ -174,6 +174,19 @@ Hai strumenti per leggere i dati reali del centro. Regole:
 `;
 };
 
+// The native iOS/Android clients render this text as typeset editorial prose (no markdown
+// renderer). Appended to EVERY system prompt, after everything else, regardless of which
+// ai_system_config row is active or whether the base prompt is admin-managed or the code
+// fallback above — a DB-edited prompt (or a model mirroring the bullet-heavy formatting of
+// the operational-module instructions) can never silently reintroduce markdown.
+const RESPONSE_STYLE_INSTRUCTIONS = `
+
+STILE DI RISPOSTA (vincolante, si applica a ogni risposta):
+- Scrivi in prosa semplice, mai in markdown: niente **grassetto**, *corsivo*, elenchi puntati o numerati (- oppure 1.), titoli con #, tabelle o blocchi di codice.
+- Paragrafi brevi, frasi dirette.
+- Se devi elencare più punti, mettili in un unico paragrafo scorrevole o su frasi consecutive, non in un elenco formattato.
+- I numeri vanno scritti dentro la frase (es. "lo scontrino medio è 61 euro"), mai isolati in una tabella o in un elenco a parte.`;
+
 export const buildSystemPrompt = (parts: {
   baseSystemPrompt: string;
   systemInstructions: string;
@@ -184,6 +197,6 @@ export const buildSystemPrompt = (parts: {
   `${parts.baseSystemPrompt}
 ${parts.systemInstructions}
 ${parts.userContext}
-${parts.trainingContext}${parts.toolPrompt ?? ''}`;
+${parts.trainingContext}${parts.toolPrompt ?? ''}${RESPONSE_STYLE_INSTRUCTIONS}`;
 
 export type { ChatMessage, UserClient };
